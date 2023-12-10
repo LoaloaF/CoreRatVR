@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Data Viewer</title>
+  <!-- Include D3.js library -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <style>
+    .svg-text {
+      font-family: DM Mono, sans-serif; /* Set your desired font family */
+      font-size: 18px; /* Set your desired font size */
+      fill: black; /* Set the font color */
+      }
+
+    .chart-container {
+      margin-left: 80px; /* Adjust this value as needed */
+      margin-bottom: 20px; /* Adjust this value as needed */
+      overflow: visible; /* or overflow: scroll; */
+      /* border: 1px solid black; Just for visualization */
+      @extend .svg-text;
+    
+    
+    }
+    h1 {
+      font-size: 14px;
+    }
+  </style>
+
+</head>
+<body>
+  <h1>Sensor streamer</h1>
+  <div id="distance-sensor-chart-container" class="chart-container"></div>
+  <div id="reward-chart-container" class="chart-container"></div>
+  <div id="lick-sensor-chart-container" class="chart-container"></div>
+  <div id="photoresisitor-sensor-chart-container" class="chart-container"></div>
+
+
+
+  <script src="/static/display_distance_sensor.js"></script>
+
+  <!-- <script src="display_lick_sensor.js"></script> -->
+</body>
+</html>
