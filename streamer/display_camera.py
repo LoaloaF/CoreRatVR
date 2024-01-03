@@ -16,12 +16,13 @@ from constants import LOGGING_DIRECTORY
 from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 
-def _stream(shm_structure_fname, termflag_shm_structure_fname, 
-                      x_resolution, y_resolution, n_channels):
+def _stream(shm_structure_fname, termflag_shm_structure_fname):
     
     # access shm
-    frame_shm = VideoFrameSHMInterface(shm_structure_fname, x_resolution, 
-                                       y_resolution, n_channels)
+    frame_shm = VideoFrameSHMInterface(shm_structure_fname)
+    x_res = frame_shm.x_res
+    y_res = frame_shm.y_res
+    nchannels = frame_shm.nchannels
     termflag_shm = FlagSHMInterface(termflag_shm_structure_fname)
     curr_t = time.time() #get current timestamp
 
@@ -39,7 +40,7 @@ def _stream(shm_structure_fname, termflag_shm_structure_fname,
             else:
                 frame, curr_t = frame_shm.get_frame()
                 # do slicing here, format x-dim, ydim, col (np)
-                if n_channels < 3:
+                if frame_shm.nchannels < 3:
                     frame = frame[:,:,0:1]
 
                 cv2.namedWindow(window_name)
@@ -49,19 +50,13 @@ def _stream(shm_structure_fname, termflag_shm_structure_fname,
     finally:
         cv2.destroyAllWindows()
 
-def run_display_camera(shm_structure_fname, termflag_shm_structure_fname, 
-                      x_resolution, y_resolution, n_channels):
-    _stream(shm_structure_fname, termflag_shm_structure_fname, x_resolution, 
-            y_resolution, n_channels)
+def run_display_camera(shm_structure_fname, termflag_shm_structure_fname):
+    _stream(shm_structure_fname, termflag_shm_structure_fname)
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Display webcam stream on screen")
     argParser.add_argument("shm_structure_fname")
     argParser.add_argument("termflag_shm_structure_fname")
-    argParser.add_argument("x_resolution", type=int)
-    argParser.add_argument("y_resolution", type=int)
-    argParser.add_argument("n_channels", type=int)
 
     kwargs = vars(argParser.parse_args())
-    print(kwargs)
     run_display_camera(**kwargs)
