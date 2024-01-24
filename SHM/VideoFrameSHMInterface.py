@@ -4,10 +4,14 @@ import struct
 from shm_interface_utils import load_shm_structure_JSON
 from shm_interface_utils import access_shm
 
-# use return types everywhere if you use them once
+from CustomLogger import CustomLogger as Logger
+
+# add logger.debug to read and write?
 
 class VideoFrameSHMInterface:
     def __init__(self, shm_structure_JSON_fname):
+        L = Logger()
+        L.logger.debug(f"SHM interface created with json {shm_structure_JSON_fname}")
         shm_structure = load_shm_structure_JSON(shm_structure_JSON_fname)
             
         self._shm_name = shm_structure["shm_name"]

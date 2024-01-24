@@ -8,12 +8,19 @@ import time
 import argparse
 import cv2
 
-from constants import LOGGING_DIRECTORY
 from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 
-def _setup_capture(x_resolution, y_resolution, fps):
-    cap = cv2.VideoCapture(0)
+from CustomLogger import CustomLogger as Logger
+
+def _setup_capture(x_resolution, y_resolution, camera_idx, fps):
+    L = Logger()
+    L.logger.debug(f"Setting up video capture for cam {camera_idx}")
+    
+    cap = cv2.VideoCapture(camera_idx)
+    if not cap.isOpened():
+        L.logger.error("Failed to open camera")
+        exit(1)
     cap.set(cv2.CAP_PROP_FPS, fps)
 
     # by default the capture receives frames from the camera closest to the 
@@ -29,42 +36,60 @@ def _setup_capture(x_resolution, y_resolution, fps):
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, new_height)
         new_width += 30
         new_height += 30
+    L.logger.debug((f"Capturing at resolution X={cap.get(cv2.CAP_PROP_FRAME_WIDTH)} "
+                    f"Y={cap.get(cv2.CAP_PROP_FRAME_WIDTH)} and "
+                    f"FPS={cap.get(cv2.CAP_PROP_FPS)}"))
+    
     return cap
 
 def _read_stream_loop(frame_shm, termflag_shm, cap):
+    L = Logger()
+    L.logger.info("Reading camera stream & writing to SHM...")
     try:
         frame_i = 0
         while True:
             #define breaking condition for the thread/process
             if termflag_shm.is_set():
+                L.logger.info("Termination flag raised")
                 break
             
             ret, frame = cap.read()
             t = time.time()
+            L.logger.debug(f"New frame_i {frame_i} from camera at {t}")
+
             
             frame = frame[:frame_shm.y_res, :frame_shm.x_res, :frame_shm.nchannels]
             frame = frame.transpose(1,0,2) # cv2: y-x-rgb, everywhere: x-y-rgb
             frame_shm.add_frame(frame, t)
-            # print("{} {}".format(frame_i, t))
+            L.logger.debug("Placed in SHM")
+            
             frame_i += 1
     finally:
         cap.release()
 
-def run_camera2shm(shm_structure_fname, termflag_shm_structure_fname, fps):
+def run_camera2shm(shm_structure_fname, termflag_shm_structure_fname, 
+                   camera_idx, fps):
     # shm access
     frame_shm = VideoFrameSHMInterface(shm_structure_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_structure_fname)
 
-    cap = _setup_capture(frame_shm.x_res, frame_shm.y_res, fps)
+    cap = _setup_capture(frame_shm.x_res, frame_shm.y_res, camera_idx, fps)
     _read_stream_loop(frame_shm, termflag_shm, cap)
 
 if __name__ == "__main__":
-    argParser = argparse.ArgumentParser("Read RealSense stream, timestamp, ",
+    argParser = argparse.ArgumentParser("Read camera stream, timestamp, ",
                                         "and place in SHM")
-    argParser.add_argument("shm_structure_fname")
-    argParser.add_argument("termflag_shm_structure_fname")
-    argParser.add_argument("fps", type=int)
+    argParser.add_argument("--shm_structure_fname")
+    argParser.add_argument("--termflag_shm_structure_fname")
+    argParser.add_argument("--logging_dir")
+    argParser.add_argument("--logging_name")
+    argParser.add_argument("--logging_level", type=int)
+    argParser.add_argument("--camera_idx", type=int)
+    argParser.add_argument("--fps", type=int)
 
     kwargs = vars(argParser.parse_args())
-    print(kwargs)
+    L = Logger()
+    L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
+                  kwargs.pop("logging_level"))
+    L.logger.info("Subprocess started")
     run_camera2shm(**kwargs)

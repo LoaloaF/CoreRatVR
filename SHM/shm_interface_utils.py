@@ -2,6 +2,8 @@ import numpy as np
 import json
 from multiprocessing import shared_memory
 
+from CustomLogger import CustomLogger as Logger
+
 def load_shm_structure_JSON(filename):
     with open(filename) as f:
         shm_structure = json.load(f)
@@ -9,10 +11,13 @@ def load_shm_structure_JSON(filename):
     return shm_structure
 
 def access_shm(shm_name):
+    L = Logger()
     try:
         shm = shared_memory.SharedMemory(name=shm_name, create=False)
+        L.logger.debug(f"SHM interface successfully linked with `{shm_name}`")
+
     except FileNotFoundError:
-        print(f"Trying to access SHM `{shm_name}` that has not been created.")
+        L.logger.error(f"Trying to access SHM `{shm_name}` that has not been created.")
         exit(1)
     return shm
 

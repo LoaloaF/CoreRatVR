@@ -2,13 +2,13 @@ from utils.SensoryDataPackage import SensoryDataPackage
 from utils.CircularSharedMemoryBuffer import CircularSharedMemoryBuffer
 from utils.MultiprocessEvent import MultiprocessEvent
 from utils.SensoryDataPackage import DataPackageJSONEncoder
-from utils import constants
+from utils import parameters
 
 from threading import Thread, Eventfrom utils.SensoryDataPackage import SensoryDataPackage
 from utils.CircularSharedMemoryBuffer import CircularSharedMemoryBuffer
 from utils.MultiprocessEvent import MultiprocessEvent
 from utils.SensoryDataPackage import DataPackageJSONEncoder
-from utils import constants
+from utils import parameters
 
 from threading import Thread, Event
 
@@ -28,7 +28,7 @@ websocket_data_buffer = []
 
 def sensor_logger_function(shm_name, event_name, save_folder):
     event = MultiprocessEvent(event_name , create=False)
-    shm = CircularSharedMemoryBuffer(shm_name, length=constants.SHM_BUFFER_LENGTH)
+    shm = CircularSharedMemoryBuffer(shm_name, length=parameters.SHM_BUFFER_LENGTH)
     
     # filename = "sensor_data.csv"
     # f = open(os.path.join(save_folder, filename), 'w', encoding='UTF8') 

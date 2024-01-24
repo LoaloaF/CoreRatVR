@@ -33,7 +33,7 @@ from utils.ReadLine import ReadLine, ReadLineEvent
 from utils.RealSenseSharedMemoryFrame import RealSenseSharedMemoryFrame
 from utils.CircularSharedMemoryBuffer import CircularSharedMemoryBuffer
 from utils.MultiprocessEvent import MultiprocessEvent
-from utils import constants
+from utils import parameters
 
 from utils.helpers import sensorLogger_call_function
 from utils.helpers import sensorGrabber_call_function
@@ -54,10 +54,10 @@ import os
 
 def periphery_control_process(term_event, q): #This thread only listens to port and executes UNO commands 
     #connect to Arduiono UNO and reward Pump via serial connection
-    rewardPump = RewardPump(constants.REWARD_PUMP_COM_PORT, velocity=7.0, infusion_amount=30)
+    rewardPump = RewardPump(parameters.REWARD_PUMP_COM_PORT, velocity=7.0, infusion_amount=30)
     rewardPump.callibrate_pump('syr bd 60ml right')
     
-    arduinoUNOdevice = serial.Serial(constants.UNO_COM_PORT, constants.UNO_BAUD_RATE, timeout=constants.UNO_TIMEOUT)
+    arduinoUNOdevice = serial.Serial(parameters.UNO_COM_PORT, parameters.UNO_BAUD_RATE, timeout=parameters.UNO_TIMEOUT)
 
     #define sound queue for reward
     frequency = 440  # Our played note will be 440 Hz
@@ -93,7 +93,7 @@ def periphery_control_process(term_event, q): #This thread only listens to port 
             if(arduinoUNOdevice.is_open):
                 arduinoUNOdevice.write(b'reward')
                 arduinoUNOdevice.flush()
-            time.sleep(constants.REWARD_SLEEP_DURATION)
+            time.sleep(parameters.REWARD_SLEEP_DURATION)
             play_obj = sa.play_buffer(reward_sound, 1, 2, 44100)
             rewardPump.give_reward()
             play_obj.wait_done()
@@ -108,21 +108,21 @@ def periphery_control_process(term_event, q): #This thread only listens to port 
                 arduinoUNOdevice.write(b'external:BLINK')
                 arduinoUNOdevice.flush()
             play_obj.wait_done()
-            time.sleep(constants.FODDCALL_SLEEP_DURATION)
+            time.sleep(parameters.FODDCALL_SLEEP_DURATION)
         elif command_str == "terminate":
             break
         else:
             arduinoUNOdevice.write(bytes(command_str, 'utf-8'))
             arduinoUNOdevice.flush()
             #print(bytes(controlWindow.periphery_control_command, 'utf-8'))
-            time.sleep(constants.EXTERNAL_COMMAND_SLEEP_DURATION)
+            time.sleep(parameters.EXTERNAL_COMMAND_SLEEP_DURATION)
     logging.info("{} PeripheryControlThreadCompleted".format(time.time()))
 
 def automated_reward_process(shm_name, reward_flag_name, term_event_name, q, save_folder):
     main_logger_fname = os.path.join(save_folder, 'reward.log')
     logging.basicConfig(filename=main_logger_fname, filemode='w', format='%(asctime)s - %(message)s', level=logging.INFO)
 
-    sensorfeedSHM = CircularSharedMemoryBuffer(shm_name, create=False, item_size=constants.SHM_ITEM_SIZE, length=constants.SHM_BUFFER_LENGTH)
+    sensorfeedSHM = CircularSharedMemoryBuffer(shm_name, create=False, item_size=parameters.SHM_ITEM_SIZE, length=parameters.SHM_BUFFER_LENGTH)
     automatedReward_control = MultiprocessEvent(reward_flag_name, create=False)
     term_event = MultiprocessEvent(term_event_name, create=False)
     distance_val = 1024 #Some value that won't trigger automated reward
@@ -152,14 +152,14 @@ def automated_reward_process(shm_name, reward_flag_name, term_event_name, q, sav
             
             toc = time.time()
             tdiff = toc - tic
-            if(d_val < constants.AUTOMATIC_REWARD_DISTANCE_THRESHOLD and tdiff > constants.AUTOMATIC_REWARD_PERIOD):
+            if(d_val < parameters.AUTOMATIC_REWARD_DISTANCE_THRESHOLD and tdiff > parameters.AUTOMATIC_REWARD_PERIOD):
                 tic = time.time()
                 q.put("rewardAuto")
                 # print('AUtoReward event. '+str(time.time()))
                 logging.info('AUtoReward event. '+str(time.time()))
 def main():
     #create session logging folder
-    save_folder = create_logging_folder(constants.SAVE_FOLDER)
+    save_folder = create_logging_folder(parameters.SAVE_FOLDER)
 
     #create necessary shared memory buffers
     cameraFeedSHM_out0 = RealSenseSharedMemoryFrame('camera_feed_out0_shm', res=[640, 480, 3], create=True)
@@ -167,7 +167,7 @@ def main():
     # cameraFeedSHM_out2 = RealSenseSharedMemoryFrame('camera_feed_out2_shm', res=[640, 480, 3], create=True)
 
     term_event = MultiprocessEvent('termination_event', create=True)
-    sensorFeedSHM = CircularSharedMemoryBuffer('sensor_feed_shm', create=True, item_size=constants.SHM_ITEM_SIZE, length=constants.SHM_BUFFER_LENGTH)
+    sensorFeedSHM = CircularSharedMemoryBuffer('sensor_feed_shm', create=True, item_size=parameters.SHM_ITEM_SIZE, length=parameters.SHM_BUFFER_LENGTH)
     automatedReward_control = MultiprocessEvent('automatic_reward_flag', create=True)
 
     q = Queue()
@@ -191,12 +191,12 @@ def main():
     #     #start the frame grabbers
         frameGrabber_out0_process, frameGrabber_out0_log_file = frameGrabber_call_function(cameraFeedSHM_out0.shm_name, term_event.shm_name, save_folder, 0)
     #     #frameGrabber_out1_process, frameGrabber_out1_log_file = frameGrabber_call_function(cameraFeedSHM_out1.shm_name, term_event.shm_name, save_folder, 1)
-    #     #frameGrabber_out2_process, frameGrabber_out2_log_file = frameGrabber_call_function(cameraFeedSHM_out2.shm_name, term_event.shm_name, save_folder, constants.PSYCHOPY_CAM_INDEX)
+    #     #frameGrabber_out2_process, frameGrabber_out2_log_file = frameGrabber_call_function(cameraFeedSHM_out2.shm_name, term_event.shm_name, save_folder, parameters.PSYCHOPY_CAM_INDEX)
         
         
-        # frameGrabber_out0_process, frameGrabber_out0_log_file = cpp_frameGrabber_call_function(cameraFeedSHM_out0.shm_name, term_event.shm_name, save_folder, 0, constants.CPP_BIN_FOLDER)
-    #     frameGrabber_out1_process, frameGrabber_out1_log_file = cpp_frameGrabber_call_function(cameraFeedSHM_out1.shm_name, term_event.shm_name, save_folder, 1,  constants.CPP_BIN_FOLDER)
-    #     frameGrabber_out2_process, frameGrabber_out2_log_file = cpp_frameGrabber_call_function(cameraFeedSHM_out2.shm_name, term_event.shm_name, save_folder, 2,  constants.CPP_BIN_FOLDER)
+        # frameGrabber_out0_process, frameGrabber_out0_log_file = cpp_frameGrabber_call_function(cameraFeedSHM_out0.shm_name, term_event.shm_name, save_folder, 0, parameters.CPP_BIN_FOLDER)
+    #     frameGrabber_out1_process, frameGrabber_out1_log_file = cpp_frameGrabber_call_function(cameraFeedSHM_out1.shm_name, term_event.shm_name, save_folder, 1,  parameters.CPP_BIN_FOLDER)
+    #     frameGrabber_out2_process, frameGrabber_out2_log_file = cpp_frameGrabber_call_function(cameraFeedSHM_out2.shm_name, term_event.shm_name, save_folder, 2,  parameters.CPP_BIN_FOLDER)
         
     #     #start the sensor processes
     #     sensorLogger_process, sensorLogger_log_file = sensorLogger_call_function(sensorFeedSHM.shm_name, term_event.shm_name, save_folder)

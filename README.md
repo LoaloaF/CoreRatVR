@@ -30,7 +30,7 @@ the main.py has the following commands to control the peripherals
  5) terminate		->	terminates the script....
 
 
-the logging folder by default is located in utils/constants folder 	SAVE_FOLDER = 'C:\\Users\\marmoNT\\Codes\\MarmosetSetup_DATA_LOGGING\\FirstExperimentScriptLoggingTestFolder'
+the logging folder by default is located in utils/parameters folder 	SAVE_FOLDER = 'C:\\Users\\marmoNT\\Codes\\MarmosetSetup_DATA_LOGGING\\FirstExperimentScriptLoggingTestFolder'
 After this folder new folder will be created based on date (YYYY-MM-DD) and later inside another folder is created based on HH-MM-SS
 
 

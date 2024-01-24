@@ -1,4 +1,4 @@
-tmp_logs/
+logs/
 SHM/tmp_shm_structure_JSONs/
 
 # Byte-compiled / optimized / DLL files

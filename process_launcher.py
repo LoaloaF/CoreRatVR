@@ -1,52 +1,56 @@
 import os
 import atexit
 import subprocess
-
-from constants import PROJECT_DIRECTORY
-from constants import LOGGING_DIRECTORY
+from Parameters import Parameters
+from CustomLogger import CustomLogger as Logger
 
 # implement good logging, either to one file or each proc has seperate one
 # isolate functionality such as cmd construction, very redundant rn
 
-def open_realsense2shm_subprocess(shm_structure_fname, termflag_shm_structure_fname,
-                                  fps, record_depth):
-    camera_indx = "0"
-    fname = f'realsense2shm_{camera_indx}_stdout.txt'
-    proc_log_file = open(os.path.join(LOGGING_DIRECTORY, fname),'w')
-    atexit.register(_close_log_file, proc_log_file)
+def open_camera2shm_proc(shm_structure_fname, termflag_shm_structure_fname, 
+                         logging_name, camera_idx, fps):
+    P = Parameters()
+    r2shm_script = os.path.join(P.PROJECT_DIRECTORY, "read2SHM", "camera2shm.py")
+    args = (
+        "--shm_structure_fname", shm_structure_fname,
+        "--termflag_shm_structure_fname", termflag_shm_structure_fname,
+        "--logging_dir", P.LOGGING_DIRECTORY_RUN,
+        "--logging_name", logging_name,
+        "--logging_level", str(P.LOGGING_LEVEL),
+        "--camera_idx", str(camera_idx),
+        "--fps", str(fps),
+    )
+    return _launch(P.WHICH_PYTHON, r2shm_script, *args)
 
-    script = os.path.join(PROJECT_DIRECTORY, "SHM", "read2SHM", "realsense2shm.py")
-    base_cmd = ["python", script, shm_structure_fname, termflag_shm_structure_fname]
-    params = fps, record_depth
-    extension_cmd = [str(p) for p in params]
-           
-    #    LOGGING_DIRECTORY, "--cam_index", camera_indx, '--auto_logging 0')
-    return subprocess.Popen(base_cmd+extension_cmd, stdout=proc_log_file, 
-                            stderr=proc_log_file)
+def open_shm2cam_stream_proc(shm_structure_fname, termflag_shm_structure_fname, 
+                             logging_name):
+    P = Parameters()
+    stream_script = os.path.join(P.PROJECT_DIRECTORY, "streamer", "display_camera.py")
+    args = (
+        "--shm_structure_fname", shm_structure_fname,
+        "--termflag_shm_structure_fname", termflag_shm_structure_fname,
+        "--logging_dir", P.LOGGING_DIRECTORY_RUN,
+        "--logging_name", logging_name,
+        "--logging_level", str(P.LOGGING_LEVEL),
+    )
+    return _launch(P.WHICH_PYTHON, stream_script, *args)
 
-def open_camera2shm_subprocess(shm_structure_fname, termflag_shm_structure_fname,
-                               fps):
-    camera_indx = "0"
-    fname = f'camera2shm_{camera_indx}_stdout.txt'
-    proc_log_file = open(os.path.join(LOGGING_DIRECTORY, fname),'w')
-    atexit.register(_close_log_file, proc_log_file)
+def _launch(exec, script, *args):
+    L = Logger()
+    L.logger.info(f"Launching subprocess {os.path.basename(script)}") 
+    msg = L.fmtmsg((f"Subprocess {os.path.basename(script)} arguments:", *args))
+    L.logger.debug(msg)
 
-    script = os.path.join(PROJECT_DIRECTORY, "read2SHM", "camera2shm.py")
-    base_cmd = ["python", script, shm_structure_fname, termflag_shm_structure_fname]
-    params = (fps, )
-    extension_cmd = [str(p) for p in params]
-           
-    return subprocess.Popen(base_cmd+extension_cmd, stdout=proc_log_file, 
-                            stderr=proc_log_file)
+    log_dir_i = [i for i in range(len(args)) if args[i] == "--logging_dir"][0]+1
+    log_name_i = [i for i in range(len(args)) if args[i] == "--logging_name"][0]+1
+    
+    log_file = open(os.path.join(args[log_dir_i], args[log_name_i]+".log"), "w")
+    atexit.register(_close_log_file, log_file)
+    proc = subprocess.Popen((exec, script, *args), stderr=log_file, stdout=log_file)
+    L.logger.info(f"With PID {proc.pid}") 
+    return proc
 
-def open_shm2cam_stream_subprocess(shm_structure_fname, termflag_shm_structure_fname):
-    fname = f'display_camera_stdout.txt'
-    proc_log_file = open(os.path.join(LOGGING_DIRECTORY, fname),'w')
-    atexit.register(_close_log_file, proc_log_file)
-
-    script = os.path.join(PROJECT_DIRECTORY, "streamer", "display_camera.py")
-    base_cmd = ["python", script, shm_structure_fname, termflag_shm_structure_fname]
-    return subprocess.Popen(base_cmd, stdout=proc_log_file, stderr=proc_log_file)
-
-def _close_log_file(f):
-    f.close()
+def _close_log_file(file):
+    L = Logger()
+    L.logger.info(f"Closing {os.path.basename(file.name)} log file: `{file.name}`")
+    file.close()
