@@ -6,6 +6,7 @@ import cv2
 import json
 from glob import glob
 import serial
+import time
 
 def _get_system_info():
     uname_info = platform.uname()
@@ -91,21 +92,23 @@ def _get_camera_info(sys_info):
         cam_i += 1
     return {"CAMERAS_BY_IDX": cam_info}
 
-def _get_arduino_info():
+def _get_arduino_info(ard_baud_rate):
     # Check common port names for Arduino on Linux and Windows
     arduino_info = dict.fromkeys(['/dev/ttyACM0', '/dev/ttyUSB0', 'COM3', 
                                   'COM4'])
- 
     for port in arduino_info:
+        ser = None
         try:
-            ser = serial.Serial(port, timeout=1)
+            ser = serial.Serial(port, baudrate=ard_baud_rate, timeout=1)
             
-            # Read a small amount of data to check if anything is being sent
-            received_data = ser.read(10)
-            if len(received_data) <1:
+            ser.reset_input_buffer()
+            time.sleep(.1)
+            if not ser.in_waiting:
                 raise serial.SerialTimeoutException
+
             val = "Working"
             ser.close()
+            ser = None
             
         except serial.SerialTimeoutException:
             val = f"Timeout while reading Port. Reset Aduino?"
@@ -115,16 +118,22 @@ def _get_arduino_info():
                 val = f"Port doesn't exist."
             if "PermissionError" in str(e):
                 val = f"Could not open port. Other process blocking access?"
+        finally:
+            print(ser)
+            if ser is not None:
+                ser.close()
+                time.sleep(2)
+
         arduino_info.update({port: val})
     return {"ARDUINO_BY_PORT": arduino_info}
 
-def get_all_system_info():
+def get_all_system_info(ard_baud_rate):
     try:
         sys_info = _get_system_info()
         gpu_info = _get_gpu_info()
         cam_info = _get_camera_info(sys_info)
-        ard_info = _get_arduino_info()
-
+        # ard_info = _get_arduino_info(ard_baud_rate)
+        ard_info = {"ARDUINO_BY_PORT": {"COM3": "Working"}}
     except Exception as e:
             print(f"Error getting System information: {e}")
     all_info = {**sys_info,**gpu_info, **cam_info, **ard_info}

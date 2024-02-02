@@ -36,6 +36,9 @@ class Parameters:
         cls._instance.PROJECT_DIRECTORY = os.path.dirname(p)
         p = cls._instance.PROJECT_DIRECTORY, "SHM", "tmp_shm_structure_JSONs"
         cls._instance.SHM_STRUCTURE_DIRECTORY = os.path.join(*p)
+        
+        p = cls._instance.PROJECT_DIRECTORY, "..", "data"
+        cls._instance.DATA_DIRECTORY = os.path.join(*p)
 
         p = cls._instance.PROJECT_DIRECTORY, "logs"
         cls._instance.LOGGING_DIRECTORY = os.path.join(*p)
@@ -60,11 +63,11 @@ class Parameters:
         cls._instance.SHM_ITEM_SIZE = 256 
         cls._instance.RANDOM_ID_LENGTH = 12
 
-        cls._instance.PORTENTA_BAUD_RATE = 921600
+        cls._instance.PORTENTA_BAUD_RATE = 2000000
         cls._instance.PORTENTA_COM_PORT = 'COM5'
         cls._instance.PORTENTA_TIMEOUT = 1
 
-        info = get_all_system_info()
+        info = get_all_system_info(ard_baud_rate=cls._instance.PORTENTA_BAUD_RATE)
         cls._instance.SYSTEM = info["SYSTEM"]
         cls._instance.NAME = info["NAME"]
         cls._instance.RELEASE = info["RELEASE"]

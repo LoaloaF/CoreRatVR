@@ -16,6 +16,7 @@ class CustomLogger:
 
         # Refer always to the same logger - only one exists per process
         self.logger = logging.getLogger("__main__")
+        self.combi_msg = ""
         
     def init_logger(self, logging_fname, logging_dir, logging_level,
                     create_run_sub_dir=False):
@@ -103,12 +104,17 @@ class CustomLogger:
     #     self._default_file_fmtr = self._create_formatter(file_fmt)
     #     self._file_hdlr.setFormatter(self._default_file_fmtr)
 
-    def spacer(self):
+    def spacer(self, level="info"):
         """
         Insert a separator line in the log to visually separate log entries.
         """
         self._switch_spacer_fmt()
-        self.logger.critical('')  # log a separator line
+        if level == "info":
+            self.logger.critical('')  # log a separator line
+        elif level == "debug":
+            self.logger.debug('')  # log a separator line
+        else:
+            self.logger.critical('')  # log a separator line
         self._switch_spacer_fmt()
 
     def fmtmsg(self, msg):

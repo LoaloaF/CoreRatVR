@@ -1,9 +1,13 @@
 from shm_interface_utils import load_shm_structure_JSON
 from shm_interface_utils import access_shm
+from CustomLogger import CustomLogger as Logger
 
 class FlagSHMInterface:
     def __init__(self, shm_structure_JSON_fname):
+        L = Logger()
+        L.logger.debug(f"SHM interface created with json {shm_structure_JSON_fname}")
         shm_structure = load_shm_structure_JSON(shm_structure_JSON_fname)
+
         self._shm_name = shm_structure["shm_name"]
         self._memory = access_shm(self._shm_name)
 

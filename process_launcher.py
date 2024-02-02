@@ -35,6 +35,37 @@ def open_shm2cam_stream_proc(shm_structure_fname, termflag_shm_structure_fname,
     )
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
+def open_por2shm2por_proc(shm_structure_fname, termflag_shm_structure_fname, 
+                          command_shm_structure_fname, logging_name, port_name, 
+                          baud_rate):
+    P = Parameters()
+    stream_script = os.path.join(P.PROJECT_DIRECTORY, "read2SHM", "portenta2shm2portenta.py")
+    args = (
+        "--shm_structure_fname", shm_structure_fname,
+        "--termflag_shm_structure_fname", termflag_shm_structure_fname,
+        "--command_shm_structure_fname", command_shm_structure_fname,
+        "--logging_dir", P.LOGGING_DIRECTORY_RUN,
+        "--logging_name", logging_name,
+        "--logging_level", str(P.LOGGING_LEVEL),
+        "--port_name", port_name,
+        "--baud_rate", str(baud_rate),
+    )
+    return _launch(P.WHICH_PYTHON, stream_script, *args)
+
+def open_log_portenta_proc(shm_structure_fname, termflag_shm_structure_fname, 
+                          logging_name, data_dir):
+    P = Parameters()
+    stream_script = os.path.join(P.PROJECT_DIRECTORY, "dataloggers", "log_portenta.py")
+    args = (
+        "--shm_structure_fname", shm_structure_fname,
+        "--termflag_shm_structure_fname", termflag_shm_structure_fname,
+        "--logging_dir", P.LOGGING_DIRECTORY_RUN,
+        "--logging_name", logging_name,
+        "--logging_level", str(P.LOGGING_LEVEL),
+        "--data_dir", data_dir,
+    )
+    return _launch(P.WHICH_PYTHON, stream_script, *args)
+
 def _launch(exec, script, *args):
     L = Logger()
     L.logger.info(f"Launching subprocess {os.path.basename(script)}") 

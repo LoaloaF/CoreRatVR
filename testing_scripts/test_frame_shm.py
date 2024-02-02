@@ -101,7 +101,7 @@ def main():
     # manually update params here
     P.USE_MULTIPROCESSING = True
     P.LOGGING_LEVEL = logging.INFO
-    P.LOGGING_LEVEL = logging.DEBUG
+    # P.LOGGING_LEVEL = logging.DEBUG
     
     L = Logger()
     logging_sub_dir = L.init_logger(__name__, P.LOGGING_DIRECTORY, 
