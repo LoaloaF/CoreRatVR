@@ -10,15 +10,71 @@
 # pack = f'{pack[:v_idx]},PCT:{time.time()}{pack[v_idx:]}'
 # print(pack)
 
-# import serial
-# import time
-# time.sleep(2)
-# ser = serial.Serial("COM3", baudrate=2000000)
-# time.sleep(.5)
+import serial
+import time
+# ser = serial.Serial("/dev/ttyACM0", baudrate=2000000)
+ser = serial.Serial("COM3", baudrate=2000000)
+print(ser.get_settings())
+ser.write("smth\r\n".encode())
+ser.read_all()
 
-# print(ser.in_waiting)
-# print(len(ser.read_all()))
-# ser.close()
+for i in range(10):
+    print("Writing cmd", end='...')
+    t = int(time.perf_counter()*1e6)
+    ser.write(b"Y200,0,200\r\n")
+    # t1 = int(time.perf_counter()*1e6)
+    # print(f"Done. ({t1-t} us)")
+    
+    
+    # ser.reset_input_buffer()
+    # t1 = int(time.perf_counter()*1e6)
+    # print(f"Done resetting inp buf. ({t1-t} us)")
+
+    
+    # ser.reset_output_buffer()
+    while True:
+        # print(ser.read_all(), end='')
+        # r = (ser.read_all())
+        # tic = time.perf_counter()
+        i = min(2048, ser.in_waiting)
+        r = None
+        if i:
+            r = ser.read_all()
+
+        # t1 = int(time.perf_counter()*1e6)
+        # print(f'b:{i}, {t1-t}us', end=".....")
+        
+        # toc = time.perf_counter()
+        if r:
+            print()
+            # print(r, flush=False)
+            
+            t1 = int(time.perf_counter()*1e6)
+            print(f'total {t1-t}us')
+            break
+    
+    print("sleeping 3 seconds...\n\n")
+    time.sleep(3)
+
+ser.close()
+
+import serial
+import time
+# ser = serial.Serial("COM3", baudrate=2000000, timeout=1)
+
+
+# previous_time = 0
+# while True:
+#     # Read a line from the serial port
+#     # line = ser.readline().decode().strip()
+#     # print(line)
+
+#     # Calculate delta time since the start of the loop
+#     current_time = time.perf_counter()
+#     delta_time = current_time - previous_time
+#     print((delta_time-int(delta_time))*1000)
+#     # Update the previous time for the next iteration
+#     previous_time = current_time
 
 
 # bytes_packet = b"<{N:BV,ID:21736,T:48307152,V:{R:0,Y:0,P:0}}>\r\n"
@@ -81,20 +137,20 @@
 #         return {"N":"ER", "V":str(e)}
 
 # o = f(b'<{N:BV,ID:4750,T:7135485,PCT:1867142.4060035,V:{R:0,Y:0,P:0},F:0}>\r\n')
-# print(o)
+# # print(o)
 
 
-data = ({'N': 'BV', 'ID': 11580, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},
-        {'N': 'BV', 'ID': 11581, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},
-        {'N': 'BV', 'ID': 11582, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},
-        {'N': 'BV', 'ID': 11583, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},
-        {'N': 'BV', 'ID': 11584, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},
-        {'N': 'BV', 'ID': 11585, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},)
+# data = ({'N': 'BV', 'ID': 11580, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},
+#         {'N': 'BV', 'ID': 11581, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},
+#         {'N': 'BV', 'ID': 11582, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},
+#         {'N': 'BV', 'ID': 11583, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},
+#         {'N': 'BV', 'ID': 11584, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},
+#         {'N': 'BV', 'ID': 11585, 'T': 12316602, 'PCT': 1867354.2807986, 'V': {'R': 0, 'Y': 0, 'P': 0}, 'F': 0},)
 
-print(data)
-import pandas as pd
+# print(data)
+# import pandas as pd
 
-data[0]["V"] = tuple(data[0].pop("V").values())
-print(data[0])
-df = pd.DataFrame([d.values() for d in data[:1]])
-print(df)
+# data[0]["V"] = tuple(data[0].pop("V").values())
+
+# df = pd.DataFrame([d.values() for d in data[:1]])
+# print(df)

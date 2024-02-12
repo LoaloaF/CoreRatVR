@@ -71,16 +71,11 @@ def _get_max_fps(cap):
     return cap.get(cv2.CAP_PROP_FPS)
 
 def _get_camera_info(sys_info):
-    cam_i = 0
     cam_info = {}
-    while True:
+    for cam_i in range(5): # max checking 5 cameras
         cap = _open_cap(cam_i)
         if cap is None:
-            if sys_info["SYSTEM"] == "Linux":  
-                if not (cam_i+1 >= len(glob("/dev/video*"))):
-                    cam_i += 1
-                    continue
-            break
+            continue
         
         max_x_res, max_y_res = _get_max_resolution(cap)
         max_fps = _get_max_fps(cap)
@@ -119,7 +114,6 @@ def _get_arduino_info(ard_baud_rate):
             if "PermissionError" in str(e):
                 val = f"Could not open port. Other process blocking access?"
         finally:
-            print(ser)
             if ser is not None:
                 ser.close()
                 time.sleep(2)

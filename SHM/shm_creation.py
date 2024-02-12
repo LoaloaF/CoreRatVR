@@ -1,12 +1,20 @@
 import atexit
-from multiprocessing import shared_memory
 import json
+import time
 import os
 from math import log
+
+from multiprocessing import shared_memory
+from multiprocessing.resource_tracker import unregister
+from multiprocessing import Process, resource_tracker
+from multiprocessing.shared_memory import SharedMemory
+
 
 from shm_buffer_errors import BufferAlreadyCreated
 from CustomLogger import CustomLogger as Logger
 from Parameters import Parameters
+
+from shm_interface_utils import remove_shm_from_resource_tracker
 
 # framecount isn't used right now, structure in general needs to be reconsiderd
 
@@ -62,7 +70,7 @@ def create_cyclic_packages_shm(shm_name, package_nbytes, npackages):
     L.logger.info(f"Creating cylic package SHM named `{shm_name}`")
 
     shm_packages_nbytes = package_nbytes*npackages
-    write_pntr_nbytes = int(log(shm_packages_nbytes, 256)) +1
+    write_pntr_nbytes = 8
     total_nbytes = write_pntr_nbytes + shm_packages_nbytes
     
     _create_shm(shm_name=shm_name, total_nbytes=total_nbytes)
@@ -87,9 +95,13 @@ def create_cyclic_bytes_shm(shm_name,    ): # audio
 def _create_shm(shm_name, total_nbytes):
     L = Logger()
     try:
+        # disable automatic unlinking (deletion) of shm when an access proc dies
+        remove_shm_from_resource_tracker()
         shm = shared_memory.SharedMemory(name=shm_name, create=True, 
                                          size=total_nbytes)
+
         shm.buf[:] = bytearray(total_nbytes)
+        # shm.close() # locally close shm bc no read write happens with this, only creatioon
     
     except FileExistsError as e:
         raise BufferAlreadyCreated(
@@ -100,9 +112,8 @@ def _create_shm(shm_name, total_nbytes):
 def _cleanup(shm, shm_name):
     P = Parameters()
     L = Logger()
-    L.logger.info(f"Tidying up SHM `{shm_name}`. Closing access file")
     try:
-        shm.close()
+        L.logger.info(f"Deleting SHM `{shm_name}`")
         shm.unlink()
     except FileNotFoundError as e:
         L.logger.warning(str(e))
@@ -112,14 +123,10 @@ def _cleanup(shm, shm_name):
     L.logger.debug(f"Deleting tmp SHM structure JSON file: {full_fname}")
     os.remove(full_fname)
 
-
-
 def validate_shm_structure(shm_structure_fname):
     # do checks 
-    from VideoFrameSHMInterface import VideoFrameSHMInterface
-    frame_shm = VideoFrameSHMInterface(shm_structure_fname)
+    pass
     
-
 def _write_json(shm_structure, shm_name):
     P = Parameters()
     fname = f"{shm_name}_shmstruct.json"

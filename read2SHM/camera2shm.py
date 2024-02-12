@@ -19,7 +19,7 @@ def _setup_capture(x_resolution, y_resolution, camera_idx, fps):
     
     cap = cv2.VideoCapture(camera_idx)
     if not cap.isOpened():
-        L.logger.error("Failed to open camera")
+        L.logger.critical("Failed to open camera")
         exit(1)
     cap.set(cv2.CAP_PROP_FPS, fps)
 

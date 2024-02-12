@@ -258,6 +258,7 @@ def main():
     #     sensorGrabber_log_file.close()
     #     psychoPy_log_file.close()
         frameGrabber_out0_log_file.close()
+        
     #     frameGrabber_out1_log_file.close()
     #     frameGrabber_out2_log_file.close()
 

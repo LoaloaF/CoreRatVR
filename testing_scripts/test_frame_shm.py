@@ -24,8 +24,9 @@ from streamer.display_camera import run_display_camera
 def test_camera2shm(P):
     L = Logger()
     # setup the main logitech stream
-    if P.FRONT_WEBCAM_IDX not in P.CAMERAS_BY_IDX:
-        L.logger.error(f"Camera with index {P.FRONT_WEBCAM_IDX} not found.")
+    if P.BUILTIN_WEBCAM_IDX not in P.CAMERAS_BY_IDX:
+        L.logger.critical(f"Camera with index {P.FRONT_WEBCAM_IDX} not found.")
+        L.spacer()
         exit(1)
     
     # setup termination
@@ -64,14 +65,14 @@ def test_camera2shm(P):
     
     L.spacer()
     if P.USE_MULTIPROCESSING:
-        ln = f"camera2shm_cam{P.FRONT_WEBCAM_IDX}"
-        camone2shm_proc = open_camera2shm_proc(logging_name=ln, **camone2shm_kwargs)
-        time.sleep(1)   # camera access by opencv more reliable with sleeping
+        # ln = f"camera2shm_cam{P.FRONT_WEBCAM_IDX}"
+        # camone2shm_proc = open_camera2shm_proc(logging_name=ln, **camone2shm_kwargs)
+        # time.sleep(1)   # camera access by opencv more reliable with sleeping
         
-        lln = f"stream_camera_cam{P.FRONT_WEBCAM_IDX}"
-        display_camone_proc = open_shm2cam_stream_proc(logging_name=ln, 
-                                                       **display_camone_kwargs)
-        time.sleep(1)
+        # ln = f"stream_camera_cam{P.FRONT_WEBCAM_IDX}"
+        # display_camone_proc = open_shm2cam_stream_proc(logging_name=ln, 
+        #                                                **display_camone_kwargs)
+        # time.sleep(1)
         
         ln = f"camera2shm_cam{P.BUILTIN_WEBCAM_IDX}"
         camtwo2shm_proc = open_camera2shm_proc(logging_name=ln, **camtwo2shm_kwargs)
@@ -80,7 +81,7 @@ def test_camera2shm(P):
         ln = f"stream_camera_cam{P.BUILTIN_WEBCAM_IDX}"
         display_camtwo_proc = open_shm2cam_stream_proc(logging_name=ln, 
                                                        **display_camtwo_kwargs)
-        
+        time.sleep(1)
     else:
         Thread(target=run_camera2shm, kwargs=camone2shm_kwargs).start()
         Thread(target=run_camera2shm, kwargs=camtwo2shm_kwargs).start()

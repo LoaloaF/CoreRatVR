@@ -66,6 +66,19 @@ def open_log_portenta_proc(shm_structure_fname, termflag_shm_structure_fname,
     )
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
+def open_stream_portenta_proc(shm_structure_fname, termflag_shm_structure_fname, 
+                              logging_name):
+    P = Parameters()
+    stream_script = os.path.join(P.PROJECT_DIRECTORY, "streamer", "display_packages.py")
+    args = (
+        "--shm_structure_fname", shm_structure_fname,
+        "--termflag_shm_structure_fname", termflag_shm_structure_fname,
+        "--logging_dir", P.LOGGING_DIRECTORY_RUN,
+        "--logging_name", logging_name,
+        "--logging_level", str(P.LOGGING_LEVEL),
+    )
+    return _launch(P.WHICH_PYTHON, stream_script, *args)
+
 def _launch(exec, script, *args):
     L = Logger()
     L.logger.info(f"Launching subprocess {os.path.basename(script)}") 
@@ -83,5 +96,6 @@ def _launch(exec, script, *args):
 
 def _close_log_file(file):
     L = Logger()
-    L.logger.info(f"Closing {os.path.basename(file.name)} log file: `{file.name}`")
+    L.logger.info(f"Closing {os.path.basename(file.name)} file: `{file.name}`")
+    L.spacer()
     file.close()

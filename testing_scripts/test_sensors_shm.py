@@ -20,8 +20,13 @@ from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 
 from read2SHM.portenta2shm2portenta import run_portenta2shm2portenta
 from dataloggers.log_portenta import run_log_portenta
+from streamer.display_packages import run_stream_packages
+
 from process_launcher import open_por2shm2por_proc
 from process_launcher import open_log_portenta_proc
+from process_launcher import open_stream_portenta_proc
+
+
 # from streamer.display_camera import run_display_camera
 
 def test_portenta2shm2portenta(P):
@@ -54,44 +59,88 @@ def test_portenta2shm2portenta(P):
     log_portenta_kwargs.pop("command_shm_structure_fname")
     log_portenta_kwargs.pop("port_name")
     log_portenta_kwargs.pop("baud_rate")
+    stream_portenta_kwargs = log_portenta_kwargs.copy()
     log_portenta_kwargs["data_dir"] = P.DATA_DIRECTORY
 
     L.spacer()
     if P.USE_MULTIPROCESSING:
-        por2shm2por_proc = open_por2shm2por_proc(logging_name="por2shm2por", 
-                                                 **portenta2shm_kwargs)
+        stream_portenta_proc = open_stream_portenta_proc(logging_name="stream_portenta", 
+                                                      **stream_portenta_kwargs)
+        time.sleep(3)
         log_portenta_proc = open_log_portenta_proc(logging_name="log_portenta", 
                                                    **log_portenta_kwargs)
+        time.sleep(3)
+        por2shm2por_proc = open_por2shm2por_proc(logging_name="por2shm2por", 
+                                                 **portenta2shm_kwargs)
+        time.sleep(3)
+        
+
+
+        # Thread(target=run_stream_packages, kwargs=stream_portenta_kwargs).start()
         
     else:
         Thread(target=run_portenta2shm2portenta, kwargs=portenta2shm_kwargs).start()
         Thread(target=run_log_portenta, kwargs=log_portenta_kwargs).start()
+        Thread(target=run_stream_packages, kwargs=stream_portenta_kwargs).start()
     
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     command_shm = CyclicPackagesSHMInterface(command_shm_struc_fname)
     
     while True:
-        inp = input("q to quit, or send command to Portenta")
-        if inp == "q":
-            L.spacer()
-            termflag_shm.set()
-            exit()
-        else:
-            L.logger.info(inp)
-            command_shm.push(inp)
+        t = time.time()
+        if t-int(t) < 0.001:
+            break
+    try:
+        i = 0
+        while True:
+            # inp = input("q to quit, or send command to Portenta")
+            # if inp == "q":
+            #     L.spacer()
+            #     termflag_shm.set()
+            #     exit()    
+            t1 = time.time()
+            if t1 > t+i:
+                command_shm.push("Y100,1,100\r\n")
+                L.logger.info("Pushed")
+                i += 2
+            
+            if t1 > t+10.8:
+                raise KeyboardInterrupt
+
+    except KeyboardInterrupt:
+        L.spacer()
+        termflag_shm.set()
+        exit()
+
+    #  while True:
+    #     inp = input("q to quit, or send command to Portenta")
+    #     if inp == "q":
+    #         L.spacer()
+    #         termflag_shm.set()
+    #         exit()
+    #     else:
+    #         L.logger.info(inp)
+    #         # time.sleep(2)
+    #         # command_shm.push("Y100,100,100")
+    #         command_shm.push(inp)
+
+
 
 def main():
     P = Parameters()
     
     # manually update params here
     P.USE_MULTIPROCESSING = True
-    P.LOGGING_LEVEL = logging.WARNING
+    P.LOGGING_LEVEL = logging.INFO
     P.LOGGING_LEVEL = logging.DEBUG
     
     if P.SYSTEM == "Linux":
         P.PORTENTA_PORT = "/dev/ttyACM0"
+        P.ARDUINO_BY_PORT = {"/dev/ttyACM0": "Working"}
     else:
         P.PORTENTA_PORT = "COM3"
+        P.ARDUINO_BY_PORT = {"COM3": "Working"}
+        P.DATA_DIRECTORY = "c://Users//RatVR//"
 
     L = Logger()
     logging_sub_dir = L.init_logger(__name__, P.LOGGING_DIRECTORY, 
@@ -106,3 +155,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    # overhang packge when term flag raised nooed to be looged (partial 256)
+    # timestamps of buffered packages should be set to inital read event timestamp
+    # benchmark max read rate, dial in, test on high perf Linux machine

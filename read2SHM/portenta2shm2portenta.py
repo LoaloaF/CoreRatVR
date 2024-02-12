@@ -24,19 +24,18 @@ _find_packet_end_char = lambda bbuf: bbuf.find(b"\n")
 def _get_pack_frombuf(packets_buf, next_p_idx):
     next_p = packets_buf[:next_p_idx+1]
     packets_buf = packets_buf[next_p_idx+1:]
-    pc_ts = time.perf_counter()
+    pc_ts = int(time.perf_counter()*1e6)
     return next_p, packets_buf, pc_ts
 
 def _get_serial_input(L, ser, packets_buf, pc_ts):
     L.combi_msg += f"{ser.in_waiting} in hardw buf, reading\n\t"
-    # ser_data = ser.read(ser.in_waiting)
     ser_data = ser.read_all()
     
     L.combi_msg += f"{len(ser_data)} chars, ser_data={ser_data}\n\t"
     next_p_start_idx = _find_packet_start_char(ser_data)
     if next_p_start_idx != -1:
-        pc_ts = time.perf_counter()
-        L.combi_msg += f'`<` found, ts={(pc_ts-int(pc_ts))*1000:.2f}(ms part)\n\t'
+        pc_ts = int(time.perf_counter()*1e6)
+        L.combi_msg += f'`<` found, ts={(pc_ts/1e6-int(pc_ts/1e6))*1000:.2f}(ms part)\n\t'
 
     next_p_idx = _find_packet_end_char(ser_data)
     if next_p_idx != -1:
@@ -87,9 +86,9 @@ def _handle_input(L, sport, sensors_shm, packets_buf, pc_ts):
 
     # if there is not full package check for a partial, timestamp it
     elif _find_packet_start_char(packets_buf) != -1:
-        pc_ts = time.perf_counter()
+        pc_ts = int(time.perf_counter()*1e6)
         L.combi_msg += (f'no end char in buf, but `<`, ts='
-                        f'{(pc_ts-int(pc_ts))*1000:.2f}(ms part)\n\t')
+                        f'{(pc_ts/1e6-int(pc_ts/1e6))*1000:.2f}(ms part)\n\t')
 
     # default: check if there is something in hardware buffer and read it
     if sport.in_waiting:
@@ -102,23 +101,23 @@ def _handle_input(L, sport, sensors_shm, packets_buf, pc_ts):
             is_fresh = True
         if packet is not None:
             _process_packet(L, sensors_shm, packet, pc_ts, is_fresh)
+    else:
+        L.logger.debug("Nothing in the port...")
     return packets_buf, pc_ts
 
 def _handle_output(L, sport, command_shm):
     L.logger.debug("Handling output")
     cmd = command_shm.popitem()
     if cmd is not None:
+        cmd = cmd[:cmd.find("\r\n")+2].encode()
         L.logger.info(f"Command found in SHM: `{cmd}` - Writing to serial.")
-        sport.write(cmd.encode())
-        L.logger.info(f"Command written.")
-        sport.flush()
-        L.logger.info(f"flushed.")
+        sport.write(cmd)
         L.spacer()
 
 def _open_serial_port(port_name, baud_rate):
     L = Logger()
     try:
-        ser = serial.Serial(port_name, baud_rate, timeout=1)
+        ser = serial.Serial(port_name, baud_rate)
         ser.flush()
         return ser
     except serial.SerialException as e:

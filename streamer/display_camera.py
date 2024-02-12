@@ -5,9 +5,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..')) # project dir
 sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 sys.path.insert(1, os.path.join(sys.path[0], '..', 'read2shm')) # read2SHM dir
 
-import numpy as np
 import cv2
-from datetime import datetime
 import time
 import argparse
 

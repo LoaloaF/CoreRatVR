@@ -1,5 +1,5 @@
 import numpy as np
-import struct
+import atexit
 import typing
 
 from CustomLogger import CustomLogger as Logger
@@ -72,8 +72,13 @@ class CyclicPackagesSHMInterface:
 
         if (read_addr := self._next_read_pointer()) is not None:
             temp_r_pointer = read_addr or (self._package_nbytes * self._npackages)
+            self.L.logger.debug(f"temp_r_pointer: {temp_r_pointer}, read_addr: {read_addr}")
             tmp_val = bytearray(self._memory.buf[temp_r_pointer - self._package_nbytes : temp_r_pointer])
-            return tmp_val.decode('utf-8')
+            val = tmp_val.decode('utf-8')
+            if not val:
+                L = Logger()
+                L.logger.error(f"Empty packet from SHM: {val}")
+            return val
         return None
     
     @property
@@ -101,7 +106,7 @@ class CyclicPackagesSHMInterface:
 
     def _next_read_pointer(self) -> typing.Optional[int]:
         if self._read_pointer == self._stored_write_pointer:
-            self.L.logger.debug("read pointer == write pointer")
+            # self.L.logger.debug("read pointer == write pointer")
             return None
         self._read_pointer += self._package_nbytes
         self._read_pointer %= self._npackages * self._package_nbytes
@@ -112,7 +117,6 @@ class CyclicPackagesSHMInterface:
         return int.from_bytes(
             self._memory.buf[
                 self._total_nbytes
-    
                  - self._write_pntr_nbytes : self._total_nbytes
            ],
            byteorder="big",
@@ -179,5 +183,5 @@ class CyclicPackagesSHMInterface:
                 val = extract_packet_data(tmp_val)
                 # print(val)
                 return val
-            return tmp_val.decode('utf-8')
+            return tmp_val
         return None
