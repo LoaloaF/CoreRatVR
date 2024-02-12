@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "/kZTy5Ny59ckuf85EOgQwekdPQ8XYiqs3MDnRuCEWsMrKrK4x1f5y1oks2d9P6Bw9fQb1F6kcZ5bkP6SARKELQ==",
+  "success": true,
+  "projectFilePath": "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharp/csharp_shm_test.csproj",
+  "expectedPackageFiles": [
+    "/home/loaloa/.nuget/packages/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

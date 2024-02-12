@@ -1,0 +1,1 @@
+{"shm_type": "cyclic_packages", "shm_name": "SensorsCyclicTestSHM", "total_nbytes": 520, "fields": {"shm_packages_nbytes": 512, "write_pntr_nbytes": 8}, "field_types": {"shm_packages_type": "str", "write_pntr_type": "uint8"}, "metadata": {"package_nbytes": 64, "npackages": 8}}
