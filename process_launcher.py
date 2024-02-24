@@ -3,6 +3,7 @@ import atexit
 import subprocess
 from Parameters import Parameters
 from CustomLogger import CustomLogger as Logger
+import shutil
 
 # implement good logging, either to one file or each proc has seperate one
 # isolate functionality such as cmd construction, very redundant rn
@@ -33,6 +34,25 @@ def open_shm2cam_stream_proc(shm_structure_fname, termflag_shm_structure_fname,
         "--logging_name", logging_name,
         "--logging_level", str(P.LOGGING_LEVEL),
     )
+    return _launch(P.WHICH_PYTHON, stream_script, *args)
+
+def open_por2shm2por_sim_proc(shm_structure_fname, termflag_shm_structure_fname, 
+                              command_shm_structure_fname, logging_name, port_name, 
+                              baud_rate):
+    P = Parameters()
+    stream_script = os.path.join(P.PROJECT_DIRECTORY, "read2SHM", "portenta2shm2portenta_sim.py")
+    args = (
+        "--shm_structure_fname", shm_structure_fname,
+        "--termflag_shm_structure_fname", termflag_shm_structure_fname,
+        "--command_shm_structure_fname", command_shm_structure_fname,
+        "--logging_dir", P.LOGGING_DIRECTORY_RUN,
+        "--logging_name", logging_name,
+        "--logging_level", str(P.LOGGING_LEVEL),
+        "--port_name", port_name,
+        "--baud_rate", str(baud_rate),
+    )
+    # exe = "nice ", " -n ", " -9 ", P.WHICH_PYTHON
+    # return _launch(exe, stream_script, *args)
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
 def open_por2shm2por_proc(shm_structure_fname, termflag_shm_structure_fname, 
@@ -90,7 +110,14 @@ def _launch(exec, script, *args):
     
     log_file = open(os.path.join(args[log_dir_i], args[log_name_i]+".log"), "w")
     atexit.register(_close_log_file, log_file)
+    
+    # if (isinstance(exec, str)):
+    #     # Use `tasset` command to set highest priority
+    #     exec = ["/bin/nice", "-n", "-90", exec]
+    #     # exec = [exec]
+    #     proc = subprocess.Popen((*exec, script, *args), stderr=log_file, stdout=log_file)
     proc = subprocess.Popen((exec, script, *args), stderr=log_file, stdout=log_file)
+
     L.logger.info(f"With PID {proc.pid}") 
     return proc
 

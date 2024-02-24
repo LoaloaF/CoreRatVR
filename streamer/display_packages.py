@@ -64,7 +64,7 @@ def _init_plot():
      for sp in ('top','right','bottom','left')]
     axes[0].tick_params(axis='both', which='both', length=0, labelleft=False)
     axes[0].set_ylim(-1,3)
-    axes[1].set_ylim(-80,80)
+    axes[1].set_ylim(-1000,1000)
     axes[2].set_ylim(0,10000)
     axes[3].set_ylim(-100,100)
     axes[3].tick_params(axis='both', which='both', length=0, labelleft=False)
@@ -123,7 +123,7 @@ def get_packages_from_shm(frame_shm, termflag_shm):
             return packages
 
 def update(i, axes, scatters, frame_shm, termflag_shm):
-    if termflag_shm.is_set():
+    if termflag_shm is not None and termflag_shm.is_set():
         plt.close()
         exit()
 
@@ -174,7 +174,7 @@ def noshm_test():
     scatters = [axes[0].scatter([],[], s=1, color='r')]
     axes[0].set_title("isFresh ball sensor pkg", y=.75, fontsize=8, loc="right")
 
-    scatters.append(axes[1].scatter([],[], s=1, color='b', m="o"))
+    scatters.append(axes[1].scatter([],[], s=1, color='b'))
     axes[1].set_title("Ball sensor, raw-only", y=.75, fontsize=8, loc="right")
     
     scatters.extend([ax.scatter([],[], s=100, marker="|", color='g') for ax in axes[2:]])

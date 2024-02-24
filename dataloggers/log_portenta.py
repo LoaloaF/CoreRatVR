@@ -42,8 +42,18 @@ def _log_sensors(sensors_shm, termflag_shm, full_fname):
             # update dict with previous ID (specific for each package type/ "N")
             last_pack_id[ard_package["N"]] = ard_package["ID"]
 
-            if ard_package["N"] in ("S", "R", "L"):
-                ard_package["V"] = str(ard_package["V"])
+            # if ard_package["N"] in ("S", "R", "F", "L", c"P"):
+            #     ard_package["V"] = str(ard_package["V"])
+            
+            if ard_package["N"] == "BV":
+                ryp_values = [int(val) for val in ard_package["V"].split("_")]
+                ard_package["V"] = max([abs(v) for v in ryp_values])
+                ard_package["Vr"] = ryp_values[0]
+                ard_package["Vy"] = ryp_values[1]
+                ard_package["Vp"] = ryp_values[2]
+
+            if ard_package["T"] < 0:
+                L.logger.warning("Portenta timestamp was negative - Reset?")
 
             # append to buffer and save to file every 256 elements
             package_buf.append(ard_package)

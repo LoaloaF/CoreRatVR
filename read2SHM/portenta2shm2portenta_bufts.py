@@ -24,9 +24,10 @@ _find_packet_end_char = lambda bbuf: bbuf.find(b"\n")
 def _get_pack_frombuf(packets_buf, next_p_idx):
     next_p = packets_buf[:next_p_idx+1]
     packets_buf = packets_buf[next_p_idx+1:]
-    return next_p, packets_buf
+    pc_ts = int(time.perf_counter()*1e6)
+    return next_p, packets_buf, pc_ts
 
-def _get_serial_input(L, ser, packets_buf):
+def _get_serial_input(L, ser, packets_buf, pc_ts):
     L.combi_msg += f"{ser.in_waiting} in hardw buf, reading\n\t"
     ser_data = ser.read_all()
     
@@ -35,9 +36,6 @@ def _get_serial_input(L, ser, packets_buf):
     if next_p_start_idx != -1:
         pc_ts = int(time.perf_counter()*1e6)
         L.combi_msg += f'`<` found, ts={(pc_ts/1e6-int(pc_ts/1e6))*1000:.2f}(ms part)\n\t'
-    else:
-        pc_ts = None
-        L.combi_msg += f' no `<` found, not updating ts\n\t'
 
     next_p_idx = _find_packet_end_char(ser_data)
     if next_p_idx != -1:
@@ -72,7 +70,7 @@ def _process_packet(L, shm, bytes_packet, pc_ts, is_fresh_val=None):
     L.spacer("debug")
     L.combi_msg = ""
 
-def _handle_input(L, sport, sensors_shm, packets_buf, prv_pc_ts):
+def _handle_input(L, sport, sensors_shm, packets_buf, pc_ts):
     L.logger.debug("Handling input")
     is_fresh = False
     
@@ -80,24 +78,23 @@ def _handle_input(L, sport, sensors_shm, packets_buf, prv_pc_ts):
     buffer_packet_idx = _find_packet_end_char(packets_buf)
     if buffer_packet_idx != -1:
         L.combi_msg += "end char in buf, getting it\n\t"
-        packet, packets_buf = _get_pack_frombuf(packets_buf, buffer_packet_idx)
-        L.combi_msg += (f'ts={(prv_pc_ts-int(prv_pc_ts))*1000:.2f}(ms part) '
+        packet, packets_buf, pc_ts = _get_pack_frombuf(packets_buf, buffer_packet_idx)
+        L.combi_msg += (f'ts={(pc_ts-int(pc_ts))*1000:.2f}(ms part) '
                         f'(len(buf)={len(packets_buf)})\n\t')
-        _process_packet(L, sensors_shm, packet, prv_pc_ts, is_fresh)
-        return packets_buf, prv_pc_ts
+        _process_packet(L, sensors_shm, packet, pc_ts, is_fresh)
+        return packets_buf, None
 
-    # # if there is not full package check for a partial, timestamp it
-    # elif _find_packet_start_char(packets_buf) != -1:
-    #     pc_ts = int(time.perf_counter()*1e6)
-    #     L.combi_msg += (f'no end char in buf, but `<`, ts='
-    #                     f'{(pc_ts/1e6-int(pc_ts/1e6))*1000:.2f}(ms part)\n\t')
+    # if there is not full package check for a partial, timestamp it
+    elif _find_packet_start_char(packets_buf) != -1:
+        pc_ts = int(time.perf_counter()*1e6)
+        L.combi_msg += (f'no end char in buf, but `<`, ts='
+                        f'{(pc_ts/1e6-int(pc_ts/1e6))*1000:.2f}(ms part)\n\t')
 
     # default: check if there is something in hardware buffer and read it
     if sport.in_waiting:
         if sport.in_waiting > 2048:
             L.logger.warning("More then 2048b in ser port. Reading too slow?")
-        packet, packets_buf, new_pc_ts = _get_serial_input(L, sport, packets_buf)
-        pc_ts = new_pc_ts if new_pc_ts else prv_pc_ts
+        packet, packets_buf, pc_ts = _get_serial_input(L, sport, packets_buf, pc_ts)
 
         # fresh if you read a partial pack (ideal) or a single full one 
         if packet is None or len(packets_buf) == 0:
@@ -105,7 +102,6 @@ def _handle_input(L, sport, sensors_shm, packets_buf, prv_pc_ts):
         if packet is not None:
             _process_packet(L, sensors_shm, packet, pc_ts, is_fresh)
     else:
-        pc_ts = prv_pc_ts
         L.logger.debug("Nothing in the port...")
     return packets_buf, pc_ts
 

@@ -34,7 +34,8 @@ def setup_hist(n):
 def plot_package_deltatimes(df):
     min_dt = np.min(np.concatenate((df["PCT"], df["T"])))
     max_dt = np.max(np.concatenate((df["PCT"], df["T"])))
-    # max_dt = 10
+    max_dt = 10
+    min_dt = 0
 
     hist_data = {
         "portenta_package_detatimes": df["T"],
@@ -88,12 +89,13 @@ if __name__ == "__main__":
     full_fname = "~/data.hdf5"
     df = load_hdf5_data(full_fname).reset_index(drop=True)
     print((df.N).value_counts())
-    df = df.iloc[:5000]
+    df = df.iloc[:int(2e6)]
+    print(df[df["T"].diff()<0])
+
 
     # print(df.iloc[947:952])
     df["T"] = df["T"].diff()/1000
     df["PCT"] = df["PCT"].diff()/1000
-    # print(df.iloc[947:952])
     df = df.iloc[1:]
     # print(df)
 

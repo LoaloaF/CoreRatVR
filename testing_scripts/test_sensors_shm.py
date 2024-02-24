@@ -25,6 +25,7 @@ from streamer.display_packages import run_stream_packages
 from process_launcher import open_por2shm2por_proc
 from process_launcher import open_log_portenta_proc
 from process_launcher import open_stream_portenta_proc
+from process_launcher import open_por2shm2por_sim_proc
 
 
 # from streamer.display_camera import run_display_camera
@@ -40,13 +41,13 @@ def test_portenta2shm2portenta(P):
     termflag_shm_struc_fname = create_singlebyte_shm(shm_name="termflag")
     # setup commands to Portenta, triggered by input from here
     command_shm_struc_fname = create_cyclic_packages_shm(shm_name="CommandCyclicTestSHM", 
-                                                         package_nbytes=256, 
+                                                         package_nbytes=32, 
                                                          npackages=8)
     
     # setup main camera one shared memory
     sensors_shm_struc_fname = create_cyclic_packages_shm(shm_name="SensorsCyclicTestSHM", 
                                                          package_nbytes=128, 
-                                                         npackages=4096)
+                                                         npackages=int(2**13)) # 8MB
     
     portenta2shm_kwargs = {
         "shm_structure_fname": sensors_shm_struc_fname,
@@ -66,17 +67,16 @@ def test_portenta2shm2portenta(P):
     if P.USE_MULTIPROCESSING:
         stream_portenta_proc = open_stream_portenta_proc(logging_name="stream_portenta", 
                                                       **stream_portenta_kwargs)
-        time.sleep(3)
+        time.sleep(2)
         log_portenta_proc = open_log_portenta_proc(logging_name="log_portenta", 
                                                    **log_portenta_kwargs)
-        time.sleep(3)
-        por2shm2por_proc = open_por2shm2por_proc(logging_name="por2shm2por", 
+        time.sleep(2)
+        por2shm2por_proc = open_por2shm2por_sim_proc(logging_name="por2shm2por", 
                                                  **portenta2shm_kwargs)
-        time.sleep(3)
-        
-
-
-        # Thread(target=run_stream_packages, kwargs=stream_portenta_kwargs).start()
+        time.sleep(2)
+        # por2shm2por_proc = open_por2shm2por_proc(logging_name="por2shm2por", 
+        #                                          **portenta2shm_kwargs)
+        # time.sleep(2)
         
     else:
         Thread(target=run_portenta2shm2portenta, kwargs=portenta2shm_kwargs).start()
@@ -100,12 +100,12 @@ def test_portenta2shm2portenta(P):
             #     exit()    
             t1 = time.time()
             if t1 > t+i:
-                command_shm.push("Y100,1,100\r\n")
+                command_shm.push("S100,100\r\n")
                 L.logger.info("Pushed")
-                i += 2
+                i += 5
             
-            if t1 > t+10.8:
-                raise KeyboardInterrupt
+            # if t1 > t+10.8:
+            #     raise KeyboardInterrupt
 
     except KeyboardInterrupt:
         L.spacer()
@@ -132,11 +132,12 @@ def main():
     # manually update params here
     P.USE_MULTIPROCESSING = True
     P.LOGGING_LEVEL = logging.INFO
-    P.LOGGING_LEVEL = logging.DEBUG
+    # P.LOGGING_LEVEL = logging.DEBUG
     
     if P.SYSTEM == "Linux":
         P.PORTENTA_PORT = "/dev/ttyACM0"
         P.ARDUINO_BY_PORT = {"/dev/ttyACM0": "Working"}
+        P.DATA_DIRECTORY = "~/"
     else:
         P.PORTENTA_PORT = "COM3"
         P.ARDUINO_BY_PORT = {"COM3": "Working"}

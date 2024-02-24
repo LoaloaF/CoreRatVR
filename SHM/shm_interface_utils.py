@@ -60,7 +60,7 @@ def extract_packet_data(bytes_packet):
     def wrap_str_values(pack, key):
         name_idx = pack.find(key)+3
         name_value = pack[name_idx:pack.find(",", name_idx)]
-        return pack.replace(name_value, f'"{name_value}"')
+        return pack.replace(name_value, f'"{name_value}"', 1)
     
     bytes_packet = bytes_packet[:bytes_packet.find(b"\n")+1]
     pack = bytes_packet.decode("utf-8")[1:-3] # strip < and \r\n>

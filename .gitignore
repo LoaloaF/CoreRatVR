@@ -1,5 +1,8 @@
-logs/
+'logs/
 SHM/tmp_shm_structure_JSONs/
+csharp/obj/*
+
+csharp/bin/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
