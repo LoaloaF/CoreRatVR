@@ -10,43 +10,45 @@ from CustomLogger import CustomLogger as Logger
 from SHM.shm_creation import create_cyclic_packages_shm
 sensors_shm_struc_fname = create_cyclic_packages_shm(shm_name="SensorsCyclicTestSHM", 
                                                     package_nbytes=64, 
-                                                    npackages=8)
-
+                                                    npackages=int(2**13))
 from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
-interf = CyclicPackagesSHMInterface(sensors_shm_struc_fname)
-L = Logger()
-
-i = 0
-while True:
-    # print(f"pushing test_{i}")
-    # interf.push(f"test_{i}")
-
-    item = interf.popitem()
-    if item is None:
-        print(".", end="", flush=True)
-    else:
-        print()
-        print(item)
-    i += 1
-    time.sleep(.200)
 
 
+# interf = CyclicPackagesSHMInterface(sensors_shm_struc_fname)
+# L = Logger()
 
-
-# # push doesn't need to work necessarily - only popping items is intented to be used for now
-# import time
-# interface = CyclicPackagesSHMInterface(sensors_shm_struc_fname)
-# print(sensors_shm_struc_fname)
 # i = 0
 # while True:
-#     msg = f"element_{i}"
-#     interface.push(msg)
-#     print("writing this to SHM:", msg)
+#     # print(f"pushing test_{i}")
+#     # interf.push(f"test_{i}")
+
+#     item = interf.popitem()
+#     if item is None:
+#         print(".", end="", flush=True)
+#     else:
+#         print()
+#         print(item)
 #     i += 1
-#     msg = interface.popitem()
-#     print("Read this from SHM:", msg)
-#     print()
-#     time.sleep(1)
+#     time.sleep(.200)
+
+
+
+
+# push doesn't need to work necessarily - only popping items is intented to be used for now
+import time
+interface = CyclicPackagesSHMInterface(sensors_shm_struc_fname)
+print(sensors_shm_struc_fname)
+i = 0
+while True:
+    msg = f"element_{i}"
+    msg = "<{N:BV,ID:48784,T:53002088,PCT:46082133127,V:0_0_0,F:0}>\r\n"
+    interface.push(msg)
+    print("writing this to SHM:", msg)
+    i += 1
+    msg = interface.popitem()
+    print("Read this from SHM:", msg)
+    print()
+    time.sleep(1)
 
 
 
