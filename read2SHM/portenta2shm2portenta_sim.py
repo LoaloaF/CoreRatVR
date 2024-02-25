@@ -132,6 +132,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", type=int)
+    argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--port_name")
     argParser.add_argument("--baud_rate", type=int)
 
@@ -140,6 +141,10 @@ if __name__ == "__main__":
     L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
                   kwargs.pop("logging_level"))
     L.logger.info("Subprocess started")
+    
+    if sys.platform.startswith('linux'):
+        if (prio := kwargs.pop("process_prio")) != -1:
+            os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
     run_portenta2shm2portenta(**kwargs)
 
 # <{N:BV,ID:21731,T:48296880,V:{R:0,Y:0,P:0}}>

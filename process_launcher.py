@@ -18,6 +18,7 @@ def open_camera2shm_proc(shm_structure_fname, termflag_shm_structure_fname,
         "--logging_dir", P.LOGGING_DIRECTORY_RUN,
         "--logging_name", logging_name,
         "--logging_level", str(P.LOGGING_LEVEL),
+        "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
         "--camera_idx", str(camera_idx),
         "--fps", str(fps),
     )
@@ -33,6 +34,8 @@ def open_shm2cam_stream_proc(shm_structure_fname, termflag_shm_structure_fname,
         "--logging_dir", P.LOGGING_DIRECTORY_RUN,
         "--logging_name", logging_name,
         "--logging_level", str(P.LOGGING_LEVEL),
+        "--process_prio", str(P.CAMERA_STREAM_PROC_PRIORITY),
+
     )
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
@@ -48,6 +51,7 @@ def open_por2shm2por_sim_proc(shm_structure_fname, termflag_shm_structure_fname,
         "--logging_dir", P.LOGGING_DIRECTORY_RUN,
         "--logging_name", logging_name,
         "--logging_level", str(P.LOGGING_LEVEL),
+        "--process_prio", str(P.PORTENTA2SHM2PORTENTA_PROC_PRIORITY),
         "--port_name", port_name,
         "--baud_rate", str(baud_rate),
     )
@@ -67,6 +71,7 @@ def open_por2shm2por_proc(shm_structure_fname, termflag_shm_structure_fname,
         "--logging_dir", P.LOGGING_DIRECTORY_RUN,
         "--logging_name", logging_name,
         "--logging_level", str(P.LOGGING_LEVEL),
+        "--process_prio", str(P.PORTENTA2SHM2PORTENTA_PROC_PRIORITY),
         "--port_name", port_name,
         "--baud_rate", str(baud_rate),
     )
@@ -82,6 +87,7 @@ def open_log_portenta_proc(shm_structure_fname, termflag_shm_structure_fname,
         "--logging_dir", P.LOGGING_DIRECTORY_RUN,
         "--logging_name", logging_name,
         "--logging_level", str(P.LOGGING_LEVEL),
+        "--process_prio", str(P.LOG_PORTENTA_PROC_PRIORITY),
         "--data_dir", data_dir,
     )
     return _launch(P.WHICH_PYTHON, stream_script, *args)
@@ -96,6 +102,7 @@ def open_stream_portenta_proc(shm_structure_fname, termflag_shm_structure_fname,
         "--logging_dir", P.LOGGING_DIRECTORY_RUN,
         "--logging_name", logging_name,
         "--logging_level", str(P.LOGGING_LEVEL),
+        "--process_prio", str(P.STREAM_PORTENTA_PROC_PRIORITY),
     )
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 

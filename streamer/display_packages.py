@@ -64,7 +64,7 @@ def _init_plot():
      for sp in ('top','right','bottom','left')]
     axes[0].tick_params(axis='both', which='both', length=0, labelleft=False)
     axes[0].set_ylim(-1,3)
-    axes[1].set_ylim(-1000,1000)
+    axes[1].set_ylim(-3000,3000)
     axes[2].set_ylim(0,10000)
     axes[3].set_ylim(-100,100)
     axes[3].tick_params(axis='both', which='both', length=0, labelleft=False)
@@ -197,9 +197,14 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", type=int)
+    argParser.add_argument("--process_prio", type=int)
 
     kwargs = vars(argParser.parse_args())
     L = Logger()
     L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
                   kwargs.pop("logging_level"))
+    
+    if sys.platform.startswith('linux'):
+        if (prio := kwargs.pop("process_prio")) != -1:
+            os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
     run_stream_packages(**kwargs)

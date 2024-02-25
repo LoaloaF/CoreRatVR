@@ -49,6 +49,12 @@ class Parameters:
         cls._instance.FILE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
         cls._instance.SPACER_LOGGING_FMT = f'%(message)s===========================================\n'
 
+        cls._instance.CAMERA2SHM_PROC_PRIORITY = -1
+        cls._instance.CAMERA_STREAM_PROC_PRIORITY = -1
+        cls._instance.PORTENTA2SHM2PORTENTA_PROC_PRIORITY = -1
+        cls._instance.LOG_PORTENTA_PROC_PRIORITY = -1
+        cls._instance.STREAM_PORTENTA_PROC_PRIORITY = 99
+
         cls._instance.REALSENSE_X_RESOLUTION = 640
         cls._instance.REALSENSE_Y_RESOLUTION = 480
         cls._instance.REALSENSE_NCHANNELS = 3

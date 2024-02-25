@@ -67,13 +67,13 @@ def test_portenta2shm2portenta(P):
     if P.USE_MULTIPROCESSING:
         stream_portenta_proc = open_stream_portenta_proc(logging_name="stream_portenta", 
                                                       **stream_portenta_kwargs)
-        time.sleep(2)
+        # time.sleep(2)
         log_portenta_proc = open_log_portenta_proc(logging_name="log_portenta", 
                                                    **log_portenta_kwargs)
-        time.sleep(2)
+        # time.sleep(2)
         por2shm2por_proc = open_por2shm2por_sim_proc(logging_name="por2shm2por", 
                                                  **portenta2shm_kwargs)
-        time.sleep(2)
+        # time.sleep(2)
         # por2shm2por_proc = open_por2shm2por_proc(logging_name="por2shm2por", 
         #                                          **portenta2shm_kwargs)
         # time.sleep(2)
@@ -98,12 +98,12 @@ def test_portenta2shm2portenta(P):
             #     L.spacer()
             #     termflag_shm.set()
             #     exit()    
-            t1 = time.time()
-            if t1 > t+i:
-                command_shm.push("S100,100\r\n")
-                L.logger.info("Pushed")
-                i += 5
-            
+            # t1 = time.time()
+            # if t1 > t+i:
+            #     command_shm.push("S100,100\r\n")
+            #     L.logger.info("Pushed")
+            #     i += 5
+            pass
             # if t1 > t+10.8:
             #     raise KeyboardInterrupt
 
