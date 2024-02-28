@@ -36,39 +36,46 @@ def generate_test_package():
     global Vy
     global Vp
     num = np.random.rand()
-    if num <.95:
-        N = "BV"
-        V_ID += 1
-        ID = V_ID
-        Vr += int(0.1*np.random.randn()*-100)
-        Vy += int(0.1*np.random.randn()*100)
-        Vp += int(0.1*np.random.randn()*100)
-        V = f"{Vr}_{Vy}_{Vp}"
-    elif num <.98:
-        N = "L"
-        L_ID += 1
-        ID = L_ID
-        V = 1
-    elif num <.983:
-        N = "S"
-        S_ID += 1
-        ID = S_ID
-        V = 1
-    elif num <.986:
-        N = "F"
-        F_ID += 1
-        ID = F_ID
-        V = 1
-    elif num <.99:
-        N = "R"
-        R_ID += 1
-        ID = R_ID
-        V = 1
-    else:
-        N = "P"
-        P_ID += 1
-        ID = P_ID
-        V = 1
+    # if num <.95:
+    #     N = "B"
+    #     V_ID += 1
+    #     ID = V_ID
+    #     Vr += int(0.1*np.random.randn()*-100)
+    #     Vy += int(0.1*np.random.randn()*100)
+    #     Vp += int(0.1*np.random.randn()*100)
+    #     V = f"{Vr}_{Vy}_{Vp}"
+    # elif num <.98:
+    #     N = "L"
+    #     L_ID += 1
+    #     ID = L_ID
+    #     V = 1
+    # elif num <.983:
+    #     N = "S"
+    #     S_ID += 1
+    #     ID = S_ID
+    #     V = 1
+    # elif num <.986:
+    #     N = "F"
+    #     F_ID += 1
+    #     ID = F_ID
+    #     V = 1
+    # elif num <.99:
+    #     N = "R"
+    #     R_ID += 1
+    #     ID = R_ID
+    #     V = 1
+    # else:
+    #     N = "P"
+    #     P_ID += 1
+    #     ID = P_ID
+    #     V = 1
+    N = "B"
+    V_ID += 1
+    ID = V_ID
+    Vr += int(0.1*np.random.randn()*-100)
+    Vy += int(0.1*np.random.randn()*100)
+    Vp += int(0.1*np.random.randn()*100)
+    V = f"{Vr}_{Vy}_{Vp}"
     
     T = int(time.perf_counter()*1e6)
     F = int(np.random.rand()>.2)

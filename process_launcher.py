@@ -116,6 +116,8 @@ def _launch(exec, script, *args):
     log_name_i = [i for i in range(len(args)) if args[i] == "--logging_name"][0]+1
     
     log_file = open(os.path.join(args[log_dir_i], args[log_name_i]+".log"), "w")
+    L.logger.info(f"Logging to {log_file.name}")
+    L.spacer()
     atexit.register(_close_log_file, log_file)
     
     # if (isinstance(exec, str)):

@@ -45,7 +45,7 @@ def _log_sensors(sensors_shm, termflag_shm, full_fname):
             # if ard_package["N"] in ("S", "R", "F", "L", c"P"):
             #     ard_package["V"] = str(ard_package["V"])
             
-            if ard_package["N"] == "BV":
+            if ard_package["N"] == "B":
                 ryp_values = [int(val) for val in ard_package["V"].split("_")]
                 ard_package["V"] = max([abs(v) for v in ryp_values])
                 ard_package["Vr"] = ryp_values[0]

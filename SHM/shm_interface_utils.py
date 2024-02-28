@@ -66,7 +66,7 @@ def extract_packet_data(bytes_packet):
     pack = bytes_packet.decode("utf-8")[1:-3] # strip < and \r\n>
 
     # wrap the ball velocity value in " " marks
-    if pack[pack.find("N:"):].startswith("N:BV"):
+    if pack[pack.find("N:"):].startswith("N:B"):
         pack = wrap_str_values(pack, key=",V:")
     # wrap the name value in " " marks
     pack = wrap_str_values(pack, key="{N:")

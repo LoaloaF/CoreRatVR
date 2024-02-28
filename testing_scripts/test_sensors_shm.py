@@ -68,8 +68,8 @@ def test_portenta2shm2portenta(P):
         stream_portenta_proc = open_stream_portenta_proc(logging_name="stream_portenta", 
                                                       **stream_portenta_kwargs)
         # time.sleep(2)
-        log_portenta_proc = open_log_portenta_proc(logging_name="log_portenta", 
-                                                   **log_portenta_kwargs)
+        # log_portenta_proc = open_log_portenta_proc(logging_name="log_portenta", 
+        #                                            **log_portenta_kwargs)
         # time.sleep(2)
         por2shm2por_proc = open_por2shm2por_sim_proc(logging_name="por2shm2por", 
                                                  **portenta2shm_kwargs)

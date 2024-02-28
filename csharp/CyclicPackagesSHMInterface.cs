@@ -60,55 +60,111 @@ public class CyclicPackagesSHMInterface
             Array.Copy(encodedItem, byteEncodedArray, encodedItem.Length);
         }
 
-        NextWritePointer();
         long tempWPointer = _internalWritePointer != 0 ? _internalWritePointer : (_packageNBytes * _nPackages);
         for (int i = 0; i < _packageNBytes; i++)
         {
             _accessor.Write(tempWPointer - _packageNBytes + i, byteEncodedArray[i]);
         }
+        NextWritePointer();
     }
 
-    public string? PopItem()
+    public int[]? fastPopBallVelocity()
     {
+        int[] attemptPackageRead(long tempRPointer) {
+            byte[] ballVelPckg = new byte[_packageNBytes];
+            _accessor.ReadArray(tempRPointer - _packageNBytes, ballVelPckg, 0, 
+                                _packageNBytes);
+            
+            // if ballVelPckg is empty, then return null
+            if (ballVelPckg[0] == 0) {
+                Console.WriteLine("Read empty package:, trying again");
+                return attemptPackageRead(tempRPointer);
+            }
+
+            bool ReadInProggress = false;
+            byte[] ballVelocity = new byte[20];
+            int bvIdx = 0;
+            foreach (byte byte_i in ballVelPckg) {
+                // start reading the package when the first 'V' is found
+                if (byte_i == (byte)'V') ReadInProggress = true;
+                
+                // don't read immidiately only after after 'V' and ':' are passed
+                if (ReadInProggress && (byte_i != (byte)'V') && (byte_i != (byte)':')) {
+                    // when a , is found, then raw yaw and pitch have been read
+                    if (byte_i == (byte)',') break;
+                    
+                    ballVelocity[bvIdx] = byte_i;
+                    // try {
+                    // }
+                    // catch (IndexOutOfRangeException ex) {
+                    //     Console.WriteLine($"Error in SHM - Could not find `,`:");
+                    //     Console.WriteLine(Encoding.UTF8.GetString(ballVelPckg));
+                    //     Console.WriteLine("Trying again\n");
+                    //     return attemptPackageRead(tempRPointer);
+                    // }
+                    bvIdx++;
+                }
+            }
+
+            string[] bvStr = new string[3];
+            bvStr = Encoding.UTF8.GetString(ballVelocity).Split("_");
+            int[] bvInt = new int[3];
+            for (int i = 0; i < 3; i++) {
+                bvInt[i] = int.Parse(bvStr[i]);
+            }
+            return bvInt;
+            // try {
+            //     bvStr = Encoding.UTF8.GetString(ballVelocity).Split("_");
+            //     int[] bvInt = new int[3];
+            //     for (int i = 0; i < 3; i++) {
+            //         bvInt[i] = int.Parse(bvStr[i]);
+            //     }
+            //     return bvInt;
+            // }
+            // catch (Exception ex) {
+            //     Console.WriteLine($"Error in SHM - 3-int parse failed:");
+            //     Console.WriteLine(string.Join("_", bvStr));
+            //     Console.WriteLine("Trying again\n");
+            //     return attemptPackageRead(tempRPointer);
+            // }
+        }
+
 
     long readAddr = NextReadPointer();
-    // Console.WriteLine(readAddr);
     if (readAddr != -1)
     {
-        // long tempRPointer = readAddr ?? (_packageNBytes * _nPackages);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         long tempRPointer = readAddr != 0 ? readAddr : (_packageNBytes * _nPackages);
-        // Console.WriteLine($"readAddr: {readAddr}, tempRPointer:{tempRPointer}");
-        byte[] tmpVal = new byte[_packageNBytes];
-        for (int i = 0; i < _packageNBytes; i++)
-        {
-            tmpVal[i] = _accessor.ReadByte(tempRPointer - _packageNBytes + i);
-        }
-        return Encoding.UTF8.GetString(tmpVal);
+        int[] bvInt = attemptPackageRead(tempRPointer);
+        
+        stopwatch.Stop();
+        Console.WriteLine($"Got {string.Join(",", bvInt)} in {stopwatch.ElapsedTicks / (TimeSpan.TicksPerMillisecond / 1000)} μs");
+        return bvInt;
     }
-    // Console.WriteLine("Nullllll");
     return null;
-    }
+}
 
-
+    // very slow....
     public Dictionary<string, object>? PopExtractedItem()
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-    long readAddr = NextReadPointer();
-    // Console.WriteLine(readAddr);
-    if (readAddr != -1)
-    {
-        // long tempRPointer = readAddr ?? (_packageNBytes * _nPackages);
-        long tempRPointer = readAddr != 0 ? readAddr : (_packageNBytes * _nPackages);
-        // Console.WriteLine($"readAddr: {readAddr}, tempRPointer:{tempRPointer}");
-        byte[] tmpVal = new byte[_packageNBytes];
-        for (int i = 0; i < _packageNBytes; i++)
+        long readAddr = NextReadPointer();
+        if (readAddr != -1)
         {
-            tmpVal[i] = _accessor.ReadByte(tempRPointer - _packageNBytes + i);
+            long tempRPointer = readAddr != 0 ? readAddr : (_packageNBytes * _nPackages);
+            byte[] tmpVal = new byte[_packageNBytes];
+            _accessor.ReadArray(tempRPointer - _packageNBytes, tmpVal, 0, _packageNBytes);
+            var result = ExtractPacketData(tmpVal);
+
+            stopwatch.Stop();
+            Console.WriteLine($"PopExtractedItem method executed in {stopwatch.ElapsedTicks / (TimeSpan.TicksPerMillisecond / 1000)} μs");
+            return result;
         }
-        return ExtractPacketData(tmpVal);
-    }
-    // Console.WriteLine("Nullllll");
-    return null;
+
+        stopwatch.Stop();
+        Console.WriteLine($"PopExtractedItem method executed in {stopwatch.ElapsedTicks / (TimeSpan.TicksPerMillisecond / 1000)} μs");
+        return null;
     }
 
 
@@ -163,9 +219,12 @@ public class CyclicPackagesSHMInterface
 
     private long NextReadPointer()
     {
-        if (_readPointer == StoredWritePointer)
+        // in C#, let the readpointer not become equal to the writepointer,
+        // it is foreced to be always one package before for stability
+        // Perhaps in C# SHM read is possible while other process writes
+        // In Python, this problem doesn't exist 
+        if (_readPointer == StoredWritePointer-_packageNBytes)
         {
-            // Console.WriteLine("read pointer == write pointer");
             return -1;
         }
 
@@ -211,9 +270,6 @@ public class CyclicPackagesSHMInterface
         // insert quotes after { and , and before : to wrap keys in quotes
         string jsonPack = pack.Replace("{", "{\"").Replace(":", "\":").Replace(",", ",\"");
 
-        // Logger L = new Logger();
-        // L.LogDebug(jsonPack);
-
         try
         {
             return JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonPack);
@@ -243,39 +299,44 @@ class Program
         // read test
         Int64 id = 0;
         Int64 prv_id = 0;
+        int[] ballVel = new int[3];
         while (true)
         {
+            ballVel = interfaceObj.fastPopBallVelocity();
+            // Console.WriteLine(item2);
             // string? item = interfaceObj.PopItem();
-            Dictionary<string, object>? item = interfaceObj.PopExtractedItem();
+            // Dictionary<string, object>? item = interfaceObj.PopExtractedItem();
 
-            // Console.WriteLine(item);
-            // Console.WriteLine("{" + string.Join(", ", item.Select(kvp => kvp.Key + ": " + kvp.Value.ToString())) + "}");
-            if (item != null)
-            {
-                if (item["N"].ToString()=="BV") 
-                {
-                    // Console.WriteLine("{" + string.Join(", ", item.Select(kvp => kvp.Key + ": " + kvp.Value.ToString())) + "}");
-                    Console.WriteLine(item["V"]);
-
-                    id = (Int64)item["ID"];
-                    if (id-1 != prv_id)
-                    {
-                        Console.WriteLine($"Error: ID jump from {prv_id} to {id}!");
-                    }
-                    prv_id = (Int64)item["ID"];
-                }
-            }
-            else if (item != null && item["N"]=="ER")
-            {
-                Console.WriteLine(item["N"]);
-                Console.WriteLine(item["V"]);
-                Console.WriteLine("");
-            }
-            else
+            // // Console.WriteLine(item);
+            // // Console.WriteLine("{" + string.Join(", ", item.Select(kvp => kvp.Key + ": " + kvp.Value.ToString())) + "}");
+            if (ballVel == null)
             {
                 Console.Write(".");
             }
-            Thread.Sleep(1);
+            //     if (item["N"].ToString()=="BV") 
+            //     {
+            //         // Console.WriteLine("{" + string.Join(", ", item.Select(kvp => kvp.Key + ": " + kvp.Value.ToString())) + "}");
+            //         // Console.WriteLine(item["V"]);
+
+            //         id = (Int64)item["ID"];
+            //         if (id-1 != prv_id)
+            //         {
+            //             Console.WriteLine($"Error: ID jump: {id-prv_id}!");
+            //         }
+            //         prv_id = (Int64)item["ID"];
+            //     }
+            // }
+            // else if (item != null && item["N"]=="ER")
+            // {
+            //     Console.WriteLine(item["N"]);
+            //     Console.WriteLine(item["V"]);
+            //     Console.WriteLine("");
+            // }
+            // else
+            // {
+            //     Console.Write(".");
+            // }
+            // Thread.Sleep(1);
         }    
         interfaceObj.Dispose(); // Don't forget to dispose the resources
         

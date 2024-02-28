@@ -19,18 +19,25 @@ from FlagSHMInterface import FlagSHMInterface
 
 def _stream(frame_shm=None, termflag_shm=None):
     fig, axes = _init_plot()
-    scatters = [axes[0].scatter([],[], s=1, color='r')]
-    axes[0].set_title("not fresh ball sensor pkg", y=.75, fontsize=8, loc="right")
+    scatters = []
 
-    scatters.append(axes[1].scatter([],[], s=1, color='b'))
-    axes[1].set_title("Ball sensor, raw-only", y=.75, fontsize=8, loc="right")
+    scatters.append(axes[0].scatter([],[], s=1, color='k'))
+    axes[0].set_title("pckgs in SHM", y=.75, fontsize=8, loc="right")
+    
+    scatters.append(axes[1].scatter([],[], s=1, color='r'))
+    axes[1].set_title("package deltatime", y=.75, fontsize=8, loc="right")
 
-    scatters.append(axes[2].scatter([],[], s=1, color='purple'))
-    axes[2].set_title("Lick sensor end-event", y=.75, fontsize=8, loc="right")
+    scatters.append(axes[2].scatter([],[], s=.3, color='y'))
+    axes[2].set_title("isFresh ball sensor pkg", y=.75, fontsize=8, loc="right")
 
-    scatters.extend([ax.scatter([],[], s=100, marker="|", color='g') for ax in axes[3:]])
-    axes[3].set_title("Sound start", y=.75, fontsize=8, loc="right")
-    axes[4].set_title("Reward start", y=.75, fontsize=8, loc="right")
+    scatters.append(axes[3].scatter([],[], s=1, color='b'))
+    axes[3].set_title("Ball sensor, raw-only", y=.75, fontsize=8, loc="right")
+    
+    scatters.extend([ax.scatter([],[], s=100, marker="|", color='g') for ax in axes[4:]])
+    axes[4].set_title("Lick sensor end-event", y=.75, fontsize=8, loc="right")
+    axes[5].set_title("Sound start", y=.75, fontsize=8, loc="right")
+    axes[6].set_title("Reward start", y=.75, fontsize=8, loc="right")
+
     
     ani = FuncAnimation(fig, update, fargs=(axes, scatters, frame_shm, termflag_shm), interval=0,
                         blit=True)
@@ -58,48 +65,50 @@ def run_stream_packages(shm_structure_fname, termflag_shm_structure_fname):
     _stream(packages_shm, termflag_shm)
 
 def _init_plot():
-    fig, axes = plt.subplots(5, figsize=(18,5), gridspec_kw={'height_ratios': [1, 8, 3, 1, 1]})
+    fig, axes = plt.subplots(7, figsize=(18,5), gridspec_kw={'height_ratios': [3, 3, .5, 4, 2, 1, 1]})
     [ax.tick_params(labelbottom=False) for ax in axes]
-    [ax.spines[sp].set_visible(False) for ax in (axes[0],axes[2],axes[3],axes[4]) 
+    [axes[ax_i].spines[sp].set_visible(False) for ax_i in (0,1,2,4,5,6) 
      for sp in ('top','right','bottom','left')]
-    axes[0].tick_params(axis='both', which='both', length=0, labelleft=False)
-    axes[0].set_ylim(-1,3)
-    axes[1].set_ylim(-3000,3000)
-    axes[2].set_ylim(0,10000)
-    axes[3].set_ylim(-100,100)
-    axes[3].tick_params(axis='both', which='both', length=0, labelleft=False)
-    axes[4].set_ylim(-100,100)
-    axes[4].tick_params(axis='both', which='both', length=0, labelleft=False)
+    axes[0].set_ylim(-80,8000)
+    axes[1].set_ylim(0,5000)
+    axes[2].tick_params(axis='both', which='both', length=0, labelleft=False)
+    axes[2].set_ylim(-1,3)
+    axes[3].set_ylim(-3000,3000)
+    axes[4].set_ylim(0,10000)
+    axes[5].set_ylim(-100,100)
+    axes[5].tick_params(axis='both', which='both', length=0, labelleft=False)
+    axes[6].set_ylim(-100,100)
+    axes[6].tick_params(axis='both', which='both', length=0, labelleft=False)
     return fig, axes
 
-def generate_package(num, last_ID):
-    if num <.95:
-        N = "BV"
-        Vr = int(np.random.randn()*-100)
-        Vy = int(np.random.randn()*100)
-        Vp = int(np.random.randn()*10)
-        V = f"{Vr}_{Vy}_{Vp}"
-    elif num <.99:
-        N = "L"
-        V = int(np.random.rand()*100)
-    elif num <.995:
-        N = "S"
-        V = 1
-    else:
-        N = "R"
-        V = 1
-    ID = last_ID+1
-    T = int(time.time()*1e6+num*100000)
-    F = int(np.random.rand()>.2)
-    return {'N': N, 'ID': ID, 'T': T, 'V': V, 'F': F}
+# def generate_package(num, last_ID):
+#     if num <.95:
+#         N = "B"
+#         Vr = int(np.random.randn()*-100)
+#         Vy = int(np.random.randn()*100)
+#         Vp = int(np.random.randn()*10)
+#         V = f"{Vr}_{Vy}_{Vp}"
+#     elif num <.99:
+#         N = "L"
+#         V = int(np.random.rand()*100)
+#     elif num <.995:
+#         N = "S"
+#         V = 1
+#     else:
+#         N = "R"
+#         V = 1
+#     ID = last_ID+1
+#     T = int(time.time()*1e6+num*100000)
+#     F = int(np.random.rand()>.2)
+#     return {'N': N, 'ID': ID, 'T': T, 'V': V, 'F': F}
 
-def generate_dummy_packages(n):
-    packages = [generate_package(0,0)]
-    for _ in range(n):
-        num = np.random.rand()
-        pack = generate_package(num, packages[-1]["ID"])
-        packages.append(pack)
-    return packages
+# def generate_dummy_packages(n):
+#     packages = [generate_package(0,0)]
+#     for _ in range(n):
+#         num = np.random.rand()
+#         pack = generate_package(num, packages[-1]["ID"])
+#         packages.append(pack)
+#     return packages
 
 def get_packages_from_shm(frame_shm, termflag_shm):
     L = Logger()
@@ -111,8 +120,12 @@ def get_packages_from_shm(frame_shm, termflag_shm):
         #     return packages
         
         pack = frame_shm.bpopitem()
-        if pack is None or pack == "":
+        if pack is None:
             # L.logger.debug(f"Pack was None, got all:{L.combi_msg}")
+            L.combi_msg = ""
+            return packages
+        if pack == "":
+            L.logger.debug(f"Pack was empty string, got all:{L.combi_msg}")
             L.combi_msg = ""
             return packages
         packages.append(pack)
@@ -145,11 +158,19 @@ def update(i, axes, scatters, frame_shm, termflag_shm):
 
             isFresh = np.array([p["F"] for p in packs], dtype=int)
             offsets = np.column_stack((np.array(x)[isFresh==0], isFresh[isFresh==0]))
-            scatters[j].set_offsets(np.concatenate((scatters[j].get_offsets(), offsets)))  # Concatenate old and new points
+            scatters[2].set_offsets(np.concatenate((scatters[2].get_offsets(), offsets)))  # Concatenate old and new points
+        
+        dt = np.diff([p["T"] for p in packs])
+        x_dt = np.column_stack((x[1:], dt))
+        scatters[1].set_offsets(np.concatenate((scatters[1].get_offsets(), x_dt)))  # Concatenate old and new points
 
+        shm_size = frame_shm.usage
+        scat_data = np.column_stack(([x[0]], [shm_size]))
+        scatters[0].set_offsets(np.concatenate((scatters[0].get_offsets(), scat_data)))  # Concatenate old and new points
+    
         # Update the existing scatter plot with new data
         offsets = np.column_stack((x, y))
-        scatters[j+1].set_offsets(np.concatenate((scatters[j+1].get_offsets(), offsets)))  # Concatenate old and new points
+        scatters[j+3].set_offsets(np.concatenate((scatters[j+3].get_offsets(), offsets)))  # Concatenate old and new points
         # scatters[j].set_color('r')
 
     packages = get_packages_from_shm(frame_shm, termflag_shm)
@@ -157,7 +178,7 @@ def update(i, axes, scatters, frame_shm, termflag_shm):
     if not len(packages):
         return scatters
     
-    BV_packs = [p for p in packages if p["N"]=="BV"]
+    BV_packs = [p for p in packages if p["N"]=="B"]
     L_packs = [p for p in packages if p["N"]=="L"]
     S_packs = [p for p in packages if p["N"]=="S"]
     R_packs = [p for p in packages if p["N"]=="R"]
@@ -165,28 +186,8 @@ def update(i, axes, scatters, frame_shm, termflag_shm):
     [proc_packet_type(which_p, i) for i, which_p in 
      enumerate([BV_packs,L_packs,S_packs,R_packs]) if which_p]
     L.logger.debug("rendering new")
-    print()
-    L.spacer()
+    L.spacer("debug")
     return scatters
-
-def noshm_test():
-    fig, axes = _init_plot()
-    scatters = [axes[0].scatter([],[], s=1, color='r')]
-    axes[0].set_title("isFresh ball sensor pkg", y=.75, fontsize=8, loc="right")
-
-    scatters.append(axes[1].scatter([],[], s=1, color='b'))
-    axes[1].set_title("Ball sensor, raw-only", y=.75, fontsize=8, loc="right")
-    
-    scatters.extend([ax.scatter([],[], s=100, marker="|", color='g') for ax in axes[2:]])
-    axes[2].set_title("Lick sensor end-event", y=.75, fontsize=8, loc="right")
-    axes[3].set_title("Sound start", y=.75, fontsize=8, loc="right")
-    axes[4].set_title("Reward start", y=.75, fontsize=8, loc="right")
-
-
-    ani = FuncAnimation(fig, update, fargs=(axes, scatters, None, None), interval=0,
-                        blit=True)
-    plt.show()
-    
 
 if __name__ == "__main__":
     # noshm_test()

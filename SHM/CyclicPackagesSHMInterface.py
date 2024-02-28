@@ -101,7 +101,9 @@ class CyclicPackagesSHMInterface:
     def _next_write_pointer(self) -> None:
         self._internal_write_pointer += self._package_nbytes
         self._internal_write_pointer %= self._npackages * self._package_nbytes
-
+        
+        if self._internal_write_pointer == 0:
+            self.L.logger.info("Cycle completed")
         self._stored_write_pointer = self._internal_write_pointer
 
     def _next_read_pointer(self) -> typing.Optional[int]:
