@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharp/csharp_shm_test.csproj": {}
+    "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharpSHM/csharp_shm_test.csproj": {}
   },
   "projects": {
-    "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharp/csharp_shm_test.csproj": {
+    "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharpSHM/csharp_shm_test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharp/csharp_shm_test.csproj",
+        "projectUniqueName": "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharpSHM/csharp_shm_test.csproj",
         "projectName": "csharp_shm_test",
-        "projectPath": "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharp/csharp_shm_test.csproj",
+        "projectPath": "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharpSHM/csharp_shm_test.csproj",
         "packagesPath": "/home/loaloa/.nuget/packages/",
-        "outputPath": "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharp/obj/",
+        "outputPath": "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharpSHM/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/loaloa/.nuget/NuGet/NuGet.Config"

@@ -110,7 +110,7 @@ class CustomLogger:
         """
         self._switch_spacer_fmt()
         if level == "info":
-            self.logger.critical('')  # log a separator line
+            self.logger.info('')  # log a separator line
         elif level == "debug":
             self.logger.debug('')  # log a separator line
         else:

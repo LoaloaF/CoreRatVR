@@ -174,6 +174,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", type=int)
+    argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--port_name")
     argParser.add_argument("--baud_rate", type=int)
 

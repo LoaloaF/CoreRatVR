@@ -3,7 +3,8 @@ using System.IO.MemoryMappedFiles;
 using System.Text;
 using Newtonsoft.Json;
 using System.Threading;
-
+using System.Collections.Generic;
+using System.IO; // For StreamReader and FileNotFoundException
 
 public class CyclicPackagesSHMInterface
 {
@@ -41,15 +42,24 @@ public class CyclicPackagesSHMInterface
         }
         catch (FileNotFoundException ex)
         {
-            Console.WriteLine($"Error: Shared memory `{_shmName}` has not been created: {ex.Message}");
+            Log($"Error: Shared memory `{_shmName}` has not been created: {ex.Message}");
             // Handle the case where the shared memory file is not found
             // You can choose to throw an exception, log an error, or take any other appropriate action
             System.Environment.Exit(1);
         }
         _accessor = _memory.CreateViewAccessor();
-        Console.WriteLine($"SHM interface created with JSON {shmStructureJsonFilename}");
+        Log($"SHM interface created with JSON {shmStructureJsonFilename}");
 
     }
+    public static void Log(string message)
+    {
+    #if UNITY_5_3_OR_NEWER
+        UnityEngine.Debug.Log(message);
+    #else
+        Console.WriteLine(message);
+    #endif
+    }
+
 
     public void Push(string item)
     {
@@ -77,7 +87,7 @@ public class CyclicPackagesSHMInterface
             
             // if ballVelPckg is empty, then return null
             if (ballVelPckg[0] == 0) {
-                Console.WriteLine("Read empty package:, trying again");
+                Log("Read empty package:, trying again");
                 return attemptPackageRead(tempRPointer);
             }
 
@@ -97,9 +107,9 @@ public class CyclicPackagesSHMInterface
                     // try {
                     // }
                     // catch (IndexOutOfRangeException ex) {
-                    //     Console.WriteLine($"Error in SHM - Could not find `,`:");
-                    //     Console.WriteLine(Encoding.UTF8.GetString(ballVelPckg));
-                    //     Console.WriteLine("Trying again\n");
+                    //     Log($"Error in SHM - Could not find `,`:");
+                    //     Log(Encoding.UTF8.GetString(ballVelPckg));
+                    //     Log("Trying again\n");
                     //     return attemptPackageRead(tempRPointer);
                     // }
                     bvIdx++;
@@ -122,9 +132,9 @@ public class CyclicPackagesSHMInterface
             //     return bvInt;
             // }
             // catch (Exception ex) {
-            //     Console.WriteLine($"Error in SHM - 3-int parse failed:");
-            //     Console.WriteLine(string.Join("_", bvStr));
-            //     Console.WriteLine("Trying again\n");
+            //     Log($"Error in SHM - 3-int parse failed:");
+            //     Log(string.Join("_", bvStr));
+            //     Log("Trying again\n");
             //     return attemptPackageRead(tempRPointer);
             // }
         }
@@ -138,7 +148,7 @@ public class CyclicPackagesSHMInterface
         int[] bvInt = attemptPackageRead(tempRPointer);
         
         stopwatch.Stop();
-        Console.WriteLine($"Got {string.Join(",", bvInt)} in {stopwatch.ElapsedTicks / (TimeSpan.TicksPerMillisecond / 1000)} μs");
+        Log($"Got {string.Join(",", bvInt)} in {stopwatch.ElapsedTicks / (TimeSpan.TicksPerMillisecond / 1000)} μs");
         return bvInt;
     }
     return null;
@@ -158,12 +168,12 @@ public class CyclicPackagesSHMInterface
             var result = ExtractPacketData(tmpVal);
 
             stopwatch.Stop();
-            Console.WriteLine($"PopExtractedItem method executed in {stopwatch.ElapsedTicks / (TimeSpan.TicksPerMillisecond / 1000)} μs");
+            Log($"PopExtractedItem method executed in {stopwatch.ElapsedTicks / (TimeSpan.TicksPerMillisecond / 1000)} μs");
             return result;
         }
 
         stopwatch.Stop();
-        Console.WriteLine($"PopExtractedItem method executed in {stopwatch.ElapsedTicks / (TimeSpan.TicksPerMillisecond / 1000)} μs");
+        Log($"PopExtractedItem method executed in {stopwatch.ElapsedTicks / (TimeSpan.TicksPerMillisecond / 1000)} μs");
         return null;
     }
 
@@ -180,7 +190,7 @@ public class CyclicPackagesSHMInterface
         }
         catch (FileNotFoundException ex)
         {
-            Console.WriteLine($"Error: Shared memory structure JSON not found: {ex.Message}");
+            Log($"Error: Shared memory structure JSON not found: {ex.Message}");
             // Handle the case where the shared memory file is not found
             // You can choose to throw an exception, log an error, or take any other appropriate action
             System.Environment.Exit(1);
@@ -198,7 +208,7 @@ public class CyclicPackagesSHMInterface
             byte[] buffer = new byte[_writePntrNBytes];
             _accessor.ReadArray(_totalNBytes - _writePntrNBytes, buffer, 0, _writePntrNBytes);
             Array.Reverse(buffer);  // Convert from little-endian to big-endian
-            // Console.WriteLine($"WritePointer: {BitConverter.ToInt64(buffer, 0)}");
+            // Log($"WritePointer: {BitConverter.ToInt64(buffer, 0)}");
             return BitConverter.ToInt64(buffer, 0);
         }
         set
@@ -288,72 +298,3 @@ public class CyclicPackagesSHMInterface
     }
 }
 
-class Program
-{
-    static void Main()
-    {
-        string sensorsShmStrucFname = "../SHM/tmp_shm_structure_JSONs/SensorsCyclicTestSHM_shmstruct.json";
-        // string sensorsShmStrucFname = "./SensorsCyclicTestSHM_shmstruct.json";
-        CyclicPackagesSHMInterface interfaceObj = new CyclicPackagesSHMInterface(sensorsShmStrucFname);
-        
-        // read test
-        Int64 id = 0;
-        Int64 prv_id = 0;
-        int[] ballVel = new int[3];
-        while (true)
-        {
-            ballVel = interfaceObj.fastPopBallVelocity();
-            // Console.WriteLine(item2);
-            // string? item = interfaceObj.PopItem();
-            // Dictionary<string, object>? item = interfaceObj.PopExtractedItem();
-
-            // // Console.WriteLine(item);
-            // // Console.WriteLine("{" + string.Join(", ", item.Select(kvp => kvp.Key + ": " + kvp.Value.ToString())) + "}");
-            if (ballVel == null)
-            {
-                Console.Write(".");
-            }
-            //     if (item["N"].ToString()=="BV") 
-            //     {
-            //         // Console.WriteLine("{" + string.Join(", ", item.Select(kvp => kvp.Key + ": " + kvp.Value.ToString())) + "}");
-            //         // Console.WriteLine(item["V"]);
-
-            //         id = (Int64)item["ID"];
-            //         if (id-1 != prv_id)
-            //         {
-            //             Console.WriteLine($"Error: ID jump: {id-prv_id}!");
-            //         }
-            //         prv_id = (Int64)item["ID"];
-            //     }
-            // }
-            // else if (item != null && item["N"]=="ER")
-            // {
-            //     Console.WriteLine(item["N"]);
-            //     Console.WriteLine(item["V"]);
-            //     Console.WriteLine("");
-            // }
-            // else
-            // {
-            //     Console.Write(".");
-            // }
-            // Thread.Sleep(1);
-        }    
-        interfaceObj.Dispose(); // Don't forget to dispose the resources
-        
-        
-        
-        
-        
-        
-        // // read test
-        // int i = 0;
-        // while (true)
-        // {
-        //     string item = $"test item {i}";
-        //     interfaceObj.Push(item);
-        //     Thread.Sleep(3000);
-        //     i++;
-        // }    
-        // interfaceObj.Dispose(); // Don't forget to dispose the resources
-    }
-}
