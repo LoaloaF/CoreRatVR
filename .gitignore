@@ -1,7 +1,7 @@
 'logs/
 SHM/tmp_shm_structure_JSONs/
-csharpSHM/obj/*
-csharpSHM/bin/*
+SHM/csTestInterface/obj/*
+SHM/csTestInterface/bin/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
