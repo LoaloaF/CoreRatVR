@@ -1,5 +1,6 @@
 import numpy as np
 import struct
+import atexit
 
 from shm_interface_utils import load_shm_structure_JSON
 from shm_interface_utils import access_shm
@@ -25,6 +26,7 @@ class VideoFrameSHMInterface:
         self.nchannels = shm_structure["metadata"]["nchannels"]
 
         self._memory = access_shm(self._shm_name)
+        atexit.register(self.close_shm, self._memory, self._shm_name)
 
     @property
     def _frame(self) -> np.ndarray:
@@ -63,3 +65,8 @@ class VideoFrameSHMInterface:
     #Reset the event to 0
     def __str__(self) -> str:
         return f"{self.__class__.__name__}({self._shm_name}):lastframe->{self._timestamp}"
+    
+    def close_shm(self):
+        L = Logger()
+        L.logger.debug(f"Closing SHM interace access `{self._shm_name}`")
+        self._memory.close()

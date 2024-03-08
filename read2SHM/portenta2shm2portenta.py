@@ -54,7 +54,7 @@ def _get_serial_input(L, ser, packets_buf):
         packet = None
     return packet, packets_buf, pc_ts
 
-def _process_packet(L, shm, bytes_packet, pc_ts, is_fresh_val=None):
+def _process_packet(L, ballvel_shm, portentaoutput_shm, bytes_packet, pc_ts, is_fresh_val=None):
     # Add PC time before the "V:" keyword
     pc_ts_bytes = b"PCT:" + str(pc_ts).encode()  # Convert pc_ts to bytes
     v_idx = bytes_packet.find(b",V:")
@@ -68,11 +68,16 @@ def _process_packet(L, shm, bytes_packet, pc_ts, is_fresh_val=None):
     L.combi_msg += f"package: {bytes_packet}"
     L.logger.debug(L.combi_msg)
     
-    shm.bpush(bytes_packet)
+    n_idx = bytes_packet.find(b"{N:")
+    name = bytes_packet[n_idx+4:n_idx+5]
+    if name == "B":
+        ballvel_shm .bpush(bytes_packet)
+    else:
+        portentaoutput_shm.bpush(bytes_packet)
     L.spacer("debug")
     L.combi_msg = ""
 
-def _handle_input(L, sport, sensors_shm, packets_buf, prv_pc_ts):
+def _handle_input(L, sport, ballvel_shm, portentaoutput_shm, packets_buf, prv_pc_ts):
     L.logger.debug("Handling input")
     is_fresh = False
     
@@ -83,7 +88,7 @@ def _handle_input(L, sport, sensors_shm, packets_buf, prv_pc_ts):
         packet, packets_buf = _get_pack_frombuf(packets_buf, buffer_packet_idx)
         L.combi_msg += (f'ts={(prv_pc_ts-int(prv_pc_ts))*1000:.2f}(ms part) '
                         f'(len(buf)={len(packets_buf)})\n\t')
-        _process_packet(L, sensors_shm, packet, prv_pc_ts, is_fresh)
+        _process_packet(L, ballvel_shm, portentaoutput_shm, packet, prv_pc_ts, is_fresh)
         return packets_buf, prv_pc_ts
 
     # # if there is not full package check for a partial, timestamp it
@@ -109,9 +114,9 @@ def _handle_input(L, sport, sensors_shm, packets_buf, prv_pc_ts):
         L.logger.debug("Nothing in the port...")
     return packets_buf, pc_ts
 
-def _handle_output(L, sport, command_shm):
+def _handle_output(L, sport, portentainput_shm):
     L.logger.debug("Handling output")
-    cmd = command_shm.popitem()
+    cmd = portentainput_shm.popitem()
     if cmd is not None:
         cmd = cmd[:cmd.find("\r\n")+2].encode()
         L.logger.info(f"Command found in SHM: `{cmd}` - Writing to serial.")
@@ -134,7 +139,8 @@ def _close_serial_port(sport):
         L = Logger()
         L.logger.info("Serial Port closed")
 
-def _read_write_loop(sensors_shm, termflag_shm, command_shm, sport):
+def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm, 
+                     portentainput_shm, sport):
     L = Logger()
     L.logger.info("Reading serial port packages & writing to SHM...")
     L.logger.info("Reading command packages from SHM & writing to serial port...")
@@ -147,33 +153,37 @@ def _read_write_loop(sensors_shm, termflag_shm, command_shm, sport):
             break
         
         # check for command packages in shm, transmit if any
-        _handle_output(L, sport, command_shm)
+        _handle_output(L, sport, portentainput_shm)
         
         # check for incoming packages on serial port, timestamp and write shm
         # buf and timestamp are stateful, relevant for consecutive serial checks 
-        packets_buf, pc_ts = _handle_input(L, sport, sensors_shm, packets_buf, pc_ts)
+        packets_buf, pc_ts = _handle_input(L, sport, ballvel_shm, portentaoutput_shm, packets_buf, pc_ts)
 
-def run_portenta2shm2portenta(shm_structure_fname, termflag_shm_structure_fname, 
-                              command_shm_structure_fname, port_name, baud_rate):
+def run_portenta2shm2portenta(termflag_shm_struc_fname, ballvelocity_shm_struc_fname, 
+                              portentaoutput_shm_struc_fname, 
+                              portentainput_shm_struc_fname, port_name, baud_rate):
     # shm access
-    sensors_shm = CyclicPackagesSHMInterface(shm_structure_fname)
-    termflag_shm = FlagSHMInterface(termflag_shm_structure_fname)
-    command_shm = CyclicPackagesSHMInterface(command_shm_structure_fname)
-
+    termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
+    ballvel_shm = CyclicPackagesSHMInterface(ballvelocity_shm_struc_fname)
+    portentaoutput_shm = CyclicPackagesSHMInterface(portentaoutput_shm_struc_fname)
+    portentainput_shm = CyclicPackagesSHMInterface(portentainput_shm_struc_fname)
+    
     sport = _open_serial_port(port_name, baud_rate)
     atexit.register(_close_serial_port, sport)
-    _read_write_loop(sensors_shm, termflag_shm, command_shm, sport)
+    _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm, 
+                     portentainput_shm, sport)
 
 if __name__ == "__main__":
     descr = ("Read incoming Portenta packages, timestamp and place in SHM. Also"
              " read command packages from SHM and send them back to Portenta.")
     argParser = argparse.ArgumentParser(descr)
-    argParser.add_argument("--shm_structure_fname")
-    argParser.add_argument("--termflag_shm_structure_fname")
-    argParser.add_argument("--command_shm_structure_fname")
+    argParser.add_argument("--termflag_shm_struc_fname")
+    argParser.add_argument("--ballvelocity_shm_struc_fname")
+    argParser.add_argument("--portentaoutput_shm_struc_fname")
+    argParser.add_argument("--portentainput_shm_struc_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level", type=int)
+    argParser.add_argument("--logging_level")
     argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--port_name")
     argParser.add_argument("--baud_rate", type=int)
@@ -183,17 +193,8 @@ if __name__ == "__main__":
     L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
                   kwargs.pop("logging_level"))
     L.logger.info("Subprocess started")
-
+    
     if sys.platform.startswith('linux'):
         if (prio := kwargs.pop("process_prio")) != -1:
             os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
     run_portenta2shm2portenta(**kwargs)
-
-# <{N:BV,ID:21731,T:48296880,V:{R:0,Y:0,P:0}}>
-# <{N:BV,ID:21732,T:48298920,V:{R:0,Y:0,P:0}}>
-# <{N:BV,ID:21733,T:48300984,V:{R:0,Y:0,P:0}}>
-# <{N:BV,ID:21734,T:48303048,V:{R:0,Y:0,P:0}}>
-# <{N:BV,ID:21735,T:48305104,V:{R:0,Y:0,P:0}}>
-# <{N:BV,ID:21736,T:48307152,V:{R:0,Y:0,P:0}}>
-
-# b"<{N:BV,ID:21736,T:48307152,V:{R:0,Y:0,P:0}}>\r\n"

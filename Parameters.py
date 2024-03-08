@@ -1,9 +1,8 @@
 import os 
-import sys
 import inspect
-import logging
 import json
 from device_checker import get_all_system_info
+from typing import Any
 
 
 class Parameters:
@@ -14,9 +13,23 @@ class Parameters:
             return cls._instance
 
         cls._instance = super(Parameters, cls).__new__(cls)
-        cls._instance.var1 = 2
-        cls._instance.var2 = 4
-        cls._instance.var3 = 22
+
+        p = os.path.abspath(inspect.getfile(inspect.currentframe()))
+        cls._instance.PROJECT_DIRECTORY = os.path.join(os.path.dirname(p), "..")
+        p = cls._instance.PROJECT_DIRECTORY, "tmp_shm_structure_JSONs"
+        cls._instance.SHM_STRUCTURE_DIRECTORY = os.path.join(*p)
+        
+        p = cls._instance.PROJECT_DIRECTORY, "data"
+        cls._instance.DATA_DIRECTORY = os.path.join(*p)
+
+        cls._instance.SESSION_NAME_PREFIX = "%Y-%m-%d_%H-%M-%S"
+        cls._instance.SESSION_NAME_POSTFIX = ""
+        cls._instance.SESSION_DATA_DIRECTORY = ""
+
+        p = cls._instance.PROJECT_DIRECTORY, "logs"
+        cls._instance.LOGGING_DIRECTORY = os.path.join(*p)
+        cls._instance.LOGGING_LEVEL = "INFO"
+        cls._instance.LOG_TO_DATA_DIR = True
 
         cls._instance.FRONT_WEBCAM_IDX = 0
         cls._instance.FRONT_WEBCAM_NAME = "LogitechMainWebcam2"
@@ -31,19 +44,37 @@ class Parameters:
         cls._instance.BUILTIN_WEBCAM_Y_RES = 480
         cls._instance.BUILTIN_WEBCAM_NCHANNELS = 3
         cls._instance.BUILTIN_WEBCAM_FPS = 30
-
-        p = os.path.abspath(inspect.getfile(inspect.currentframe()))
-        cls._instance.PROJECT_DIRECTORY = os.path.dirname(p)
-        p = cls._instance.PROJECT_DIRECTORY, "SHM", "tmp_shm_structure_JSONs"
-        cls._instance.SHM_STRUCTURE_DIRECTORY = os.path.join(*p)
         
-        p = cls._instance.PROJECT_DIRECTORY, "..", "data"
-        cls._instance.DATA_DIRECTORY = os.path.join(*p)
+        
+        cls._instance.SHM_NAME_TERM_FLAG = 'termflag'
+        cls._instance.SHM_NAME_TERM_FLAG = 'termflag'
+        cls._instance.SHM_NAME_TERM_FLAG = 'termflag'
+        
+        cls._instance.SHM_NAME_BALLVELOCITY = 'ballvelocity'
+        cls._instance.SHM_NPACKAGES_BALLVELOCITY = int(2**12) # 4k
+        cls._instance.SHM_PACKAGE_NBYTES_BALLVELOCITY = 80
+        
+        cls._instance.SHM_NAME_PORTENTA_OUTPUT = 'portentaoutput'
+        cls._instance.SHM_NPACKAGES_PORTENTA_OUTPUT = int(2**12) # 4k
+        cls._instance.SHM_PACKAGE_NBYTES_PORTENTA_OUTPUT = 80
+        
+        cls._instance.SHM_NAME_PORTENTA_INPUT = 'portentainput'
+        cls._instance.SHM_NPACKAGES_PORTENTA_INPUT = 16
+        cls._instance.SHM_PACKAGE_NBYTES_PORTENTA_INPUT = 32
+        
+        cls._instance.SHM_NAME_UNITY_OUTPUT = 'unityoutput'
+        cls._instance.SHM_NPACKAGES_UNITY_OUTPUT = -1
+        cls._instance.SHM_PACKAGE_NBYTES_UNITY_OUTPUT = -1
+        
+        cls._instance.SHM_NAME_UNITY_INPUT = 'unityinput'
+        cls._instance.SHM_NPACKAGES_UNITY_INPUT = -1
+        cls._instance.SHM_PACKAGE_NBYTES_UNITY_INPUT = -1
 
-        p = cls._instance.PROJECT_DIRECTORY, "logs"
-        cls._instance.LOGGING_DIRECTORY = os.path.join(*p)
-        cls._instance.LOGGING_DIRECTORY_RUN = ""
-        cls._instance.LOGGING_LEVEL = logging.INFO
+
+
+
+
+
 
         cls._instance.CONSOLE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
         cls._instance.FILE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
@@ -70,10 +101,10 @@ class Parameters:
         cls._instance.RANDOM_ID_LENGTH = 12
 
         cls._instance.PORTENTA_BAUD_RATE = 2000000
-        cls._instance.PORTENTA_COM_PORT = 'COM5'
+        cls._instance.PORTENTA_PORT = 'COM3'
         cls._instance.PORTENTA_TIMEOUT = 1
 
-        info = get_all_system_info(ard_baud_rate=cls._instance.PORTENTA_BAUD_RATE)
+        info = get_all_system_info()
         cls._instance.SYSTEM = info["SYSTEM"]
         cls._instance.NAME = info["NAME"]
         cls._instance.RELEASE = info["RELEASE"]
@@ -125,8 +156,19 @@ class Parameters:
         # CPP_BIN_FOLDER = './marmosetSetup_CppBin'
         return cls._instance
         
-    def __str__(self):
-        params = {key: value for key, value in vars(self).items()
-                    if isinstance(key, str) and key.isupper()}
+    def get_locked_attributes(self) -> dict[str, Any]:
+        params = get_attributes
+        locked_keys = [
+            PROJECT_DIRECTORY,
+            SHM_STRUCTURE_DIRECTORY,
+        ]
+        return {key: value for key, value in params.items() if key in locked_keys}
+    
+    def get_attributes(self) -> dict[str, Any]:
+        return {key: value for key, value in vars(self).items()
+                if isinstance(key, str) and key.isupper()}
+    
+    def __str__(self) -> str:
+        params = self.get_attributes()
         params_json = json.dumps(params, indent=2)
         return params_json

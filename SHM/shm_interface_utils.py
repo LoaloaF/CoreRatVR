@@ -1,6 +1,5 @@
 import numpy as np
 import json
-import atexit
 
 from multiprocessing import shared_memory
 from multiprocessing import resource_tracker
@@ -41,7 +40,6 @@ def access_shm(shm_name):
         remove_shm_from_resource_tracker()
 
         shm = shared_memory.SharedMemory(name=shm_name, create=False)
-        atexit.register(_close, shm, shm_name)
         L.logger.debug(f"SHM interface (R/W) successfully linked `{shm_name}`")
 
     except FileNotFoundError:
@@ -50,10 +48,6 @@ def access_shm(shm_name):
         exit(1)
     return shm
 
-def _close(shm, shm_name):
-    L = Logger()
-    L.logger.debug(f"Closing SHM interace access `{shm_name}`")
-    shm.close()
 
 def extract_packet_data(bytes_packet):
     # encaps name_value with (is a string)

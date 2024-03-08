@@ -17,7 +17,7 @@ from CustomLogger import CustomLogger as Logger
 from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 
-def _stream(frame_shm=None, termflag_shm=None):
+def _stream(ballvel_shm, portentaout_shm, termflag_shm):
     fig, axes = _init_plot()
     scatters = []
 
@@ -39,7 +39,7 @@ def _stream(frame_shm=None, termflag_shm=None):
     axes[6].set_title("Reward start", y=.75, fontsize=8, loc="right")
 
     
-    ani = FuncAnimation(fig, update, fargs=(axes, scatters, frame_shm, termflag_shm), interval=0,
+    ani = FuncAnimation(fig, update, fargs=(axes, scatters, ballvel_shm, portentaout_shm, termflag_shm), interval=0,
                         blit=True)
     plt.show()
     
@@ -57,12 +57,14 @@ def _stream(frame_shm=None, termflag_shm=None):
     # plt.show()
     
 
-def run_stream_packages(shm_structure_fname, termflag_shm_structure_fname):
+def run_stream_packages(termflag_shm_struc_fname, ballvelocity_shm_struc_fname, 
+                        portentaoutput_shm_struc_fname):
     # shm access
-    packages_shm = CyclicPackagesSHMInterface(shm_structure_fname)
-    termflag_shm = FlagSHMInterface(termflag_shm_structure_fname)
+    ballvel_shm = CyclicPackagesSHMInterface(ballvelocity_shm_struc_fname)
+    portentaout_shm = CyclicPackagesSHMInterface(portentaoutput_shm_struc_fname)
+    termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
 
-    _stream(packages_shm, termflag_shm)
+    _stream(ballvel_shm, portentaout_shm, termflag_shm)
 
 def _init_plot():
     fig, axes = plt.subplots(7, figsize=(18,5), gridspec_kw={'height_ratios': [3, 3, .5, 4, 2, 1, 1]})
@@ -110,7 +112,7 @@ def _init_plot():
 #         packages.append(pack)
 #     return packages
 
-def get_packages_from_shm(frame_shm, termflag_shm):
+def get_packages_from_shm(ballvel_shm, portentaout_shm, termflag_shm):
     L = Logger()
     packages = []
     while True:
@@ -119,7 +121,11 @@ def get_packages_from_shm(frame_shm, termflag_shm):
         #     L.logger.debug(f"emptied SHM: {L.combi_msg}")
         #     return packages
         
-        pack = frame_shm.bpopitem()
+        if portentaout_shm.usage > 0:
+            pack = portentaout_shm.bpopitem()
+        else:
+            pack = ballvel_shm.bpopitem()
+
         if pack is None:
             # L.logger.debug(f"Pack was None, got all:{L.combi_msg}")
             L.combi_msg = ""
@@ -135,7 +141,7 @@ def get_packages_from_shm(frame_shm, termflag_shm):
             L.combi_msg = ""
             return packages
 
-def update(i, axes, scatters, frame_shm, termflag_shm):
+def update(i, axes, scatters, ballvel_shm, portentaout_shm, termflag_shm):
     if termflag_shm is not None and termflag_shm.is_set():
         plt.close()
         exit()
@@ -164,7 +170,7 @@ def update(i, axes, scatters, frame_shm, termflag_shm):
         x_dt = np.column_stack((x[1:], dt))
         scatters[1].set_offsets(np.concatenate((scatters[1].get_offsets(), x_dt)))  # Concatenate old and new points
 
-        shm_size = frame_shm.usage
+        shm_size = ballvel_shm.usage
         scat_data = np.column_stack(([x[0]], [shm_size]))
         scatters[0].set_offsets(np.concatenate((scatters[0].get_offsets(), scat_data)))  # Concatenate old and new points
     
@@ -173,7 +179,7 @@ def update(i, axes, scatters, frame_shm, termflag_shm):
         scatters[j+3].set_offsets(np.concatenate((scatters[j+3].get_offsets(), offsets)))  # Concatenate old and new points
         # scatters[j].set_color('r')
 
-    packages = get_packages_from_shm(frame_shm, termflag_shm)
+    packages = get_packages_from_shm(ballvel_shm, portentaout_shm, termflag_shm)
     # packages = generate_dummy_packages(100)
     if not len(packages):
         return scatters
@@ -190,14 +196,13 @@ def update(i, axes, scatters, frame_shm, termflag_shm):
     return scatters
 
 if __name__ == "__main__":
-    # noshm_test()
-    
     argParser = argparse.ArgumentParser("Display Portenta packages stream on screen")
-    argParser.add_argument("--shm_structure_fname")
-    argParser.add_argument("--termflag_shm_structure_fname")
+    argParser.add_argument("--termflag_shm_struc_fname")
+    argParser.add_argument("--ballvelocity_shm_struc_fname")
+    argParser.add_argument("--portentaoutput_shm_struc_fname")
     argParser.add_argument("--logging_dir")
+    argParser.add_argument("--logging_level")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level", type=int)
     argParser.add_argument("--process_prio", type=int)
 
     kwargs = vars(argParser.parse_args())

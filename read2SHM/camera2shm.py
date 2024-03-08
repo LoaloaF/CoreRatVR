@@ -83,7 +83,7 @@ if __name__ == "__main__":
     argParser.add_argument("--termflag_shm_structure_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level", type=int)
+    argParser.add_argument("--logging_level")
     argParser.add_argument("--camera_idx", type=int)
     argParser.add_argument("--fps", type=int)
 

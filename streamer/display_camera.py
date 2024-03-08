@@ -63,7 +63,7 @@ if __name__ == "__main__":
     argParser.add_argument("--termflag_shm_structure_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level", type=int)
+    argParser.add_argument("--logging_level")
 
     kwargs = vars(argParser.parse_args())
     L = Logger()

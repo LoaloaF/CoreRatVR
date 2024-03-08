@@ -1,6 +1,7 @@
 from shm_interface_utils import load_shm_structure_JSON
 from shm_interface_utils import access_shm
 from CustomLogger import CustomLogger as Logger
+import atexit
 
 class FlagSHMInterface:
     def __init__(self, shm_structure_JSON_fname):
@@ -10,6 +11,7 @@ class FlagSHMInterface:
 
         self._shm_name = shm_structure["shm_name"]
         self._memory = access_shm(self._shm_name)
+        atexit.register(self.close_shm, self._memory, self._shm_name)
 
     @property
     def _state(self) -> bool:
@@ -39,3 +41,8 @@ class FlagSHMInterface:
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}({self._shm_name}):state->{self._state}"
+    
+    def close_shm(self):
+        L = Logger()
+        L.logger.debug(f"Closing SHM interace access `{self._shm_name}`")
+        self._memory.close()

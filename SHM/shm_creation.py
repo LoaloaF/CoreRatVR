@@ -15,6 +15,7 @@ from CustomLogger import CustomLogger as Logger
 from Parameters import Parameters
 
 from shm_interface_utils import remove_shm_from_resource_tracker
+from shm_interface_utils import remove_shm_from_resource_tracker
 
 # framecount isn't used right now, structure in general needs to be reconsiderd
 
@@ -46,7 +47,7 @@ def create_video_frame_shm(shm_name, x_resolution, y_resolution,
                      "colorformat": "BGR",
                      },
     }
-    # L.logger.debug(L.fmtmsg((f"video frame SHM structure:`", shm_structure)))
+    
 
     shm_structure_fname = _write_json(shm_structure, shm_name)
     L.logger.debug("Test access to SHM from same process")
@@ -134,3 +135,8 @@ def _write_json(shm_structure, shm_name):
     with open(full_fname, "w") as f:
         json.dump(shm_structure, f)
     return full_fname
+
+def delete_shm(shm_name):
+    # logging
+    shm = shared_memory.SharedMemory(name=shm_name, create=False)
+    _cleanup(shm, shm_name)

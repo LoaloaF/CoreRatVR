@@ -87,14 +87,14 @@ def _get_camera_info(sys_info):
         cam_i += 1
     return {"CAMERAS_BY_IDX": cam_info}
 
-def _get_arduino_info(ard_baud_rate):
+def _get_arduino_info():
     # Check common port names for Arduino on Linux and Windows
     arduino_info = dict.fromkeys(['/dev/ttyACM0', '/dev/ttyUSB0', 'COM3', 
                                   'COM4'])
     for port in arduino_info:
         ser = None
         try:
-            ser = serial.Serial(port, baudrate=ard_baud_rate, timeout=1)
+            ser = serial.Serial(port, baudrate=2000000, timeout=1)
             
             ser.reset_input_buffer()
             time.sleep(.1)
@@ -121,12 +121,12 @@ def _get_arduino_info(ard_baud_rate):
         arduino_info.update({port: val})
     return {"ARDUINO_BY_PORT": arduino_info}
 
-def get_all_system_info(ard_baud_rate):
+def get_all_system_info():
     try:
         sys_info = _get_system_info()
         gpu_info = _get_gpu_info()
         cam_info = _get_camera_info(sys_info)
-        # ard_info = _get_arduino_info(ard_baud_rate)
+        # ard_info = _get_arduino_info()
         ard_info = {"ARDUINO_BY_PORT": {"COM3": "Working"}}
     except Exception as e:
             print(f"Error getting System information: {e}")

@@ -12,7 +12,7 @@ from CustomLogger import CustomLogger as Logger
 from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 
-def _log_sensors(sensors_shm, termflag_shm, full_fname):
+def _log_sensors(termflag_shm, ballvelocity_shm, portentaoutput_shm, full_fname):
     L = Logger()
     L.logger.info("Reading packges from SHM and saving it...")
 
@@ -24,9 +24,12 @@ def _log_sensors(sensors_shm, termflag_shm, full_fname):
             break
         
         # get a package if there are more than 10
-        if sensors_shm.usage <= 1:
+        if ballvelocity_shm.usage <= 1:
             continue
-        ard_package = sensors_shm.bpopitem()
+        ard_package = ballvelocity_shm.bpopitem()
+        
+        # TO DO
+        # ard_package = portentaoutput_shm.bpopitem()
         
         # check for error cases
         if ard_package is None:
@@ -66,35 +69,37 @@ def _log_sensors(sensors_shm, termflag_shm, full_fname):
                           append=True, format="table")
                 package_buf.clear()
         
-        L.logger.debug(f"Packs in SHM: {sensors_shm.usage}")
+        L.logger.debug(f"Packs in SHM: {ballvelocity_shm.usage}")
         L.spacer("debug")
 
 
-def run_log_portenta(shm_structure_fname, termflag_shm_structure_fname,
-                     data_dir):
+def run_log_portenta(termflag_shm_struc_fname, ballvelocity_shm_struc_fname, 
+                     portentaoutput_shm_struc_fname, session_data_dir):
     # shm access
-    sensors_shm = CyclicPackagesSHMInterface(shm_structure_fname)
-    termflag_shm = FlagSHMInterface(termflag_shm_structure_fname)
+    termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
+    ballvelocity_shm = CyclicPackagesSHMInterface(ballvelocity_shm_struc_fname)
+    portentaoutput_shm = CyclicPackagesSHMInterface(portentaoutput_shm_struc_fname)
 
-    full_fname = os.path.join(data_dir, "data.hdf5")
+    full_fname = os.path.join(session_data_dir, "data.hdf5")
     # check if the file exists and create it if necessary
     if os.path.exists(full_fname):
         os.remove(full_fname)
     with pd.HDFStore(full_fname) as hdf:
         hdf.put('arduino_packages', pd.DataFrame(), format='table', append=False)
     
-    _log_sensors(sensors_shm, termflag_shm, full_fname)
+    _log_sensors(termflag_shm, ballvelocity_shm, portentaoutput_shm, full_fname)
 
 if __name__ == "__main__":
     descr = ("Write Portenta packages from SHM to a file.")
     argParser = argparse.ArgumentParser(descr)
-    argParser.add_argument("--shm_structure_fname")
-    argParser.add_argument("--termflag_shm_structure_fname")
+    argParser.add_argument("--termflag_shm_struc_fname")
+    argParser.add_argument("--ballvelocity_shm_struc_fname")
+    argParser.add_argument("--portentaoutput_shm_struc_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level", type=int)
+    argParser.add_argument("--logging_level")
     argParser.add_argument("--process_prio", type=int)
-    argParser.add_argument("--data_dir")
+    argParser.add_argument("--session_data_dir")
 
     kwargs = vars(argParser.parse_args())
     L = Logger()
@@ -106,22 +111,3 @@ if __name__ == "__main__":
         if (prio := kwargs.pop("process_prio")) != -1:
             os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
     run_log_portenta(**kwargs)
-
-"""
-    
-2024-02-07 07:22:25,019|DEBUG|19444|CyclicPackagesSHMInterface|bpopitem
-	reading from SHM 0:128 - bytearray(b'<{N:S,ID:0,T:415344714,PCT:322808720681,V:P,F:1}>\r\n\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
-
-2024-02-07 07:22:25,032|DEBUG|19444|shm_interface_utils|extract_packet_data
-	{"N":"S","ID":0,"T":415344714,"PCT":322808720681,"V":P,"F":1}
-
-Traceback (most recent call last):
-  File "P:\sync\projects\marmosetgaze\marmosetSetup\dataloggers\log_portenta.py", line 87, in <module>
-    run_log_portenta(**kwargs)
-  File "P:\sync\projects\marmosetgaze\marmosetSetup\dataloggers\log_portenta.py", line 70, in run_log_portenta
-    _log_sensors(sensors_shm, termflag_shm, full_fname)
-  File "P:\sync\projects\marmosetgaze\marmosetSetup\dataloggers\log_portenta.py", line 43, in _log_sensors
-    last_pack_id[ard_package["N"]] = ard_package["ID"]
-                                     ~~~~~~~~~~~^^^^^^
-
-"""

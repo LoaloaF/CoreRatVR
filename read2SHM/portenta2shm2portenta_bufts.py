@@ -169,7 +169,7 @@ if __name__ == "__main__":
     argParser.add_argument("--command_shm_structure_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level", type=int)
+    argParser.add_argument("--logging_level")
     argParser.add_argument("--port_name")
     argParser.add_argument("--baud_rate", type=int)
 

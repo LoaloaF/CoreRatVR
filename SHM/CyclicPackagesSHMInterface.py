@@ -22,11 +22,12 @@ class CyclicPackagesSHMInterface:
         self._write_pntr_nbytes = shm_structure["fields"]["write_pntr_nbytes"] # old: _write_pointer_byte_lengthh
         self._npackages = shm_structure["metadata"]["npackages"]    # old: shm_buffer_lengthh
         self._package_nbytes = shm_structure["metadata"]["package_nbytes"]  # old: item_sizee
-
-        self._memory = access_shm(self._shm_name)
         
         self._internal_write_pointer = 0
         self._read_pointer = 0
+        
+        self._memory = access_shm(self._shm_name)
+        atexit.register(self.close_shm, self._memory, self._shm_name)
 
     def push(self, item: str) -> None:
         """
@@ -187,3 +188,8 @@ class CyclicPackagesSHMInterface:
                 return val
             return tmp_val
         return None
+    
+    def close_shm(self):
+        L = Logger()
+        L.logger.debug(f"Closing SHM interace access `{self._shm_name}`")
+        self._memory.close()

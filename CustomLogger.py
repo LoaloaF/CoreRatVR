@@ -1,6 +1,5 @@
 import os
 import logging
-import datetime
 import json
 from Parameters import Parameters
 
@@ -18,8 +17,7 @@ class CustomLogger:
         self.logger = logging.getLogger("__main__")
         self.combi_msg = ""
         
-    def init_logger(self, logging_fname, logging_dir, logging_level,
-                    create_run_sub_dir=False):
+    def init_logger(self, logging_fname, logging_dir, logging_level):
         P = Parameters()
 
         ll = logging_level if logging_level is not None else P.LOGGING_LEVEL
@@ -32,17 +30,20 @@ class CustomLogger:
         # ensusre filenames/ paths exist
         logging_dir = logging_dir if logging_dir is not None else P.LOGGING_DIRECTORY_RUN
         logging_fname = logging_fname if logging_fname is not None else "default"
-        if create_run_sub_dir:
-            # the first logger from the main script creates a sub dir
-            logging_dir = self._create_sub_log_dir(logging_dir)
         
         # setup logging to file
         file_hdlr = self._create_logfile_handler(logging_fname, logging_dir)
         self.logger.addHandler(file_hdlr)
         
-        if create_run_sub_dir:
-            return logging_dir
-
+    # def _create_formatter(self, fmt):
+    #     return ColorfulFormatter(fmt)
+    
+    def reset_logger(self):
+        handlers = self.logger.handlers[:]
+        for handler in handlers:
+            handler.close()
+            self.logger.removeHandler(handler)
+    
     def _create_formatter(self, fmt):
         return logging.Formatter(fmt)
     
@@ -55,12 +56,6 @@ class CustomLogger:
         console_handler.setFormatter(self._create_formatter(P.CONSOLE_LOGGING_FMT))
         return console_handler
     
-    def _create_sub_log_dir(self, logging_dir):
-        tstamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        logging_sub_dir = os.path.join(logging_dir, tstamp)
-        os.makedirs(logging_sub_dir)
-        return logging_sub_dir
-
     def _create_logfile_handler(self, logging_fname, write_to_directory):
         """
         Set up file-based logging with the default file formatter.
@@ -125,6 +120,26 @@ class CustomLogger:
         else:
             msg = msg.replace("\n", "\n\t")
         return msg
+
+# class ColorfulFormatter(logging.Formatter):
+#     COLORS = {
+#         logging.DEBUG: '\033[0;36m',  # CYAN
+#         logging.INFO: '\033[0;37m',  # WHITE
+#         logging.WARNING: '\033[1;33m',  # YELLOW
+#         logging.ERROR: '\033[1;31m',  # RED
+#         logging.CRITICAL: '\033[1;41m',  # RED BACKGROUND
+#     }
+
+#     RESET = '\033[0m'
+
+#     def format(self, record):
+#         color = self.COLORS.get(record.levelno)
+#         message = super().format(record)
+
+#         if color:
+#             message = f"{color}{message}{self.RESET}"
+
+#         return message
 
 if __name__ == "__main__":
     P = Parameters()
