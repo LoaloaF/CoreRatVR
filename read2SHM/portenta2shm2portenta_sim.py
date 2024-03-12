@@ -84,13 +84,7 @@ def _handle_input(ballvel_shm, portentaoutput_shm):
         portentaoutput_shm.bpush(pack.encode())
     return 
 
-def _handle_output(command_shm):
-    cmd = command_shm.popitem()
-    if cmd is not None:
-        cmd = cmd[:cmd.find("\r\n")+2].encode()
-        print(cmd)
-
-def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm, portentainput_shm):
+def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm):
     L = Logger()
     L.logger.info("Reading serial port packages & writing to SHM...")
     L.logger.info("Reading command packages from SHM & writing to serial port...")
@@ -100,9 +94,6 @@ def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm, portentainpu
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
             break
-        
-        # check for command packages in shm, transmit if any
-        _handle_output(portentainput_shm)
         
         # check for incoming packages on serial port, timestamp and write shm
         # buf and timestamp are stateful, relevant for consecutive serial checks 
@@ -117,15 +108,13 @@ def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm, portentainpu
 
 
 def run_portenta2shm2portenta_sim(termflag_shm_struc_fname, ballvelocity_shm_struc_fname, 
-                              portentaoutput_shm_struc_fname, 
-                              portentainput_shm_struc_fname, port_name, baud_rate):
+                                  portentaoutput_shm_struc_fname):
     # shm access
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     ballvel_shm = CyclicPackagesSHMInterface(ballvelocity_shm_struc_fname)
     portentaoutput_shm = CyclicPackagesSHMInterface(portentaoutput_shm_struc_fname)
-    portentainput_shm = CyclicPackagesSHMInterface(portentainput_shm_struc_fname)
 
-    _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm, portentainput_shm)
+    _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm)
 
 if __name__ == "__main__":
     descr = ("Read incoming Portenta packages, timestamp and place in SHM. Also"
@@ -134,13 +123,10 @@ if __name__ == "__main__":
     argParser.add_argument("--termflag_shm_struc_fname")
     argParser.add_argument("--ballvelocity_shm_struc_fname")
     argParser.add_argument("--portentaoutput_shm_struc_fname")
-    argParser.add_argument("--portentainput_shm_struc_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level")
     argParser.add_argument("--process_prio", type=int)
-    argParser.add_argument("--port_name")
-    argParser.add_argument("--baud_rate", type=int)
 
     kwargs = vars(argParser.parse_args())
     L = Logger()
@@ -152,12 +138,3 @@ if __name__ == "__main__":
         if (prio := kwargs.pop("process_prio")) != -1:
             os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
     run_portenta2shm2portenta_sim(**kwargs)
-
-# <{N:BV,ID:21731,T:48296880,V:{R:0,Y:0,P:0}}>
-# <{N:BV,ID:21732,T:48298920,V:{R:0,Y:0,P:0}}>
-# <{N:BV,ID:21733,T:48300984,V:{R:0,Y:0,P:0}}>
-# <{N:BV,ID:21734,T:48303048,V:{R:0,Y:0,P:0}}>
-# <{N:BV,ID:21735,T:48305104,V:{R:0,Y:0,P:0}}>
-# <{N:BV,ID:21736,T:48307152,V:{R:0,Y:0,P:0}}>
-
-# b"<{N:BV,ID:21736,T:48307152,V:{R:0,Y:0,P:0}}>\r\n"

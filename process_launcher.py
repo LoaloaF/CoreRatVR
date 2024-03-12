@@ -39,60 +39,59 @@ def open_shm2cam_stream_proc(shm_structure_fname, termflag_shm_structure_fname,
     )
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
-def open_por2shm2por_sim_proc(termflag_shm_struc_fname, ballvelocity_shm_struc_fname, 
-                              portentaoutput_shm_struc_fname, 
-                              portentainput_shm_struc_fname, logging_name, 
-                              port_name, baud_rate):
+
+
+
+
+
+
+
+
+
+
+
+
+def open_por2shm2por_sim_proc():
     P = Parameters()
-    stream_script = os.path.join(P.PROJECT_DIRECTORY, "CoreRatVR", "read2SHM", "portenta2shm2portenta_sim.py")
-    args = (
-        "--termflag_shm_struc_fname", termflag_shm_struc_fname,
-        "--ballvelocity_shm_struc_fname", ballvelocity_shm_struc_fname,
-        "--portentaoutput_shm_struc_fname", portentaoutput_shm_struc_fname,
-        "--portentainput_shm_struc_fname", portentainput_shm_struc_fname,
-        "--logging_dir", P.LOGGING_DIRECTORY,
-        "--logging_name", logging_name,
-        "--logging_level", P.LOGGING_LEVEL,
+    script = "portenta2shm2portenta_sim.py"
+    path = P.PROJECT_DIRECTORY, "CoreRatVR", "read2SHM", script
+    stream_script = os.path.join(*path)
+    
+    args = _make_proc_args()
+    args.extend([
+        "--logging_name", script.replace(".py", ".log"),
         "--process_prio", str(P.PORTENTA2SHM2PORTENTA_PROC_PRIORITY),
-        "--port_name", port_name,
-        "--baud_rate", str(baud_rate),
-    )
+    ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
-def open_por2shm2por_proc(termflag_shm_struc_fname, ballvelocity_shm_struc_fname, 
-                          portentaoutput_shm_struc_fname, 
-                          portentainput_shm_struc_fname, logging_name, 
-                          port_name, baud_rate):
+def open_por2shm2por_proc():
     P = Parameters()
-    stream_script = os.path.join(P.PROJECT_DIRECTORY, "CoreRatVR", "read2SHM", "portenta2shm2portenta.py")
-    args = (
-        "--termflag_shm_struc_fname", termflag_shm_struc_fname,
-        "--ballvelocity_shm_struc_fname", ballvelocity_shm_struc_fname,
-        "--portentaoutput_shm_struc_fname", portentaoutput_shm_struc_fname,
-        "--portentainput_shm_struc_fname", portentainput_shm_struc_fname,
-        "--logging_dir", P.LOGGING_DIRECTORY,
-        "--logging_name", logging_name,
-        "--logging_level", P.LOGGING_LEVEL,
+    script = "portenta2shm2portenta.py"
+    path = P.PROJECT_DIRECTORY, "CoreRatVR", "read2SHM", script
+    stream_script = os.path.join(*path)
+    
+    args = _make_proc_args(shm_args=("termflag", "ballvelocity", 
+                                     "portentaoutput", "portentainput"))
+    args.extend([
+        "--logging_name", script.replace(".py", ".log"),
         "--process_prio", str(P.PORTENTA2SHM2PORTENTA_PROC_PRIORITY),
-        "--port_name", port_name,
-        "--baud_rate", str(baud_rate),
-    )
+        "--port_name", P.PORTENTA_PORT,
+        "--baud_rate", str(P.PORTENTA_BAUD_RATE),
+    ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
-def open_log_portenta_proc(termflag_shm_struc_fname, ballvelocity_shm_struc_fname, 
-                           portentaoutput_shm_struc_fname, logging_name, session_data_dir):
+def open_log_portenta_proc():
     P = Parameters()
-    stream_script = os.path.join(P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", "log_portenta.py")
-    args = (
-        "--termflag_shm_struc_fname", termflag_shm_struc_fname,
-        "--ballvelocity_shm_struc_fname", ballvelocity_shm_struc_fname,
-        "--portentaoutput_shm_struc_fname", portentaoutput_shm_struc_fname,
-        "--logging_dir", P.LOGGING_DIRECTORY,
-        "--logging_name", logging_name,
-        "--logging_level", P.LOGGING_LEVEL,
+    script = "log_portenta.py"
+    path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
+    stream_script = os.path.join(*path)
+    
+    args = _make_proc_args()
+    args.extend([
+        "--logging_name", script.replace(".py", ".log"),
         "--process_prio", str(P.LOG_PORTENTA_PROC_PRIORITY),
-        "--session_data_dir", session_data_dir,
-    )
+        "--session_data_dir", P.SESSION_DATA_DIRECTORY,
+    ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
 def open_stream_portenta_proc():

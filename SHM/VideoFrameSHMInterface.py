@@ -26,7 +26,7 @@ class VideoFrameSHMInterface:
         self.nchannels = shm_structure["metadata"]["nchannels"]
 
         self._memory = access_shm(self._shm_name)
-        atexit.register(self.close_shm, self._memory, self._shm_name)
+        atexit.register(self.close_shm)
 
     @property
     def _frame(self) -> np.ndarray:

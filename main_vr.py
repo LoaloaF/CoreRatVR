@@ -13,6 +13,7 @@ from CustomLogger import CustomLogger as Logger
 import backend
 
 import process_launcher as pl
+import SHM.shm_creation as sc
 
 def run_backend(host="0.0.0.0", port=8000):
     P = Parameters()
@@ -47,8 +48,7 @@ def run_backend(host="0.0.0.0", port=8000):
 
     @app.post("/initiate")
     def initiate():
-        if state["initiated"]:
-            raise HTTPException(status_code=400, detail="Already initiated.")
+        backend.validate_state(state, valid_initiated=False)
         session_save_dir = backend.init_save_dir()
         logging_dir = backend.init_logger(session_save_dir)
         P.SESSION_DATA_DIRECTORY = session_save_dir
@@ -63,92 +63,88 @@ def run_backend(host="0.0.0.0", port=8000):
     
     @app.post("/shm/create_termflag_shm")
     def create_termflag_shm():
-        if not state["initiated"]:
-            raise HTTPException(status_code=400, detail="Not initiated yet")
-        if state[P.SHM_NAME_TERM_FLAG]:
-            raise HTTPException(status_code=400, detail="SHM already created")
-
-        backend.handle_create_termflag_shm()
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: False})
+        sc.create_singlebyte_shm(shm_name=P.SHM_NAME_TERM_FLAG)
         state[P.SHM_NAME_TERM_FLAG] = True
 
     @app.post("/shm/create_ballvelocity_shm")
     def create_ballvelocity_shm():
-        if not state["initiated"]:
-            raise HTTPException(status_code=400, detail="Not initiated yet")
-        if state[P.SHM_NAME_BALLVELOCITY]:
-            raise HTTPException(status_code=400, detail="SHM already created")
-
-        backend.handle_create_ballvelocity_shm()
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_BALLVELOCITY: False})
+        sc.create_cyclic_packages_shm(shm_name=P.SHM_NAME_BALLVELOCITY, 
+                                      package_nbytes=P.SHM_PACKAGE_NBYTES_BALLVELOCITY, 
+                                      npackages=P.SHM_NPACKAGES_BALLVELOCITY)
         state[P.SHM_NAME_BALLVELOCITY] = True
     
     @app.post("/shm/create_portentaoutput_shm")
     def create_portentaoutput_shm():
-        if not state["initiated"]:
-            raise HTTPException(status_code=400, detail="Not initiated yet")
-        if state[P.SHM_NAME_PORTENTA_OUTPUT]:
-            raise HTTPException(status_code=400, detail="SHM already created")
-
-        backend.handle_create_portentaoutput_shm()
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_PORTENTA_OUTPUT: False})
+        sc.create_cyclic_packages_shm(shm_name=P.SHM_NAME_PORTENTA_OUTPUT, 
+                                      package_nbytes=P.SHM_PACKAGE_NBYTES_PORTENTA_OUTPUT, 
+                                      npackages=P.SHM_NPACKAGES_PORTENTA_OUTPUT)
         state[P.SHM_NAME_PORTENTA_OUTPUT] = True
         
     @app.post("/shm/create_portentainput_shm")
     def create_portentainput_shm():
-        if not state["initiated"]:
-            raise HTTPException(status_code=400, detail="Not initiated yet")
-        if state[P.SHM_NAME_PORTENTA_INPUT]:
-            raise HTTPException(status_code=400, detail="SHM already created")
-
-        backend.handle_create_portentainput_shm()
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_PORTENTA_INPUT: False})
+        sc.create_cyclic_packages_shm(shm_name=P.SHM_NAME_PORTENTA_INPUT, 
+                                      package_nbytes=P.SHM_PACKAGE_NBYTES_PORTENTA_INPUT, 
+                                      npackages=P.SHM_NPACKAGES_PORTENTA_INPUT)
         state[P.SHM_NAME_PORTENTA_INPUT] = True
-    
-    
-    @app.post("/procs/open_por2shm2por_sim_proc")
-    def open_por2shm2por_sim_proc():
-        if not state[P.SHM_NAME_PORTENTA_OUTPUT]:
-            raise HTTPException(status_code=400, 
-                                detail="portentaoutput SHM not created")
-        elif not state[P.SHM_NAME_PORTENTA_INPUT]:
-            raise HTTPException(status_code=400, 
-                                detail="portentainput SHM not created")
 
-        backend.handle_open_por2shm2por_sim_proc()
-        
-    @app.post("/procs/open_por2shm2por_proc")
-    def open_por2shm2por_sim_proc():
-        if not state[P.SHM_NAME_PORTENTA_OUTPUT]:
-            raise HTTPException(status_code=400, 
-                                detail="portentaoutput SHM not created")
-        elif not state[P.SHM_NAME_PORTENTA_INPUT]:
-            raise HTTPException(status_code=400, 
-                                detail="portentainput SHM not created")
 
-        backend.handle_open_por2shm2por_proc()
+
+    @app.post("/procs/launch_por2shm2por_sim")
+    def launch_por2shm2por_sim():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_PORTENTA_OUTPUT: True,
+                                                  P.SHM_NAME_BALLVELOCITY: True,
+                                                  })
+        proc = pl.open_por2shm2por_sim_proc()
+        return {"pid": proc.pid} 
+
+    @app.post("/procs/launch_por2shm2por")
+    def launch_por2shm2por():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_PORTENTA_OUTPUT: True,
+                                                  P.SHM_NAME_BALLVELOCITY: True,
+                                                  P.SHM_NAME_PORTENTA_INPUT: True,
+                                                  })
+        proc = pl.open_por2shm2por_proc()
+        return {"pid": proc.pid} 
         
-    @app.post("/procs/open_log_portenta_proc")
-    def open_log_portenta_proc():
-        if not state[P.SHM_NAME_PORTENTA_OUTPUT]:
-            raise HTTPException(status_code=400, 
-                                detail="portentaoutput SHM not created")
-        elif not state[P.SHM_NAME_BALLVELOCITY]:
-            raise HTTPException(status_code=400, 
-                                detail="ballvelocity SHM not created")
-        backend.handle_open_log_portenta_proc()
-    
-    @app.post("/procs/open_stream_portenta_proc")
-    def open_log_portenta_proc():
-        if not state[P.SHM_NAME_PORTENTA_OUTPUT]:
-            raise HTTPException(status_code=400, 
-                                detail="portentaoutput SHM not created")
-        elif not state[P.SHM_NAME_BALLVELOCITY]:
-            raise HTTPException(status_code=400, 
-                                detail="ballvelocity SHM not created")
-        backend.handle_open_log_portenta_proc()
+    @app.post("/procs/launch_log_portenta")
+    def launch_log_portenta():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_PORTENTA_OUTPUT: True,
+                                                  P.SHM_NAME_BALLVELOCITY: True,
+                                                  })
+        proc = pl.open_log_portenta_proc()
+        return {"pid": proc.pid} 
+
+    @app.post("/procs/launch_stream_portenta")
+    def launch_stream_portenta():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_PORTENTA_OUTPUT: True,
+                                                  P.SHM_NAME_BALLVELOCITY: True,
+                                                  })
         proc = pl.open_stream_portenta_proc()
         return {"pid": proc.pid} 
 
     @app.post("/raise_term_flag")
     def raise_term_flag():
-        # do checks
+        if not state['initiated']:
+            # not handled by function below bc logger not initiated yet -> mess
+            # backend.validate_state(state, valid_initiated=False)
+            raise HTTPException(status_code=400, detail="Not initiated.")
+
         open_shm_mem_names = []
         for key, value in state.items():
             if value and key in (P.SHM_NAME_TERM_FLAG, P.SHM_NAME_BALLVELOCITY,

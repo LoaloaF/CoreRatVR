@@ -11,7 +11,7 @@ class FlagSHMInterface:
 
         self._shm_name = shm_structure["shm_name"]
         self._memory = access_shm(self._shm_name)
-        atexit.register(self.close_shm, self._memory, self._shm_name)
+        atexit.register(self.close_shm)
 
     @property
     def _state(self) -> bool:

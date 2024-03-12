@@ -28,6 +28,11 @@ def test_endpoints():
         response = requests.post(f"{base_url}/shm/create_ballvelocity_shm")
         print("POST /shm/create_ballvelocity_shm:", response.json())
 
+        # POST /procs/open_stream_portenta_proc
+        response = requests.post(f"{base_url}/procs/launch_stream_portenta")
+        print("POST /procs/open_stream_portenta_proc:", response.json())
+
+
         # POST /shm/create_portentaoutput_shm
         response = requests.post(f"{base_url}/shm/create_portentaoutput_shm")
         print("POST /shm/create_portentaoutput_shm:", response.json())
@@ -37,23 +42,25 @@ def test_endpoints():
         print("POST /shm/create_portentainput_shm:", response.json())
 
         # POST /procs/open_por2shm2por_sim_proc
-        response = requests.post(f"{base_url}/procs/open_por2shm2por_sim_proc")
+        response = requests.post(f"{base_url}/procs/launch_por2shm2por_sim")
         print("POST /procs/open_por2shm2por_sim_proc:", response.json())
         
         # POST /procs/open_por2shm2por_proc
-        response = requests.post(f"{base_url}/procs/open_por2shm2por_proc")
+        response = requests.post(f"{base_url}/procs/launch_por2shm2por")
         print("POST /procs/open_por2shm2por_proc:", response.json())
         
         # POST /procs/open_log_portenta_proc
-        response = requests.post(f"{base_url}/procs/open_log_portenta_proc")
+        response = requests.post(f"{base_url}/procs/launch_log_portenta")
         print("POST /procs/open_log_portenta_proc:", response.json())
         
+        # response = requests.post(f"{base_url}/raise_term_flag")
+
         # POST /procs/open_stream_portenta_proc
-        response = requests.post(f"{base_url}/procs/open_stream_portenta_proc")
+        response = requests.post(f"{base_url}/procs/launch_stream_portenta")
         print("POST /procs/open_stream_portenta_proc:", response.json())
 
     run()
-    sleep(1)
+    sleep(15)
     # POST /term_session
     response = requests.post(f"{base_url}/raise_term_flag")
     print("POST /raise_term_flag:", response.json())
