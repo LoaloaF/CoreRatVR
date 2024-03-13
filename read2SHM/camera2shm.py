@@ -67,11 +67,11 @@ def _read_stream_loop(frame_shm, termflag_shm, cap):
     finally:
         cap.release()
 
-def run_camera2shm(shm_structure_fname, termflag_shm_structure_fname, 
+def run_camera2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname, 
                    camera_idx, fps):
     # shm access
-    frame_shm = VideoFrameSHMInterface(shm_structure_fname)
-    termflag_shm = FlagSHMInterface(termflag_shm_structure_fname)
+    frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
+    termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
 
     cap = _setup_capture(frame_shm.x_res, frame_shm.y_res, camera_idx, fps)
     _read_stream_loop(frame_shm, termflag_shm, cap)
@@ -79,17 +79,22 @@ def run_camera2shm(shm_structure_fname, termflag_shm_structure_fname,
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Read camera stream, timestamp, ",
                                         "and place in SHM")
-    argParser.add_argument("--shm_structure_fname")
-    argParser.add_argument("--termflag_shm_structure_fname")
+    argParser.add_argument("--videoframe_shm_struc_fname")
+    argParser.add_argument("--termflag_shm_struc_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level")
+    argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--camera_idx", type=int)
     argParser.add_argument("--fps", type=int)
-
     kwargs = vars(argParser.parse_args())
+    
     L = Logger()
     L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
                   kwargs.pop("logging_level"))
     L.logger.info("Subprocess started")
+    L.logger.debug(L.fmtmsg(kwargs))
+    if sys.platform.startswith('linux'):
+        if (prio := kwargs.pop("process_prio")) != -1:
+            os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
     run_camera2shm(**kwargs)

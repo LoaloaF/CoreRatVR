@@ -31,23 +31,21 @@ class Parameters:
         cls._instance.LOGGING_LEVEL = "INFO"
         cls._instance.LOG_TO_DATA_DIR = True
 
-        cls._instance.FRONT_WEBCAM_IDX = 0
-        cls._instance.FRONT_WEBCAM_NAME = "LogitechMainWebcam2"
-        cls._instance.FRONT_WEBCAM_X_RES = 640
-        cls._instance.FRONT_WEBCAM_Y_RES = 480
-        cls._instance.FRONT_WEBCAM_NCHANNELS = 3
-        cls._instance.FRONT_WEBCAM_FPS = 30
+        # cls._instance.FRONT_WEBCAM_IDX = 0
+        # cls._instance.FRONT_WEBCAM_NAME = "LogitechMainWebcam2"
+        # cls._instance.FRONT_WEBCAM_X_RES = 640
+        # cls._instance.FRONT_WEBCAM_Y_RES = 480
+        # cls._instance.FRONT_WEBCAM_NCHANNELS = 3
+        # cls._instance.FRONT_WEBCAM_FPS = 30
 
-        cls._instance.BUILTIN_WEBCAM_IDX = 2
-        cls._instance.BUILTIN_WEBCAM_NAME = "XPS13Webcam2"
-        cls._instance.BUILTIN_WEBCAM_X_RES = 640
-        cls._instance.BUILTIN_WEBCAM_Y_RES = 480
-        cls._instance.BUILTIN_WEBCAM_NCHANNELS = 3
-        cls._instance.BUILTIN_WEBCAM_FPS = 30
+        # cls._instance.BUILTIN_WEBCAM_IDX = 2
+        # cls._instance.BUILTIN_WEBCAM_NAME = "XPS13Webcam2"
+        # cls._instance.BUILTIN_WEBCAM_X_RES = 640
+        # cls._instance.BUILTIN_WEBCAM_Y_RES = 480
+        # cls._instance.BUILTIN_WEBCAM_NCHANNELS = 3
+        # cls._instance.BUILTIN_WEBCAM_FPS = 30
         
         
-        cls._instance.SHM_NAME_TERM_FLAG = 'termflag'
-        cls._instance.SHM_NAME_TERM_FLAG = 'termflag'
         cls._instance.SHM_NAME_TERM_FLAG = 'termflag'
         
         cls._instance.SHM_NAME_BALLVELOCITY = 'ballvelocity'
@@ -69,8 +67,22 @@ class Parameters:
         cls._instance.SHM_NAME_UNITY_INPUT = 'unityinput'
         cls._instance.SHM_NPACKAGES_UNITY_INPUT = -1
         cls._instance.SHM_PACKAGE_NBYTES_UNITY_INPUT = -1
+        
+        cls._instance.SHM_NAME_FACE_CAM = 'facecam'
+        
+        cls._instance.SHM_NAME_BODY_CAM = 'bodycam'
 
-
+        cls._instance.FACE_CAM_IDX = 0
+        cls._instance.FACE_CAM_X_RES = 640
+        cls._instance.FACE_CAM_Y_RES = 480
+        cls._instance.FACE_CAM_NCHANNELS = 3
+        cls._instance.FACE_CAM_FPS = 30
+        
+        cls._instance.BODY_CAM_IDX = 2
+        cls._instance.BODY_CAM_X_RES = 640
+        cls._instance.BODY_CAM_Y_RES = 480
+        cls._instance.BODY_CAM_NCHANNELS = 3
+        cls._instance.BODY_CAM_FPS = 30
 
 
 
@@ -84,7 +96,7 @@ class Parameters:
         cls._instance.CAMERA_STREAM_PROC_PRIORITY = -1
         cls._instance.PORTENTA2SHM2PORTENTA_PROC_PRIORITY = -1
         cls._instance.LOG_PORTENTA_PROC_PRIORITY = -1
-        cls._instance.STREAM_PORTENTA_PROC_PRIORITY = -1
+        cls._instance.STREAM_PORTENTA_PROC_PRIORITY = 90
 
         cls._instance.REALSENSE_X_RESOLUTION = 640
         cls._instance.REALSENSE_Y_RESOLUTION = 480
@@ -157,10 +169,11 @@ class Parameters:
         return cls._instance
         
     def get_locked_attributes(self) -> dict[str, Any]:
-        params = get_attributes
+        params = get_attributes()
         locked_keys = [
-            PROJECT_DIRECTORY,
-            SHM_STRUCTURE_DIRECTORY,
+            self.PROJECT_DIRECTORY,
+            self.SHM_STRUCTURE_DIRECTORY,
+            self.SESSION_DATA_DIRECTORY,
         ]
         return {key: value for key, value in params.items() if key in locked_keys}
     
@@ -168,6 +181,10 @@ class Parameters:
         return {key: value for key, value in vars(self).items()
                 if isinstance(key, str) and key.isupper()}
     
+    def save_to_json(self, session_save_dir: str) -> None:
+        with open(os.path.join(session_save_dir,'parameters.json'), 'w') as f:
+            json.dump(self.get_attributes(), f)
+
     def __str__(self) -> str:
         params = self.get_attributes()
         params_json = json.dumps(params, indent=2)

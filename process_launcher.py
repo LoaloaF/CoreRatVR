@@ -8,48 +8,36 @@ import shutil
 # implement good logging, either to one file or each proc has seperate one
 # isolate functionality such as cmd construction, very redundant rn
 
-def open_camera2shm_proc(shm_structure_fname, termflag_shm_structure_fname, 
-                         logging_name, camera_idx, fps):
+def open_camera2shm_proc(cam_name):
     P = Parameters()
-    r2shm_script = os.path.join(P.PROJECT_DIRECTORY, "read2SHM", "camera2shm.py")
-    args = (
-        "--shm_structure_fname", shm_structure_fname,
-        "--termflag_shm_structure_fname", termflag_shm_structure_fname,
-        "--logging_dir", P.LOGGING_DIRECTORY_RUN,
-        "--logging_name", logging_name,
-        "--logging_level", P.LOGGING_LEVEL,
+    script = "camera2shm.py"
+    path = P.PROJECT_DIRECTORY, "CoreRatVR", "read2SHM", script
+    stream_script = os.path.join(*path)
+    
+    args = _make_proc_args(shm_args=("termflag", cam_name))
+    cam_idx = str(P.FACE_CAM_IDX) if cam_name == 'facecam' else str(P.BODY_CAM_IDX)
+    fps = str(P.FACE_CAM_FPS) if cam_name == 'facecam' else str(P.BODY_CAM_FPS)
+    args.extend([
+        "--logging_name", (cam_name+script).replace(".py", ""),
         "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
-        "--camera_idx", str(camera_idx),
-        "--fps", str(fps),
-    )
-    return _launch(P.WHICH_PYTHON, r2shm_script, *args)
-
-def open_shm2cam_stream_proc(shm_structure_fname, termflag_shm_structure_fname, 
-                             logging_name):
-    P = Parameters()
-    stream_script = os.path.join(P.PROJECT_DIRECTORY, "CoreRatVR", "streamer", "display_camera.py")
-    args = (
-        "--shm_structure_fname", shm_structure_fname,
-        "--termflag_shm_structure_fname", termflag_shm_structure_fname,
-        "--logging_dir", P.LOGGING_DIRECTORY_RUN,
-        "--logging_name", logging_name,
-        "--logging_level", P.LOGGING_LEVEL,
-        "--process_prio", str(P.CAMERA_STREAM_PROC_PRIORITY),
-
-    )
+        "--camera_idx", cam_idx,
+        # "--channels", P.FACE_CAM_IDX if cam_name == 'facecam' else P.BODY_CAM_IDX,
+        "--fps", fps,
+    ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
-
-
-
-
-
-
-
-
-
-
-
+def open_shm2cam_stream_proc(cam_name):
+    P = Parameters()
+    script = "display_camera.py"
+    path = P.PROJECT_DIRECTORY, "CoreRatVR", "streamer", script
+    stream_script = os.path.join(*path)
+    
+    args = _make_proc_args(shm_args=("termflag", cam_name))
+    args.extend([
+        "--logging_name", (cam_name+script).replace(".py", ""),
+        "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
+    ])
+    return _launch(P.WHICH_PYTHON, stream_script, *args)
 
 def open_por2shm2por_sim_proc():
     P = Parameters()
@@ -59,7 +47,7 @@ def open_por2shm2por_sim_proc():
     
     args = _make_proc_args()
     args.extend([
-        "--logging_name", script.replace(".py", ".log"),
+        "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.PORTENTA2SHM2PORTENTA_PROC_PRIORITY),
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
@@ -73,7 +61,7 @@ def open_por2shm2por_proc():
     args = _make_proc_args(shm_args=("termflag", "ballvelocity", 
                                      "portentaoutput", "portentainput"))
     args.extend([
-        "--logging_name", script.replace(".py", ".log"),
+        "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.PORTENTA2SHM2PORTENTA_PROC_PRIORITY),
         "--port_name", P.PORTENTA_PORT,
         "--baud_rate", str(P.PORTENTA_BAUD_RATE),
@@ -88,7 +76,7 @@ def open_log_portenta_proc():
     
     args = _make_proc_args()
     args.extend([
-        "--logging_name", script.replace(".py", ".log"),
+        "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.LOG_PORTENTA_PROC_PRIORITY),
         "--session_data_dir", P.SESSION_DATA_DIRECTORY,
     ])
@@ -102,7 +90,7 @@ def open_stream_portenta_proc():
     
     args = _make_proc_args()
     args.extend([
-        "--logging_name", script.replace(".py", ".log"),
+        "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.STREAM_PORTENTA_PROC_PRIORITY),
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
@@ -126,6 +114,12 @@ def _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput"),
     if "portentainput" in shm_args:
         args.extend(("--portentainput_shm_struc_fname", 
                      constr_fname(P.SHM_NAME_PORTENTA_INPUT)))
+    if "facecam" in shm_args:
+        args.extend(("--videoframe_shm_struc_fname", 
+                     constr_fname(P.SHM_NAME_FACE_CAM)))
+    if "bodycam" in shm_args:
+        args.extend(("--videoframe_shm_struc_fname", 
+                     constr_fname(P.SHM_NAME_BODY_CAM)))
        
     if logging_args:
         args.extend(("--logging_dir", P.LOGGING_DIRECTORY))
@@ -146,7 +140,7 @@ def _launch(exec, script, *args):
     log_dir_i = [i for i in range(len(args)) if args[i] == "--logging_dir"][0]+1
     log_name_i = [i for i in range(len(args)) if args[i] == "--logging_name"][0]+1
     
-    log_file = open(os.path.join(args[log_dir_i], args[log_name_i]), "w")
+    log_file = open(os.path.join(args[log_dir_i], args[log_name_i]+".log"), "w")
     L.logger.info(f"Logging to {log_file.name}")
     L.spacer()
     atexit.register(_close_log_file, log_file)

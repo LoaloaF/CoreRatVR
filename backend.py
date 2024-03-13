@@ -52,7 +52,7 @@ def init_logger(session_save_dir):
     if L.logger.handlers:
         L.reset_logger()
     log_dir = session_save_dir if P.LOG_TO_DATA_DIR else P.LOGGING_DIRECTORY
-    L.init_logger(__name__, log_dir, P.LOGGING_LEVEL)
+    L.init_logger("__main__", log_dir, P.LOGGING_LEVEL)
     return log_dir
 
 def validate_state(state, valid_initiated=None, valid_shm_created=None):
@@ -74,92 +74,10 @@ def validate_state(state, valid_initiated=None, valid_shm_created=None):
                 L.logger.error(f"{shm_name} shm {msg}")
                 raise HTTPException(status_code=400, detail=f"{shm_name} shm {msg}")
         
-
-# def handle_create_termflag_shm():
-#     P = Parameters()
-#     create_singlebyte_shm(shm_name=P.SHM_NAME_TERM_FLAG)
-
-# def handle_create_ballvelocity_shm():
-#     P = Parameters()
-#     create_cyclic_packages_shm(shm_name=P.SHM_NAME_BALLVELOCITY, 
-#                                package_nbytes=P.SHM_PACKAGE_NBYTES_BALLVELOCITY, 
-#                                npackages=P.SHM_NPACKAGES_BALLVELOCITY)
-
-# def handle_create_portentaoutput_shm():
-#     P = Parameters()
-#     create_cyclic_packages_shm(shm_name=P.SHM_NAME_PORTENTA_OUTPUT, 
-#                                package_nbytes=P.SHM_PACKAGE_NBYTES_PORTENTA_OUTPUT, 
-#                                npackages=P.SHM_NPACKAGES_PORTENTA_OUTPUT)
-
-# def handle_create_portentainput_shm():
-#     P = Parameters()
-#     create_cyclic_packages_shm(shm_name=P.SHM_NAME_PORTENTA_INPUT, 
-#                                package_nbytes=P.SHM_PACKAGE_NBYTES_PORTENTA_INPUT, 
-#                                npackages=P.SHM_NPACKAGES_PORTENTA_INPUT)
-
-
-
-
-
-
-
-
-# def handle_open_por2shm2por_sim_proc():
-#     P = Parameters()
-#     constr_fname = lambda name: os.path.join(P.SHM_STRUCTURE_DIRECTORY, 
-#                                              name+"_shmstruct.json")
-#     kwargs = {
-#         "termflag_shm_struc_fname": constr_fname(P.SHM_NAME_TERM_FLAG),
-#         "ballvelocity_shm_struc_fname": constr_fname(P.SHM_NAME_BALLVELOCITY),
-#         "portentaoutput_shm_struc_fname": constr_fname(P.SHM_NAME_PORTENTA_OUTPUT),
-#         "portentainput_shm_struc_fname": constr_fname(P.SHM_NAME_PORTENTA_INPUT),
-#         "port_name": P.PORTENTA_PORT,
-#         "baud_rate": P.PORTENTA_BAUD_RATE,
-#         }
-#     return open_por2shm2por_sim_proc(logging_name="por2shm2por_sim", **kwargs)
-
-# def handle_open_por2shm2por_proc():
-#     P = Parameters()
-#     constr_fname = lambda name: os.path.join(P.SHM_STRUCTURE_DIRECTORY, 
-#                                              name+"_shmstruct.json")
-#     kwargs = {
-#         "termflag_shm_struc_fname": constr_fname(P.SHM_NAME_TERM_FLAG),
-#         "ballvelocity_shm_struc_fname": constr_fname(P.SHM_NAME_BALLVELOCITY),
-#         "portentaoutput_shm_struc_fname": constr_fname(P.SHM_NAME_PORTENTA_OUTPUT),
-#         "portentainput_shm_struc_fname": constr_fname(P.SHM_NAME_PORTENTA_INPUT),
-#         "port_name": P.PORTENTA_PORT,
-#         "baud_rate": P.PORTENTA_BAUD_RATE,
-#         }
-#     return open_por2shm2por_proc(logging_name="por2shm2por", **kwargs)
-    
-# def handle_open_log_portenta_proc():
-#     P = Parameters()
-#     constr_fname = lambda name: os.path.join(P.SHM_STRUCTURE_DIRECTORY, 
-#                                              name+"_shmstruct.json")
-#     kwargs = {
-#         "termflag_shm_struc_fname": constr_fname(P.SHM_NAME_TERM_FLAG),
-#         "ballvelocity_shm_struc_fname": constr_fname(P.SHM_NAME_BALLVELOCITY),
-#         "portentaoutput_shm_struc_fname": constr_fname(P.SHM_NAME_PORTENTA_OUTPUT),
-#         "session_data_dir": P.SESSION_DATA_DIRECTORY,
-#         }
-#     return open_log_portenta_proc(logging_name="log_portenta", **kwargs)
-    
-
-
-
-
-
-
-
-
-###
-# TO DO - merge process launching into process launcher, take away backend functions
-# TO DO - test cameara
-# TO DO - metadata saving parameters after initiation
+###            
 # TO DO - cleanup SHM stuff, like logging formatting etc
 # TO DO - check if arduino is connceted before launching process
 # TO DO - write logger proccess properly
-# TO DO - HTTP checks somehwere else
 
 def POST_raise_term_flag(open_shm_mem_names):
     P = Parameters()

@@ -113,6 +113,8 @@ class CustomLogger:
         self._switch_spacer_fmt()
 
     def fmtmsg(self, msg):
+        if isinstance(msg, dict):
+            msg = json.dumps(msg, indent=2)
         if isinstance(msg, (list, tuple)):
             msg = [json.dumps(m, indent=2) if isinstance(m, dict) else str(m) 
                    for m in msg]

@@ -50,23 +50,28 @@ def _stream(frame_shm, termflag_shm):
     finally:
         cv2.destroyAllWindows()
 
-def run_display_camera(shm_structure_fname, termflag_shm_structure_fname):
+def run_display_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname):
     # shm access
-    frame_shm = VideoFrameSHMInterface(shm_structure_fname)
-    termflag_shm = FlagSHMInterface(termflag_shm_structure_fname)
+    frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
+    termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
 
     _stream(frame_shm, termflag_shm)
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Display webcam stream on screen")
-    argParser.add_argument("--shm_structure_fname")
-    argParser.add_argument("--termflag_shm_structure_fname")
+    argParser.add_argument("--videoframe_shm_struc_fname")
+    argParser.add_argument("--termflag_shm_struc_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level")
+    argParser.add_argument("--process_prio", type=int)
 
     kwargs = vars(argParser.parse_args())
     L = Logger()
     L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
                   kwargs.pop("logging_level"))
+    L.logger.debug(kwargs)
+    if sys.platform.startswith('linux'):
+        if (prio := kwargs.pop("process_prio")) != -1:
+            os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
     run_display_camera(**kwargs)

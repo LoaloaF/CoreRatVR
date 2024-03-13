@@ -1,7 +1,6 @@
 import os
 import signal
 import sys
-import atexit
 sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
 
 from fastapi import FastAPI, HTTPException
@@ -26,6 +25,8 @@ def run_backend(host="0.0.0.0", port=8000):
         P.SHM_NAME_PORTENTA_INPUT: False,
         P.SHM_NAME_UNITY_OUTPUT: False,
         P.SHM_NAME_UNITY_INPUT: False,
+        P.SHM_NAME_FACE_CAM: False,
+        P.SHM_NAME_BODY_CAM: False,
         }
     
     @app.exception_handler(Exception)
@@ -53,8 +54,9 @@ def run_backend(host="0.0.0.0", port=8000):
         logging_dir = backend.init_logger(session_save_dir)
         P.SESSION_DATA_DIRECTORY = session_save_dir
         P.LOGGING_DIRECTORY = logging_dir
+        P.save_to_json(P.SESSION_DATA_DIRECTORY)
         state["initiated"] = True
-        
+
         L = Logger()
         L.spacer()
         L.logger.info("Session initiated.")
@@ -94,9 +96,44 @@ def run_backend(host="0.0.0.0", port=8000):
                                       package_nbytes=P.SHM_PACKAGE_NBYTES_PORTENTA_INPUT, 
                                       npackages=P.SHM_NPACKAGES_PORTENTA_INPUT)
         state[P.SHM_NAME_PORTENTA_INPUT] = True
+    
+    @app.post("/shm/create_unityinput_shm")
+    def create_unityinput_shm():
+        P.SHM_NAME_UNITY_INPUT
+        pass
+    
+    @app.post("/shm/create_unityoutput_shm")
+    def create_unityoutput_shm():
+        P.SHM_NAME_UNITY_OUTPUT
+        pass
+
+    @app.post("/shm/create_facecam_shm")
+    def create_facecam_shm():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_FACE_CAM: False})
+        sc.create_video_frame_shm(shm_name=P.SHM_NAME_FACE_CAM, 
+                                  x_resolution=P.FACE_CAM_X_RES,
+                                  y_resolution=P.FACE_CAM_Y_RES,
+                                  nchannels=P.FACE_CAM_NCHANNELS)
+        state[P.SHM_NAME_FACE_CAM] = True
+
+    @app.post("/shm/create_bodycam_shm")
+    def create_bodycam_shm():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_BODY_CAM: False})
+        sc.create_video_frame_shm(shm_name=P.SHM_NAME_BODY_CAM, 
+                                  x_resolution=P.BODY_CAM_X_RES,
+                                  y_resolution=P.BODY_CAM_Y_RES,
+                                  nchannels=P.BODY_CAM_NCHANNELS)
+        state[P.SHM_NAME_BODY_CAM] = True
 
 
 
+
+
+
+    ### PROCESSES ###
+        
     @app.post("/procs/launch_por2shm2por_sim")
     def launch_por2shm2por_sim():
         backend.validate_state(state, valid_initiated=True, 
@@ -137,6 +174,42 @@ def run_backend(host="0.0.0.0", port=8000):
                                                   })
         proc = pl.open_stream_portenta_proc()
         return {"pid": proc.pid} 
+    
+    @app.post("/procs/launch_facecam2shm")
+    def launch_facecam2shm():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_FACE_CAM: True,
+                                                  })
+        proc = pl.open_camera2shm_proc(P.SHM_NAME_FACE_CAM)
+        return {"pid": proc.pid} 
+    
+    @app.post("/procs/launch_bodycam2shm")
+    def launch_bodycam2shm():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_BODY_CAM: True,
+                                                  })
+        proc = pl.open_camera2shm_proc(P.SHM_NAME_BODY_CAM)
+        return {"pid": proc.pid}
+    
+    @app.post("/procs/launch_stream_facecam")
+    def launch_stream_facecam():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_FACE_CAM: True,
+                                                  })
+        proc = pl.open_shm2cam_stream_proc(P.SHM_NAME_FACE_CAM)
+        return {"pid": proc.pid}
+    
+    @app.post("/procs/launch_stream_bodycam")
+    def launch_stream_bodycam():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_BODY_CAM: True,
+                                                  })
+        proc = pl.open_shm2cam_stream_proc(P.SHM_NAME_BODY_CAM)
+        return {"pid": proc.pid}
 
     @app.post("/raise_term_flag")
     def raise_term_flag():
@@ -149,7 +222,8 @@ def run_backend(host="0.0.0.0", port=8000):
         for key, value in state.items():
             if value and key in (P.SHM_NAME_TERM_FLAG, P.SHM_NAME_BALLVELOCITY,
                                  P.SHM_NAME_PORTENTA_OUTPUT, P.SHM_NAME_PORTENTA_INPUT,
-                                 P.SHM_NAME_UNITY_OUTPUT, P.SHM_NAME_UNITY_INPUT):
+                                 P.SHM_NAME_UNITY_OUTPUT, P.SHM_NAME_UNITY_INPUT,
+                                 P.SHM_NAME_FACE_CAM, P.SHM_NAME_BODY_CAM):
                 open_shm_mem_names.append(key)
         backend.POST_raise_term_flag(open_shm_mem_names)
 
