@@ -77,9 +77,7 @@ def validate_state(state, valid_initiated=None, valid_shm_created=None):
 ###            
 # TO DO - check if arduino is connceted before launching process
 # TO DO - or try to auto flash Portenta
-# TO DO - cleanup SHM stuff, like logging formatting etc
-# TO DO - write logger proccess properly
-# TO DO - sudo chprio command
+# TO DO - sudo chprio command passwordless
 
 def POST_raise_term_flag(open_shm_mem_names):
     P = Parameters()
