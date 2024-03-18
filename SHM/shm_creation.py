@@ -9,8 +9,6 @@ from multiprocessing.resource_tracker import unregister
 from multiprocessing import Process, resource_tracker
 from multiprocessing.shared_memory import SharedMemory
 
-
-from shm_buffer_errors import BufferAlreadyCreated
 from CustomLogger import CustomLogger as Logger
 from Parameters import Parameters
 
@@ -24,10 +22,9 @@ def create_video_frame_shm(shm_name, x_resolution, y_resolution,
     L = Logger()
     L.logger.info(f"Creating video frame SHM named `{shm_name}`")
     
-    tstamp_nbytes = 8
-    framecount_nbytes = 0
+    package_nbytes = 80
     frame_nbytes = x_resolution * y_resolution * nchannels
-    total_nbytes = tstamp_nbytes + framecount_nbytes + frame_nbytes
+    total_nbytes = package_nbytes + frame_nbytes
 
     _create_shm(shm_name=shm_name, total_nbytes=total_nbytes)
     
@@ -35,8 +32,7 @@ def create_video_frame_shm(shm_name, x_resolution, y_resolution,
         "shm_type": "video_frame",
         "shm_name": shm_name,
         "total_nbytes": total_nbytes,
-        "fields": {"tstamp_nbytes": tstamp_nbytes, 
-                   "framecount_nbytes": framecount_nbytes,
+        "fields": {"package_nbytes": package_nbytes, 
                    "frame_nbytes":frame_nbytes},
         "field_types": {"tstamp_type": "uint64",
                         "framecount_type": "int",
@@ -102,13 +98,14 @@ def _create_shm(shm_name, total_nbytes):
                                          size=total_nbytes)
 
         shm.buf[:] = bytearray(total_nbytes)
-        # shm.close() # locally close shm bc no read write happens with this, only creatioon
+        atexit.register(_cleanup, shm, shm_name)
     
-    except FileExistsError as e:
-        raise BufferAlreadyCreated(
-            L.logger.warning(f"SHM named `{shm_name}` already exists.")
-        ) from e
-    atexit.register(_cleanup, shm, shm_name)
+    except FileExistsError:
+        L.logger.error(f"SHM named `{shm_name}` already exists.")
+        L.logger.info("Attemping to close it...")
+        shm = shared_memory.SharedMemory(name=shm_name, create=False)
+        _cleanup(shm, shm_name)
+        exit(1)
 
 def _cleanup(shm, shm_name):
     P = Parameters()

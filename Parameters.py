@@ -54,7 +54,7 @@ class Parameters:
         
         cls._instance.SHM_NAME_PORTENTA_OUTPUT = 'portentaoutput'
         cls._instance.SHM_NPACKAGES_PORTENTA_OUTPUT = int(2**12) # 4k
-        cls._instance.SHM_PACKAGE_NBYTES_PORTENTA_OUTPUT = 80
+        cls._instance.SHM_PACKAGE_NBYTES_PORTENTA_OUTPUT = 40
         
         cls._instance.SHM_NAME_PORTENTA_INPUT = 'portentainput'
         cls._instance.SHM_NPACKAGES_PORTENTA_INPUT = 16
@@ -90,13 +90,14 @@ class Parameters:
 
         cls._instance.CONSOLE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
         cls._instance.FILE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
-        cls._instance.SPACER_LOGGING_FMT = f'%(message)s===========================================\n'
+        # cls._instance.SPACER_LOGGING_FMT = f'%(message)s===========================================\n'
 
         cls._instance.CAMERA2SHM_PROC_PRIORITY = -1
         cls._instance.CAMERA_STREAM_PROC_PRIORITY = -1
         cls._instance.PORTENTA2SHM2PORTENTA_PROC_PRIORITY = -1
         cls._instance.LOG_PORTENTA_PROC_PRIORITY = -1
-        cls._instance.STREAM_PORTENTA_PROC_PRIORITY = 90
+        cls._instance.STREAM_PORTENTA_PROC_PRIORITY = -1
+        cls._instance.LOG_CAMERA_PROC_PRIORITY = -1
 
         cls._instance.REALSENSE_X_RESOLUTION = 640
         cls._instance.REALSENSE_Y_RESOLUTION = 480

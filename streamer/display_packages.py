@@ -122,9 +122,9 @@ def get_packages_from_shm(ballvel_shm, portentaout_shm, termflag_shm):
         #     return packages
         
         if portentaout_shm.usage > 0:
-            pack = portentaout_shm.bpopitem()
+            pack = portentaout_shm.popitem(return_type=dict)
         else:
-            pack = ballvel_shm.bpopitem()
+            pack = ballvel_shm.popitem(return_type=dict)
 
         if pack is None:
             # L.logger.debug(f"Pack was None, got all:{L.combi_msg}")

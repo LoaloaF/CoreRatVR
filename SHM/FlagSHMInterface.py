@@ -39,9 +39,6 @@ class FlagSHMInterface:
     def reset(self):
         self._state = False
 
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__}({self._shm_name}):state->{self._state}"
-    
     def close_shm(self):
         L = Logger()
         L.logger.debug(f"Closing SHM interace access `{self._shm_name}`")

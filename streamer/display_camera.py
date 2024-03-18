@@ -16,37 +16,33 @@ from FlagSHMInterface import FlagSHMInterface
 
 def _stream(frame_shm, termflag_shm):
     L = Logger()
-    # access shm
-    x_res = frame_shm.x_res
-    y_res = frame_shm.y_res
-    nchannels = frame_shm.nchannels
-    curr_t = time.time() #get current timestamp
 
     L.logger.info("Starting camera stream")
+    prv_frame_package = b''
     try:
-        cam_index = 0
         cv2.startWindowThread()
         while True: 
             if termflag_shm.is_set():
                 L.logger.info("Termination flag raised")
                 break
 
-            #wait until new frame is available
-            if not frame_shm.compare_timestamps(curr_t):
-                #time.sleep(0.001) #sleep for 1ms while waiting for next frame
-                pass
-            else:
-                frame, curr_t = frame_shm.get_frame()
-                L.logger.debug(f"New frame read from SHM")
+            # wait until new frame is available
+            if (frame_package := frame_shm.get_package()) == prv_frame_package:
+                # time.sleep(0.001) #sleep for 1ms while waiting for next frame
+                continue
+            prv_frame_package = frame_package
 
-                # do slicing here, format x-dim, ydim, col (np)
-                if frame_shm.nchannels < 3:
-                    frame = frame[:,:,0:1]
+            frame = frame_shm.get_frame()
+            L.logger.debug(f"New frame {frame.shape} read from SHM: {frame_package}")
 
-                cv2.namedWindow(frame_shm._shm_name)
-                # then flip to convert to cv2 y-x-col
-                cv2.imshow(frame_shm._shm_name, frame.transpose(1,0,2))
-                cv2.waitKey(1)
+            # do slicing here, format x-dim, ydim, col (np)
+            if frame_shm.nchannels < 3:
+                frame = frame[:,:,0:1]
+
+            cv2.namedWindow(frame_shm._shm_name)
+            # then flip to convert to cv2 y-x-col
+            cv2.imshow(frame_shm._shm_name, frame.transpose(1,0,2))
+            cv2.waitKey(1)
     finally:
         cv2.destroyAllWindows()
 

@@ -201,6 +201,15 @@ def run_backend(host="0.0.0.0", port=8000):
                                                   })
         proc = pl.open_shm2cam_stream_proc(P.SHM_NAME_FACE_CAM)
         return {"pid": proc.pid}
+
+    @app.post("/procs/launch_log_facecam")
+    def launch_log_facecam():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_FACE_CAM: True,
+                                                  })
+        proc = pl.open_log_camera_proc(P.SHM_NAME_FACE_CAM)
+        return {"pid": proc.pid}
     
     @app.post("/procs/launch_stream_bodycam")
     def launch_stream_bodycam():

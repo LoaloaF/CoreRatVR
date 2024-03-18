@@ -71,9 +71,9 @@ def _process_packet(L, ballvel_shm, portentaoutput_shm, bytes_packet, pc_ts, is_
     n_idx = bytes_packet.find(b"{N:")
     name = bytes_packet[n_idx+4:n_idx+5]
     if name == "B":
-        ballvel_shm .bpush(bytes_packet)
+        ballvel_shm .push(bytes_packet)
     else:
-        portentaoutput_shm.bpush(bytes_packet)
+        portentaoutput_shm.push(bytes_packet)
     L.spacer("debug")
     L.combi_msg = ""
 
@@ -116,7 +116,7 @@ def _handle_input(L, sport, ballvel_shm, portentaoutput_shm, packets_buf, prv_pc
 
 def _handle_output(L, sport, portentainput_shm):
     L.logger.debug("Handling output")
-    cmd = portentainput_shm.popitem()
+    cmd = portentainput_shm.popitem(return_type=str)
     if cmd is not None:
         cmd = cmd[:cmd.find("\r\n")+2].encode()
         L.logger.info(f"Command found in SHM: `{cmd}` - Writing to serial.")

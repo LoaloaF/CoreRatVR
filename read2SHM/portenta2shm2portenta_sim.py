@@ -79,9 +79,9 @@ def generate_test_package():
 def _handle_input(ballvel_shm, portentaoutput_shm):
     pack, name = generate_test_package()
     if name == "B":
-        ballvel_shm.bpush(pack.encode())
+        ballvel_shm.push(pack.encode())
     else:
-        portentaoutput_shm.bpush(pack.encode())
+        portentaoutput_shm.push(pack.encode())
     return 
 
 def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm):

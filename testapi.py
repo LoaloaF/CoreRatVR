@@ -9,7 +9,7 @@ def test_endpoints():
     # response = requests.get(f"{base_url}/parameters")
     # print("GET /parameters:", response.json())
 
-    # PATCH /parameters/{key}
+    # # PATCH /parameters/{key}
     # key = "LOGGING_LEVEL"  # replace with your key
     # new_value = "DEBUG"  # replace with your value
     # response = requests.patch(f"{base_url}/parameters/{key}?new_value={new_value}")
@@ -44,23 +44,24 @@ def test_endpoints():
         response = requests.post(f"{base_url}/procs/launch_por2shm2por_sim")
         print("POST /procs/open_por2shm2por_sim_proc:", response.json())
         
-        # POST /procs/open_por2shm2por_proc
-        response = requests.post(f"{base_url}/procs/launch_por2shm2por")
-        print("POST /procs/open_por2shm2por_proc:", response.json())
+        # # POST /procs/open_por2shm2por_proc
+        # response = requests.post(f"{base_url}/procs/launch_por2shm2por")
+        # print("POST /procs/open_por2shm2por_proc:", response.json())
         
         # POST /procs/open_log_portenta_proc
         response = requests.post(f"{base_url}/procs/launch_log_portenta")
         print("POST /procs/open_log_portenta_proc:", response.json())
         
-        # POST /procs/open_stream_portenta_proc
-        response = requests.post(f"{base_url}/procs/launch_stream_portenta")
-        print("POST /procs/open_stream_portenta_proc:", response.json())
+        # # POST /procs/open_stream_portenta_proc
+        # response = requests.post(f"{base_url}/procs/launch_stream_portenta")
+        # print("POST /procs/open_stream_portenta_proc:", response.json())
 
 
     def run_cam():
         # POST /initiate
         response = requests.post(f"{base_url}/initiate")
         print("POST /initiate:", response.json())
+        time.sleep(1)
 
         # POST /shm/create_termflag_shm
         response = requests.post(f"{base_url}/shm/create_termflag_shm")
@@ -69,23 +70,26 @@ def test_endpoints():
         response = requests.post(f"{base_url}/shm/create_facecam_shm")
         print("POST /shm/create_facecam_shm:", response.json())
 
+        response = requests.post(f"{base_url}/procs/launch_log_facecam")
+        print("POST /procs/launch_log_facecam:", response.json())
         response = requests.post(f"{base_url}/procs/launch_facecam2shm")
         print("POST /procs/launch_facecam2shm:", response.json())
         
-        time.sleep(1)
         response = requests.post(f"{base_url}/procs/launch_stream_facecam")
         print("POST /procs/launch_stream_facecam:", response.json())
         
         
-        response = requests.post(f"{base_url}/shm/create_bodycam_shm")
-        print("POST /shm/create_bodycam_shm:", response.json())
-
-        response = requests.post(f"{base_url}/procs/launch_bodycam2shm")
-        print("POST /procs/launch_bodycam2shm:", response.json())
         
-        time.sleep(1)
-        response = requests.post(f"{base_url}/procs/launch_stream_bodycam")
-        print("POST /procs/launch_stream_bodycam:", response.json())
+        
+        # response = requests.post(f"{base_url}/shm/create_bodycam_shm")
+        # print("POST /shm/create_bodycam_shm:", response.json())
+
+        # response = requests.post(f"{base_url}/procs/launch_bodycam2shm")
+        # print("POST /procs/launch_bodycam2shm:", response.json())
+        
+        # time.sleep(1)
+        # response = requests.post(f"{base_url}/procs/launch_stream_bodycam")
+        # print("POST /procs/launch_stream_bodycam:", response.json())
 
     def term():
         # POST /term_session
@@ -94,7 +98,7 @@ def test_endpoints():
 
     run_cam()
     run()
-    sleep(40)
+    sleep(50)
     # sleep(100)
     term()
     

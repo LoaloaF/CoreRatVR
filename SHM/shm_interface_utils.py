@@ -68,7 +68,7 @@ def extract_packet_data(bytes_packet):
     # insert quotes after { and , and before : to wrap keys in quotes
     json_pack = pack.replace("{", '{"').replace(":", '":').replace(",", ',"')
     L = Logger()    
-    L.logger.debug(json_pack)
+    # L.logger.debug(json_pack)
     try:
         return json.loads(json_pack)
     except json.JSONDecodeError as e:

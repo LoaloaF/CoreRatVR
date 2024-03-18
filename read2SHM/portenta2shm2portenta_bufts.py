@@ -66,7 +66,7 @@ def _process_packet(L, shm, bytes_packet, pc_ts, is_fresh_val=None):
     L.combi_msg += f"package: {bytes_packet}"
     L.logger.debug(L.combi_msg)
     
-    shm.bpush(bytes_packet)
+    shm.push(bytes_packet)
     L.spacer("debug")
     L.combi_msg = ""
 
@@ -107,7 +107,7 @@ def _handle_input(L, sport, sensors_shm, packets_buf, pc_ts):
 
 def _handle_output(L, sport, command_shm):
     L.logger.debug("Handling output")
-    cmd = command_shm.popitem()
+    cmd = command_shm.popitem(return_type=str)
     if cmd is not None:
         cmd = cmd[:cmd.find("\r\n")+2].encode()
         L.logger.info(f"Command found in SHM: `{cmd}` - Writing to serial.")

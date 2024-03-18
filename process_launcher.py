@@ -18,7 +18,7 @@ def open_camera2shm_proc(cam_name):
     cam_idx = str(P.FACE_CAM_IDX) if cam_name == 'facecam' else str(P.BODY_CAM_IDX)
     fps = str(P.FACE_CAM_FPS) if cam_name == 'facecam' else str(P.BODY_CAM_FPS)
     args.extend([
-        "--logging_name", (cam_name+script).replace(".py", ""),
+        "--logging_name", cam_name+"2shm",
         "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
         "--camera_idx", cam_idx,
         # "--channels", P.FACE_CAM_IDX if cam_name == 'facecam' else P.BODY_CAM_IDX,
@@ -34,8 +34,24 @@ def open_shm2cam_stream_proc(cam_name):
     
     args = _make_proc_args(shm_args=("termflag", cam_name))
     args.extend([
-        "--logging_name", (cam_name+script).replace(".py", ""),
+        "--logging_name", "display_"+cam_name,
         "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
+    ])
+    return _launch(P.WHICH_PYTHON, stream_script, *args)
+
+def open_log_camera_proc(cam_name):
+    P = Parameters()
+    script = "log_camera.py"
+    path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
+    stream_script = os.path.join(*path)
+    
+    args = _make_proc_args(shm_args=("termflag", cam_name))
+    fps = str(P.FACE_CAM_FPS) if cam_name == 'facecam' else str(P.BODY_CAM_FPS)
+    args.extend([
+        "--logging_name", "log_"+cam_name,
+        "--process_prio", str(P.LOG_CAMERA_PROC_PRIORITY),
+        "--session_data_dir", P.SESSION_DATA_DIRECTORY,
+        "--fps", fps,
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 

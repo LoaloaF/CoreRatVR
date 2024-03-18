@@ -74,7 +74,7 @@ class CustomLogger:
         except FileNotFoundError as e:
             print(f"{e} Won't log to file.")
 
-    def _switch_spacer_fmt(self):
+    def _switch_spacer_fmt(self, spacer_length):
         """
         Toggle between default formatter and spacer formatter for all handlers.
         """
@@ -82,7 +82,8 @@ class CustomLogger:
 
         is_default = self.logger.handlers[0].formatter._fmt == P.CONSOLE_LOGGING_FMT
         if is_default:
-            spacer_fmtr = self._create_formatter(P.SPACER_LOGGING_FMT)
+            spacer_format = f"%(message)s{'=' * spacer_length}\n"
+            spacer_fmtr = self._create_formatter(spacer_format)
             [han.setFormatter(spacer_fmtr) for han in self.logger.handlers]
         else:
             fmts = P.CONSOLE_LOGGING_FMT, P.FILE_LOGGING_FMT
@@ -99,18 +100,18 @@ class CustomLogger:
     #     self._default_file_fmtr = self._create_formatter(file_fmt)
     #     self._file_hdlr.setFormatter(self._default_file_fmtr)
 
-    def spacer(self, level="info"):
+    def spacer(self, level="info", spacer_length=80):
         """
         Insert a separator line in the log to visually separate log entries.
         """
-        self._switch_spacer_fmt()
+        self._switch_spacer_fmt(spacer_length)
         if level == "info":
             self.logger.info('')  # log a separator line
         elif level == "debug":
             self.logger.debug('')  # log a separator line
         else:
             self.logger.critical('')  # log a separator line
-        self._switch_spacer_fmt()
+        self._switch_spacer_fmt(spacer_length)
 
     def fmtmsg(self, msg):
         if isinstance(msg, dict):

@@ -73,11 +73,13 @@ def validate_state(state, valid_initiated=None, valid_shm_created=None):
                 msg = "not created" if valid_shm_created[shm_name] else "already created"
                 L.logger.error(f"{shm_name} shm {msg}")
                 raise HTTPException(status_code=400, detail=f"{shm_name} shm {msg}")
-        
+
 ###            
-# TO DO - cleanup SHM stuff, like logging formatting etc
 # TO DO - check if arduino is connceted before launching process
+# TO DO - or try to auto flash Portenta
+# TO DO - cleanup SHM stuff, like logging formatting etc
 # TO DO - write logger proccess properly
+# TO DO - sudo chprio command
 
 def POST_raise_term_flag(open_shm_mem_names):
     P = Parameters()

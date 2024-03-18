@@ -48,21 +48,21 @@ def _read_stream_loop(frame_shm, termflag_shm, cap):
     try:
         frame_i = 0
         while True:
-            #define breaking condition for the thread/process
+            # define breaking condition for the thread/process
             if termflag_shm.is_set():
                 L.logger.info("Termination flag raised")
                 break
-            
             ret, frame = cap.read()
-            t = time.time()
-            L.logger.debug(f"New frame_i {frame_i} from camera at {t}")
+            if not ret:
+                L.logger.info("Capture didn't return a frame, exiting.")
+                break
 
+            pack = "<{" + f"N:I,ID:{frame_i},PCT:{int(time.time()*1e6)}" + "}>\r\n"
+            L.logger.debug(f"New frame: {pack}")
             
             frame = frame[:frame_shm.y_res, :frame_shm.x_res, :frame_shm.nchannels]
             frame = frame.transpose(1,0,2) # cv2: y-x-rgb, everywhere: x-y-rgb
-            frame_shm.add_frame(frame, t)
-            L.logger.debug("Placed in SHM")
-            
+            frame_shm.add_frame(frame, pack.encode('utf-8'))
             frame_i += 1
     finally:
         cap.release()

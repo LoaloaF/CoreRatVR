@@ -86,12 +86,19 @@ def plot_T_PCT_comparison(df):
 
 
 if __name__ == "__main__":
-    full_fname = "~/data.hdf5"
-    df = load_hdf5_data(full_fname).reset_index(drop=True)
+    import os
+    base_path = '../data/'
+    all_dirs = sorted(os.listdir(base_path))
+    full_fname = os.path.join(base_path, all_dirs[-1], "data.hdf5")
+    
+    df = load_hdf5_data(full_fname)#.reset_index(drop=True)
+    print(df[-50:])
+    exit()
     print((df.N).value_counts())
     df = df.iloc[:int(2e6)]
     print(df[df["T"].diff()<0])
-
+    print(df["ID"].diff()[df["ID"].diff()!=1])
+    exit()
 
     # print(df.iloc[947:952])
     df["T"] = df["T"].diff()/1000

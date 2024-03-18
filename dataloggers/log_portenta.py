@@ -4,90 +4,98 @@ import os
 sys.path.insert(1, os.path.join(sys.path[0], '..')) # project dir
 sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 
-import pandas as pd
 import argparse
+import pandas as pd
 
 from CustomLogger import CustomLogger as Logger
-
 from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 
-def _log_sensors(termflag_shm, ballvelocity_shm, portentaoutput_shm, full_fname):
+def _check_package(ard_package, last_pack_id):
+    # check if no package was skipped (cont. IDs)
+    if (prv_id := last_pack_id.get(ard_package["N"])) is not None:
+        if (dif := (ard_package["ID"]-prv_id)) != 1:
+            L.logger.warning(f"Package ID discontinuous; gap was {dif}")
+    # update dict with previous ID (specific for each package type/ "N")
+    last_pack_id[ard_package["N"]] = ard_package["ID"]
+
+    if ard_package["T"] < 0:
+        L.logger.warning("Portenta timestamp was negative - Reset?")
+    return last_pack_id
+
+def _process_ballvell_package(ard_package):
+    ryp_values = [int(val) for val in ard_package["V"].split("_")]
+    ard_package["V"] = max([abs(v) for v in ryp_values])
+    ard_package["Vr"] = ryp_values[0]
+    ard_package["Vy"] = ryp_values[1]
+    ard_package["Vp"] = ryp_values[2]
+    return ard_package
+
+def _save_package_set(package_buf, full_fname):
+    # write package buffer to hdf_file
+    df = pd.DataFrame(package_buf)
+    L.logger.debug(f"saving to hdf5:\n{df.to_string()}")
+    try:
+        df.to_hdf(full_fname, key='packages', mode='a', 
+                  append=True, format="table")
+    except ValueError as e:
+        L.logger.error(f"Error saving to hdf5:\n{e}\n\n{df.to_string()}")
+
+def _log(termflag_shm, ballvel_shm, portentaout_shm, full_fname):
     L = Logger()
-    L.logger.info("Reading packges from SHM and saving it...")
+    L.logger.info("Reading Portenta packges from SHM and saving them...")
 
     package_buf = []
     last_pack_id = {}
-    while True:        
+    nchecks = 1
+    package_buf_size = 256
+    while True:
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
+            if package_buf:
+                _save_package_set(package_buf, full_fname)
             break
         
-        # get a package if there are more than 10
-        if ballvelocity_shm.usage <= 1:
-            continue
-        ard_package = ballvelocity_shm.bpopitem()
-        
-        # TO DO
-        # ard_package = portentaoutput_shm.bpopitem()
-        
-        # check for error cases
-        if ard_package is None:
-            L.logger.warning("Package was None, reading too fast")
-        elif ard_package == "":
-            L.logger.error("Empty string package!")
-        
+        if portentaout_shm.usage > 0:
+            ard_package = portentaout_shm.popitem(return_type=dict)
+        elif ballvel_shm.usage > 0:
+            ard_package = ballvel_shm.popitem(return_type=dict)
         else:
-            # check if no package was skipped (cont. IDs)
-            if (prv_id := last_pack_id.get(ard_package["N"])) is not None:
-                if (dif := (ard_package["ID"]-prv_id)) != 1:
-                    L.logger.warning(f"Package ID discontinuous; gap was {dif}")
-            # update dict with previous ID (specific for each package type/ "N")
-            last_pack_id[ard_package["N"]] = ard_package["ID"]
-
-            # if ard_package["N"] in ("S", "R", "F", "L", c"P"):
-            #     ard_package["V"] = str(ard_package["V"])
-            
-            if ard_package["N"] == "B":
-                ryp_values = [int(val) for val in ard_package["V"].split("_")]
-                ard_package["V"] = max([abs(v) for v in ryp_values])
-                ard_package["Vr"] = ryp_values[0]
-                ard_package["Vy"] = ryp_values[1]
-                ard_package["Vp"] = ryp_values[2]
-
-            if ard_package["T"] < 0:
-                L.logger.warning("Portenta timestamp was negative - Reset?")
-
-            # append to buffer and save to file every 256 elements
-            package_buf.append(ard_package)
-            L.logger.debug(f"logging package: {ard_package}")
-            if len(package_buf) >= 256:
-                # write package buffer to hdf_file
-                df = pd.DataFrame(package_buf)#.reset_index(drop=True).set_index("ID")
-                L.logger.debug(f"saving to hdf5:\n{df.to_string()}")
-                df.to_hdf(full_fname, key='arduino_packages', mode='a', 
-                          append=True, format="table")
-                package_buf.clear()
+            nchecks += 1
+            continue
+        if ard_package == "":
+            # check for unexpected error cases when reading from SHM
+            L.logger.error("Empty package!")
+            continue
+        last_pack_id = _check_package(ard_package, last_pack_id)
         
-        L.logger.debug(f"Packs in SHM: {ballvelocity_shm.usage}")
-        L.spacer("debug")
+        if ard_package["N"] == "B":
+            ard_package = _process_ballvell_package(ard_package)
+        # append to buffer and save to file every 256 elements
+        package_buf.append(ard_package)
 
+        L.logger.debug(f"after {nchecks} SHM checks logging package:\n\t{ard_package}")
+        if len(package_buf) >= package_buf_size:
+            _save_package_set(package_buf, full_fname)
+            package_buf.clear()
+        
+        L.logger.debug((f"Packs in ballvel SHM: {ballvel_shm.usage}, in "
+                       f"portentaout SHM: {portentaout_shm.usage}"))
+        L.spacer("debug")
+        nchecks = 1
 
 def run_log_portenta(termflag_shm_struc_fname, ballvelocity_shm_struc_fname, 
                      portentaoutput_shm_struc_fname, session_data_dir):
     # shm access
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
-    ballvelocity_shm = CyclicPackagesSHMInterface(ballvelocity_shm_struc_fname)
-    portentaoutput_shm = CyclicPackagesSHMInterface(portentaoutput_shm_struc_fname)
+    ballvel_shm = CyclicPackagesSHMInterface(ballvelocity_shm_struc_fname)
+    portentaout_shm = CyclicPackagesSHMInterface(portentaoutput_shm_struc_fname)
 
-    full_fname = os.path.join(session_data_dir, "data.hdf5")
-    # check if the file exists and create it if necessary
-    if os.path.exists(full_fname):
-        os.remove(full_fname)
+    full_fname = os.path.join(session_data_dir, "portenta_output.hdf5")
     with pd.HDFStore(full_fname) as hdf:
-        hdf.put('arduino_packages', pd.DataFrame(), format='table', append=False)
+        hdf.put('packages', pd.DataFrame(), format='table', append=False)
     
-    _log_sensors(termflag_shm, ballvelocity_shm, portentaoutput_shm, full_fname)
+    _log(termflag_shm, ballvel_shm, portentaout_shm, full_fname)
 
 if __name__ == "__main__":
     descr = ("Write Portenta packages from SHM to a file.")
