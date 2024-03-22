@@ -5,9 +5,6 @@ from Parameters import Parameters
 from CustomLogger import CustomLogger as Logger
 import shutil
 
-# implement good logging, either to one file or each proc has seperate one
-# isolate functionality such as cmd construction, very redundant rn
-
 def open_camera2shm_proc(cam_name):
     P = Parameters()
     script = "camera2shm.py"
@@ -111,6 +108,19 @@ def open_stream_portenta_proc():
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
+def open_log_unity_proc():
+    P = Parameters()
+    script = "log_unity.py"
+    path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
+    stream_script = os.path.join(*path)
+    
+    args = _make_proc_args(shm_args=("termflag", "unityoutput"))
+    args.extend([
+        "--logging_name", script.replace(".py", ""),
+        "--process_prio", str(P.LOG_UNITY_PROC_PRIORITY),
+        "--session_data_dir", P.SESSION_DATA_DIRECTORY,
+    ])
+    return _launch(P.WHICH_PYTHON, stream_script, *args)
 
 def _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput"),
                    logging_args=True):
@@ -136,6 +146,12 @@ def _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput"),
     if "bodycam" in shm_args:
         args.extend(("--videoframe_shm_struc_fname", 
                      constr_fname(P.SHM_NAME_BODY_CAM)))
+    if "unityoutput" in shm_args:
+        args.extend(("--unityoutput_shm_struc_fname", 
+                     constr_fname(P.SHM_NAME_UNITY_OUTPUT)))
+    if "unityinput" in shm_args:
+        args.extend(("--unityinput_shm_struc_fname", 
+                     constr_fname(P.SHM_NAME_UNITY_INPUT)))
        
     if logging_args:
         args.extend(("--logging_dir", P.LOGGING_DIRECTORY))

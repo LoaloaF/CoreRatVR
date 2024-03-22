@@ -55,6 +55,7 @@ def extract_packet_data(bytes_packet):
         name_idx = pack.find(key)+3
         name_value = pack[name_idx:pack.find(",", name_idx)]
         return pack.replace(name_value, f'"{name_value}"', 1)
+    L = Logger()    
     
     bytes_packet = bytes_packet[:bytes_packet.find(b"\n")+1]
     pack = bytes_packet.decode("utf-8")[1:-3] # strip < and \r\n>
@@ -67,7 +68,6 @@ def extract_packet_data(bytes_packet):
 
     # insert quotes after { and , and before : to wrap keys in quotes
     json_pack = pack.replace("{", '{"').replace(":", '":').replace(",", ',"')
-    L = Logger()    
     # L.logger.debug(json_pack)
     try:
         return json.loads(json_pack)

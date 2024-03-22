@@ -54,15 +54,15 @@ class Parameters:
         
         cls._instance.SHM_NAME_PORTENTA_OUTPUT = 'portentaoutput'
         cls._instance.SHM_NPACKAGES_PORTENTA_OUTPUT = int(2**12) # 4k
-        cls._instance.SHM_PACKAGE_NBYTES_PORTENTA_OUTPUT = 40
+        cls._instance.SHM_PACKAGE_NBYTES_PORTENTA_OUTPUT = 80
         
         cls._instance.SHM_NAME_PORTENTA_INPUT = 'portentainput'
         cls._instance.SHM_NPACKAGES_PORTENTA_INPUT = 16
         cls._instance.SHM_PACKAGE_NBYTES_PORTENTA_INPUT = 32
         
         cls._instance.SHM_NAME_UNITY_OUTPUT = 'unityoutput'
-        cls._instance.SHM_NPACKAGES_UNITY_OUTPUT = -1
-        cls._instance.SHM_PACKAGE_NBYTES_UNITY_OUTPUT = -1
+        cls._instance.SHM_NPACKAGES_UNITY_OUTPUT = 128
+        cls._instance.SHM_PACKAGE_NBYTES_UNITY_OUTPUT = 128
         
         cls._instance.SHM_NAME_UNITY_INPUT = 'unityinput'
         cls._instance.SHM_NPACKAGES_UNITY_INPUT = -1
@@ -98,6 +98,7 @@ class Parameters:
         cls._instance.LOG_PORTENTA_PROC_PRIORITY = -1
         cls._instance.STREAM_PORTENTA_PROC_PRIORITY = -1
         cls._instance.LOG_CAMERA_PROC_PRIORITY = -1
+        cls._instance.LOG_UNITY_PROC_PRIORITY = -1
 
         cls._instance.REALSENSE_X_RESOLUTION = 640
         cls._instance.REALSENSE_Y_RESOLUTION = 480
@@ -114,7 +115,7 @@ class Parameters:
         cls._instance.RANDOM_ID_LENGTH = 12
 
         cls._instance.PORTENTA_BAUD_RATE = 2000000
-        cls._instance.PORTENTA_PORT = 'COM3'
+        cls._instance.PORTENTA_PORT = '/dev/ttyACM0'
         cls._instance.PORTENTA_TIMEOUT = 1
 
         info = get_all_system_info()

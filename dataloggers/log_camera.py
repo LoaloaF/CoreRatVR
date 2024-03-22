@@ -47,11 +47,11 @@ def _log(frame_shm, termflag_shm, full_fname, videowriter):
             sleep(0.001)
             nchecks += 1
             continue
+        frame = frame_shm.get_frame()
         # check for ID discontinuity
         if (dif := (frame_package["ID"]-prv_id)) != 1:
             L.logger.warning(f"Package ID discontinuous; gap was {dif}")
 
-        frame = frame_shm.get_frame()
         L.logger.debug(f"after {nchecks} SHM checks got frame {frame.shape} {frame_package}")
         frame_package.pop("N")
         package_buf.append(frame_package)

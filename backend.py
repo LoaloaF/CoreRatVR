@@ -68,16 +68,10 @@ def validate_state(state, valid_initiated=None, valid_shm_created=None):
     if valid_shm_created is not None:
         # itereate over pairs of shm_name and the valid `was_created`` state
         for shm_name, valid_state in valid_shm_created.items():
-            # L.logger.info(f"shm_name: {shm_name}, valid_state: {valid_state}, state[{shm_name}]: {state[shm_name]}")
             if state[shm_name] != valid_state:
                 msg = "not created" if valid_shm_created[shm_name] else "already created"
                 L.logger.error(f"{shm_name} shm {msg}")
                 raise HTTPException(status_code=400, detail=f"{shm_name} shm {msg}")
-
-###            
-# TO DO - check if arduino is connceted before launching process
-# TO DO - or try to auto flash Portenta
-# TO DO - sudo chprio command passwordless
 
 def POST_raise_term_flag(open_shm_mem_names):
     P = Parameters()
@@ -90,3 +84,11 @@ def POST_raise_term_flag(open_shm_mem_names):
     sleep(1)
     [delete_shm(shm_name) for shm_name in open_shm_mem_names]
     sleep(1)
+
+# TODO - check if arduino is connceted before launching process or try to auto flash Portenta
+# TODO - sudo chprio command passwordless
+# TODO - check if process is already running before launching (add to state?)
+# TODO - design and build protoype user web interface 
+# TODO - Unity input SHM: think of instructions to be sent to Unity (before and after session start)
+# TODO - Unity camera logger?
+# TODO - TTL camera logger

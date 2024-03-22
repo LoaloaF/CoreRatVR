@@ -53,7 +53,6 @@ class CyclicPackagesSHMInterface:
         
     def popitem(self, return_type=bytearray
         ) -> typing.Optional[typing.Union[bytearray, str, dict]]:
-        
         if (read_addr := self._next_read_pointer()) is not None:
             temp_r_pointer = read_addr 
             # if the read pointer is 0, we have to read to the last package
@@ -64,6 +63,7 @@ class CyclicPackagesSHMInterface:
             self.L.logger.debug((f"Reading from SHM {package_start_idx}:"
                                 f"{temp_r_pointer}"))
             item = bytearray(self._memory.buf[package_start_idx : temp_r_pointer])
+            # self.L.logger.debug(f"All: {bytearray(self._memory.buf[0:self._total_nbytes])}")
 
             if return_type == bytearray:
                 pass

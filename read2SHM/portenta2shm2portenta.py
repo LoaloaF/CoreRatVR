@@ -54,7 +54,8 @@ def _get_serial_input(L, ser, packets_buf):
         packet = None
     return packet, packets_buf, pc_ts
 
-def _process_packet(L, ballvel_shm, portentaoutput_shm, bytes_packet, pc_ts, is_fresh_val=None):
+def _process_packet(L, ballvel_shm, portentaoutput_shm, bytes_packet, pc_ts, 
+                    is_fresh_val=None):
     # Add PC time before the "V:" keyword
     pc_ts_bytes = b"PCT:" + str(pc_ts).encode()  # Convert pc_ts to bytes
     v_idx = bytes_packet.find(b",V:")
@@ -62,7 +63,8 @@ def _process_packet(L, ballvel_shm, portentaoutput_shm, bytes_packet, pc_ts, is_
 
     # Add isFresh packet (not from buffer) at the end, if passed
     if is_fresh_val is not None:
-        is_fresh_bytes = b",F:" + str(int(is_fresh_val)).encode()  # Convert is_fresh_val to bytes
+        # Convert is_fresh_val to bytes
+        is_fresh_bytes = b",F:" + str(int(is_fresh_val)).encode()  
         bytes_packet = bytes_packet[:-4] + is_fresh_bytes + b"}>\r\n"
     
     L.combi_msg += f"package: {bytes_packet}"
@@ -71,7 +73,7 @@ def _process_packet(L, ballvel_shm, portentaoutput_shm, bytes_packet, pc_ts, is_
     n_idx = bytes_packet.find(b"{N:")
     name = bytes_packet[n_idx+4:n_idx+5]
     if name == "B":
-        ballvel_shm .push(bytes_packet)
+        ballvel_shm.push(bytes_packet)
     else:
         portentaoutput_shm.push(bytes_packet)
     L.spacer("debug")
@@ -88,7 +90,8 @@ def _handle_input(L, sport, ballvel_shm, portentaoutput_shm, packets_buf, prv_pc
         packet, packets_buf = _get_pack_frombuf(packets_buf, buffer_packet_idx)
         L.combi_msg += (f'ts={(prv_pc_ts-int(prv_pc_ts))*1000:.2f}(ms part) '
                         f'(len(buf)={len(packets_buf)})\n\t')
-        _process_packet(L, ballvel_shm, portentaoutput_shm, packet, prv_pc_ts, is_fresh)
+        _process_packet(L, ballvel_shm, portentaoutput_shm, packet, prv_pc_ts, 
+                        is_fresh)
         return packets_buf, prv_pc_ts
 
     # # if there is not full package check for a partial, timestamp it
@@ -108,7 +111,9 @@ def _handle_input(L, sport, ballvel_shm, portentaoutput_shm, packets_buf, prv_pc
         if packet is None or len(packets_buf) == 0:
             is_fresh = True
         if packet is not None:
-            _process_packet(L, sensors_shm, packet, pc_ts, is_fresh)
+            _process_packet(L, ballvel_shm, portentaoutput_shm, packet, pc_ts, 
+                            is_fresh)
+            
     else:
         pc_ts = prv_pc_ts
         L.logger.debug("Nothing in the port...")
@@ -198,3 +203,6 @@ if __name__ == "__main__":
         if (prio := kwargs.pop("process_prio")) != -1:
             os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
     run_portenta2shm2portenta(**kwargs)
+
+    # bytearray(b'<{N:B,ID:1503794,T:1148601741,PCT:83294352096,V:0_0_0,F:1}>\r\n')
+    # bytearray(b'<{N:B,ID:31935,T:83387324179,PCT:83387324179,V:3925_1337_5032,F:1}>\r\n\x00\x00\

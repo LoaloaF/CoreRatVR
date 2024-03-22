@@ -5,6 +5,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..')) # project dir
 sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 
 import argparse
+from time import sleep
 import pandas as pd
 
 from CustomLogger import CustomLogger as Logger
@@ -54,6 +55,7 @@ def _log(termflag_shm, ballvel_shm, portentaout_shm, full_fname):
             L.logger.info("Termination flag raised")
             if package_buf:
                 _save_package_set(package_buf, full_fname)
+            sleep(.5)
             break
         
         if portentaout_shm.usage > 0:

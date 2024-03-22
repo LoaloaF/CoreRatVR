@@ -127,7 +127,8 @@ def get_all_system_info():
         gpu_info = _get_gpu_info()
         cam_info = _get_camera_info(sys_info)
         # ard_info = _get_arduino_info()
-        ard_info = {"ARDUINO_BY_PORT": {"COM3": "Working"}}
+        # ard_info = {"ARDUINO_BY_PORT": {"COM3": "Working"}}
+        ard_info = {"ARDUINO_BY_PORT": {"/dev/ttyACM0": "Working"}}
     except Exception as e:
             print(f"Error getting System information: {e}")
     all_info = {**sys_info,**gpu_info, **cam_info, **ard_info}

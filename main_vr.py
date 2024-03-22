@@ -63,6 +63,33 @@ def run_backend(host="0.0.0.0", port=8000):
         L.logger.debug(L.fmtmsg(["Parameters", str(Parameters())]))
         L.spacer()
     
+    @app.post("/raise_term_flag")
+    def raise_term_flag():
+        if not state['initiated']:
+            # not handled by function below bc logger not initiated yet -> mess
+            # backend.validate_state(state, valid_initiated=False)
+            raise HTTPException(status_code=400, detail="Not initiated.")
+
+        open_shm_mem_names = []
+        for key, value in state.items():
+            if value and key in (P.SHM_NAME_TERM_FLAG, P.SHM_NAME_BALLVELOCITY,
+                                 P.SHM_NAME_PORTENTA_OUTPUT, P.SHM_NAME_PORTENTA_INPUT,
+                                 P.SHM_NAME_UNITY_OUTPUT, P.SHM_NAME_UNITY_INPUT,
+                                 P.SHM_NAME_FACE_CAM, P.SHM_NAME_BODY_CAM):
+                open_shm_mem_names.append(key)
+        backend.POST_raise_term_flag(open_shm_mem_names)
+
+        state["initiated"] = False
+        for shm_name in open_shm_mem_names:
+            state[shm_name] = False
+
+
+
+
+    ############################################################################
+    ############################## create SHM ##################################
+    ############################################################################
+
     @app.post("/shm/create_termflag_shm")
     def create_termflag_shm():
         backend.validate_state(state, valid_initiated=True, 
@@ -99,13 +126,22 @@ def run_backend(host="0.0.0.0", port=8000):
     
     @app.post("/shm/create_unityinput_shm")
     def create_unityinput_shm():
-        P.SHM_NAME_UNITY_INPUT
-        pass
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_UNITY_INPUT: False})
+        sc.create_cyclic_packages_shm(shm_name=P.SHM_NAME_UNITY_INPUT, 
+                                      package_nbytes=P.SHM_PACKAGE_NBYTES_UNITY_INPUT,
+                                      npackages=P.SHM_NPACKAGES_UNITY_INPUT)
+        state[P.SHM_NAME_UNITY_INPUT] = True
     
     @app.post("/shm/create_unityoutput_shm")
     def create_unityoutput_shm():
-        P.SHM_NAME_UNITY_OUTPUT
-        pass
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_UNITY_OUTPUT: False})
+        sc.create_cyclic_packages_shm(shm_name=P.SHM_NAME_UNITY_OUTPUT, 
+                                      package_nbytes=P.SHM_PACKAGE_NBYTES_UNITY_OUTPUT,
+                                      npackages=P.SHM_NPACKAGES_UNITY_OUTPUT)
+        state[P.SHM_NAME_UNITY_OUTPUT] = True
+
 
     @app.post("/shm/create_facecam_shm")
     def create_facecam_shm():
@@ -130,9 +166,9 @@ def run_backend(host="0.0.0.0", port=8000):
 
 
 
-
-
-    ### PROCESSES ###
+    ############################################################################
+    ############################## create procs ################################
+    ############################################################################
         
     @app.post("/procs/launch_por2shm2por_sim")
     def launch_por2shm2por_sim():
@@ -219,30 +255,22 @@ def run_backend(host="0.0.0.0", port=8000):
                                                   })
         proc = pl.open_shm2cam_stream_proc(P.SHM_NAME_BODY_CAM)
         return {"pid": proc.pid}
+    
+    @app.post("/procs/launch_log_unity")
+    def launch_log_unity():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_UNITY_OUTPUT: True,
+                                                  })
+        proc = pl.open_log_unity_proc()
+        return {"pid": proc.pid}
 
-    @app.post("/raise_term_flag")
-    def raise_term_flag():
-        if not state['initiated']:
-            # not handled by function below bc logger not initiated yet -> mess
-            # backend.validate_state(state, valid_initiated=False)
-            raise HTTPException(status_code=400, detail="Not initiated.")
 
-        open_shm_mem_names = []
-        for key, value in state.items():
-            if value and key in (P.SHM_NAME_TERM_FLAG, P.SHM_NAME_BALLVELOCITY,
-                                 P.SHM_NAME_PORTENTA_OUTPUT, P.SHM_NAME_PORTENTA_INPUT,
-                                 P.SHM_NAME_UNITY_OUTPUT, P.SHM_NAME_UNITY_INPUT,
-                                 P.SHM_NAME_FACE_CAM, P.SHM_NAME_BODY_CAM):
-                open_shm_mem_names.append(key)
-        backend.POST_raise_term_flag(open_shm_mem_names)
 
-        state["initiated"] = False
-        for shm_name in open_shm_mem_names:
-            state[shm_name] = False
+
 
     
     uvicorn.run(app, host=host, port=port)
-
 def main():
     # atexit.register(backend.handle_exit)
     run_backend(host="0.0.0.0", port=8000)
