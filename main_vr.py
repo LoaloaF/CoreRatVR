@@ -27,6 +27,7 @@ def run_backend(host="0.0.0.0", port=8000):
         P.SHM_NAME_UNITY_INPUT: False,
         P.SHM_NAME_FACE_CAM: False,
         P.SHM_NAME_BODY_CAM: False,
+        P.SHM_NAME_UNITY_CAM: False,
         }
     
     @app.exception_handler(Exception)
@@ -162,6 +163,16 @@ def run_backend(host="0.0.0.0", port=8000):
                                   y_resolution=P.BODY_CAM_Y_RES,
                                   nchannels=P.BODY_CAM_NCHANNELS)
         state[P.SHM_NAME_BODY_CAM] = True
+    
+    @app.post("/shm/create_unitycam_shm")
+    def create_unitycam_shm():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_UNITY_CAM: False})
+        sc.create_video_frame_shm(shm_name=P.SHM_NAME_UNITY_CAM, 
+                                  x_resolution=P.UNITY_CAM_X_RES,
+                                  y_resolution=P.UNITY_CAM_Y_RES,
+                                  nchannels=P.UNITY_CAM_NCHANNELS)
+        state[P.SHM_NAME_UNITY_CAM] = True
 
 
 
@@ -263,6 +274,15 @@ def run_backend(host="0.0.0.0", port=8000):
                                                   P.SHM_NAME_UNITY_OUTPUT: True,
                                                   })
         proc = pl.open_log_unity_proc()
+        return {"pid": proc.pid}
+
+    @app.post("/procs/launch_log_unitycam")
+    def launch_log_unitycam():
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_UNITY_CAM: True,
+                                                  })
+        proc = pl.open_log_camera_proc(P.SHM_NAME_UNITY_CAM)
         return {"pid": proc.pid}
 
 

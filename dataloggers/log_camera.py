@@ -12,6 +12,7 @@ import h5py
 import cv2 as cv
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 
 from CustomLogger import CustomLogger as Logger
 from VideoFrameSHMInterface import VideoFrameSHMInterface
@@ -56,8 +57,12 @@ def _log(frame_shm, termflag_shm, full_fname, videowriter):
         frame_package.pop("N")
         package_buf.append(frame_package)
         
+        if frame_shm._shm_name == "unitycam":
+            frame = np.flip(frame, 0)
+            frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+        
         # video frame saving
-        videowriter.write(frame.transpose(1,0,2))
+        videowriter.write(frame)
         # single frame saving
         with h5py.File(full_fname, "a") as hdf:
             jpeg_data = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
@@ -85,7 +90,7 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
     # video saving
     fourcc = cv.VideoWriter_fourcc(*'mp4v')
     videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
-                                 fps, (frame_shm.x_res, frame_shm.y_res))
+                                 fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
     
     Logger().logger.debug(full_fname)
     _log(frame_shm, termflag_shm, full_fname, videowriter)
@@ -105,7 +110,7 @@ if __name__ == "__main__":
     L = Logger()
     L.init_logger(kwargs.get('logging_name'), kwargs.pop("logging_dir"), 
                   kwargs.pop("logging_level"))
-    L.logger.debug(kwargs)
+    L.logger.debug(L.fmtmsg(kwargs))
     if sys.platform.startswith('linux'):
         if (prio := kwargs.pop("process_prio")) != -1:
             os.system(f'sudo chrt -f -p {prio} {os.getpid()}')

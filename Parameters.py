@@ -67,17 +67,24 @@ class Parameters:
         cls._instance.SHM_NAME_UNITY_INPUT = 'unityinput'
         cls._instance.SHM_NPACKAGES_UNITY_INPUT = -1
         cls._instance.SHM_PACKAGE_NBYTES_UNITY_INPUT = -1
-        
-        cls._instance.SHM_NAME_FACE_CAM = 'facecam'
-        
-        cls._instance.SHM_NAME_BODY_CAM = 'bodycam'
 
+        cls._instance.SHM_NAME_UNITY_CAM = 'unitycam'
+        # cls._instance.UNITY_CAM_IDX = None
+        # cls._instance.UNITY_CAM_X_RES = 1920
+        # cls._instance.UNITY_CAM_Y_RES = 1080
+        cls._instance.UNITY_CAM_X_RES = 1070
+        cls._instance.UNITY_CAM_Y_RES = 800
+        cls._instance.UNITY_CAM_NCHANNELS = 3
+        cls._instance.UNITY_CAM_FPS = 20
+
+        cls._instance.SHM_NAME_FACE_CAM = 'facecam'
         cls._instance.FACE_CAM_IDX = 0
         cls._instance.FACE_CAM_X_RES = 640
         cls._instance.FACE_CAM_Y_RES = 480
         cls._instance.FACE_CAM_NCHANNELS = 3
         cls._instance.FACE_CAM_FPS = 30
         
+        cls._instance.SHM_NAME_BODY_CAM = 'bodycam'
         cls._instance.BODY_CAM_IDX = 2
         cls._instance.BODY_CAM_X_RES = 640
         cls._instance.BODY_CAM_Y_RES = 480

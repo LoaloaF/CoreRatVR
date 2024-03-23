@@ -1,6 +1,7 @@
 import numpy as np
 import typing
 import atexit
+import time
 
 from shm_interface_utils import load_shm_structure_JSON
 from shm_interface_utils import access_shm
@@ -29,14 +30,17 @@ class VideoFrameSHMInterface:
 
     @property
     def _frame(self) -> np.ndarray:
-        # return np.asarray(np.frombuffer(self._memory.buf[self._package_nbytes:self._total_nbytes], dtype= np.uint8)).reshape( [ self._res[1], self._res[0], self._res[2] ])
         raw_frame = self._memory.buf[self._package_nbytes:self._total_nbytes]
         np_frame = np.asarray(np.frombuffer(raw_frame, dtype=self._frame_type))
-        return np_frame.reshape([self.x_res, self.y_res, self.nchannels])
+        return np_frame.reshape([self.y_res, self.x_res, self.nchannels])
     
     @_frame.setter
     def _frame(self, img: np.ndarray):
-        self._memory.buf[self._package_nbytes:self._total_nbytes] = bytearray(img[:])
+        # swapaxes is used to convert from opencv format to numpy format (y-x-c)
+        t0 = time.time()
+        frame_raw = bytearray(np.swapaxes(img,0,1))
+        self._memory.buf[self._package_nbytes:self._total_nbytes] = frame_raw
+        Logger().logger.debug(f"SHM write in {time.time()-t0:.6f} s")
     
     #Trigger the event
     def add_frame(self, img, package):

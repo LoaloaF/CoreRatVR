@@ -43,6 +43,10 @@ def test_endpoints():
         # POST /shm/create_unityinput_shm
         response = requests.post(f"{base_url}/shm/create_unityinput_shm")
         print("POST /shm/create_unityinput_shm:", response.json())
+        
+        # POST /shm/create_unityinput_shm
+        response = requests.post(f"{base_url}/shm/create_unitycam_shm")
+        print("POST /shm/create_unitycam_shm:", response.json())
 
     def run():
         
@@ -54,16 +58,20 @@ def test_endpoints():
         # response = requests.post(f"{base_url}/procs/launch_por2shm2por")
         # print("POST /procs/open_por2shm2por_proc:", response.json())
         
-        # POST /procs/open_log_portenta_proc
-        response = requests.post(f"{base_url}/procs/launch_log_portenta")
-        print("POST /procs/open_log_portenta_proc:", response.json())
+        # # POST /procs/open_log_portenta_proc
+        # response = requests.post(f"{base_url}/procs/launch_log_portenta")
+        # print("POST /procs/open_log_portenta_proc:", response.json())
         
         # # POST /procs/open_stream_portenta_proc
         # response = requests.post(f"{base_url}/procs/launch_stream_portenta")
         # print("POST /procs/open_stream_portenta_proc:", response.json())
         
+        # # POST /procs/launch_log_unity
+        # response = requests.post(f"{base_url}/procs/launch_log_unity")
+        # print("POST /procs/launch_log_unity:", response.json())
+        
         # POST /procs/launch_log_unity
-        response = requests.post(f"{base_url}/procs/launch_log_unity")
+        response = requests.post(f"{base_url}/procs/launch_log_unitycam")
         print("POST /procs/launch_log_unity:", response.json())
 
 
@@ -82,6 +90,7 @@ def test_endpoints():
 
         response = requests.post(f"{base_url}/procs/launch_log_facecam")
         print("POST /procs/launch_log_facecam:", response.json())
+        
         response = requests.post(f"{base_url}/procs/launch_facecam2shm")
         print("POST /procs/launch_facecam2shm:", response.json())
         
@@ -109,11 +118,11 @@ def test_endpoints():
     # run_cam()
     createshm()
     run()
+    run_cam()
     # sleep(50)
     # sleep(100)
     # term()
     
-    # run_cam()
     # sleep(6)
     # term()
     

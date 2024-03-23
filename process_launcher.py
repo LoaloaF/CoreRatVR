@@ -43,7 +43,14 @@ def open_log_camera_proc(cam_name):
     stream_script = os.path.join(*path)
     
     args = _make_proc_args(shm_args=("termflag", cam_name))
-    fps = str(P.FACE_CAM_FPS) if cam_name == 'facecam' else str(P.BODY_CAM_FPS)
+    
+    match cam_name:
+        case 'facecam':
+            fps = str(P.FACE_CAM_FPS)
+        case 'bodycam':
+            fps = str(P.BODY_CAM_FPS)
+        case 'unitycam':
+            fps = str(P.UNITY_CAM_FPS)
     args.extend([
         "--logging_name", "log_"+cam_name,
         "--process_prio", str(P.LOG_CAMERA_PROC_PRIORITY),
@@ -152,6 +159,9 @@ def _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput"),
     if "unityinput" in shm_args:
         args.extend(("--unityinput_shm_struc_fname", 
                      constr_fname(P.SHM_NAME_UNITY_INPUT)))
+    if "unitycam" in shm_args:
+        args.extend(("--videoframe_shm_struc_fname", 
+                     constr_fname(P.SHM_NAME_UNITY_CAM)))
        
     if logging_args:
         args.extend(("--logging_dir", P.LOGGING_DIRECTORY))

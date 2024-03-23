@@ -6,8 +6,8 @@ sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 sys.path.insert(1, os.path.join(sys.path[0], '..', 'read2shm')) # read2SHM dir
 
 import cv2
-import time
 import argparse
+import matplotlib.pyplot as plt
 
 from CustomLogger import CustomLogger as Logger
 
@@ -35,13 +35,11 @@ def _stream(frame_shm, termflag_shm):
             frame = frame_shm.get_frame()
             L.logger.debug(f"New frame {frame.shape} read from SHM: {frame_package}")
 
-            # do slicing here, format x-dim, ydim, col (np)
-            if frame_shm.nchannels < 3:
-                frame = frame[:,:,0:1]
+            # if frame_shm.nchannels < 3:
+            #     frame = frame[:,:,0:1]
 
             cv2.namedWindow(frame_shm._shm_name)
-            # then flip to convert to cv2 y-x-col
-            cv2.imshow(frame_shm._shm_name, frame.transpose(1,0,2))
+            cv2.imshow(frame_shm._shm_name, frame)
             cv2.waitKey(1)
     finally:
         cv2.destroyAllWindows()
