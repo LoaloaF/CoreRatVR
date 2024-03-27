@@ -115,16 +115,22 @@ def test_endpoints():
         response = requests.post(f"{base_url}/raise_term_flag")
         print("POST /raise_term_flag:", response.json())
 
+    def inputloop():
+        while True:
+            msg = input("Press Enter to send Unity input...")
+            requests.post(f"{base_url}/unityinput/{msg}", json={"message": msg})
+
     # run_cam()
     createshm()
     run()
-    run_cam()
+    # run_cam()
     # sleep(50)
     # sleep(100)
     # term()
     
     # sleep(6)
     # term()
+    inputloop()
     
     
 if __name__ == "__main__":

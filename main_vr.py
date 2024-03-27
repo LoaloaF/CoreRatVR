@@ -11,8 +11,11 @@ from Parameters import Parameters
 from CustomLogger import CustomLogger as Logger
 import backend
 
+from process_launcher import shm_struct_fname
+
 import process_launcher as pl
 import SHM.shm_creation as sc
+from SHM.CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 
 def run_backend(host="0.0.0.0", port=8000):
     P = Parameters()
@@ -29,6 +32,7 @@ def run_backend(host="0.0.0.0", port=8000):
         P.SHM_NAME_BODY_CAM: False,
         P.SHM_NAME_UNITY_CAM: False,
         }
+    unityinput_shm = None
     
     @app.exception_handler(Exception)
     async def global_exception_handler(request, exc):
@@ -285,11 +289,17 @@ def run_backend(host="0.0.0.0", port=8000):
         proc = pl.open_log_camera_proc(P.SHM_NAME_UNITY_CAM)
         return {"pid": proc.pid}
 
-
-
-
-
-    
+    @app.post("/unityinput/{msg}")
+    def unityinput(msg: str):
+        backend.validate_state(state, valid_initiated=True, 
+                               valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                                  P.SHM_NAME_UNITY_INPUT: True,
+                                                  })
+        struct_fname = shm_struct_fname(P.SHM_NAME_UNITY_INPUT)
+        unityinput_shm = CyclicPackagesSHMInterface(struct_fname)
+        unityinput_shm.push(msg.encode())
+        unityinput_shm.close_shm()
+        
     uvicorn.run(app, host=host, port=port)
 def main():
     # atexit.register(backend.handle_exit)

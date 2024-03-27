@@ -123,6 +123,9 @@ def _handle_output(L, sport, portentainput_shm):
     L.logger.debug("Handling output")
     cmd = portentainput_shm.popitem(return_type=str)
     if cmd is not None:
+        if cmd.find("\r\n") == -1:
+            L.logger.error(f"Cmd in SHM did not end with `\\r\\n`: `{cmd}`")
+            return
         cmd = cmd[:cmd.find("\r\n")+2].encode()
         L.logger.info(f"Command found in SHM: `{cmd}` - Writing to serial.")
         sport.write(cmd)

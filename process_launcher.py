@@ -3,7 +3,6 @@ import atexit
 import subprocess
 from Parameters import Parameters
 from CustomLogger import CustomLogger as Logger
-import shutil
 
 def open_camera2shm_proc(cam_name):
     P = Parameters()
@@ -129,39 +128,41 @@ def open_log_unity_proc():
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
+def shm_struct_fname(shm_name):
+    P = Parameters()
+    return os.path.join(P.SHM_STRUCTURE_DIRECTORY, shm_name+"_shmstruct.json")
+
 def _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput"),
                    logging_args=True):
     P = Parameters()
-    constr_fname = lambda name: os.path.join(P.SHM_STRUCTURE_DIRECTORY, 
-                                             name+"_shmstruct.json")
     args = []
     if "termflag" in shm_args:
         args.extend(("--termflag_shm_struc_fname", 
-                     constr_fname(P.SHM_NAME_TERM_FLAG)))
+                     shm_struct_fname(P.SHM_NAME_TERM_FLAG)))
     if "ballvelocity" in shm_args:
         args.extend(("--ballvelocity_shm_struc_fname", 
-                     constr_fname(P.SHM_NAME_BALLVELOCITY)))
+                     shm_struct_fname(P.SHM_NAME_BALLVELOCITY)))
     if "portentaoutput" in shm_args:
         args.extend(("--portentaoutput_shm_struc_fname", 
-                     constr_fname(P.SHM_NAME_PORTENTA_OUTPUT)))
+                     shm_struct_fname(P.SHM_NAME_PORTENTA_OUTPUT)))
     if "portentainput" in shm_args:
         args.extend(("--portentainput_shm_struc_fname", 
-                     constr_fname(P.SHM_NAME_PORTENTA_INPUT)))
+                     shm_struct_fname(P.SHM_NAME_PORTENTA_INPUT)))
     if "facecam" in shm_args:
         args.extend(("--videoframe_shm_struc_fname", 
-                     constr_fname(P.SHM_NAME_FACE_CAM)))
+                     shm_struct_fname(P.SHM_NAME_FACE_CAM)))
     if "bodycam" in shm_args:
         args.extend(("--videoframe_shm_struc_fname", 
-                     constr_fname(P.SHM_NAME_BODY_CAM)))
+                     shm_struct_fname(P.SHM_NAME_BODY_CAM)))
     if "unityoutput" in shm_args:
         args.extend(("--unityoutput_shm_struc_fname", 
-                     constr_fname(P.SHM_NAME_UNITY_OUTPUT)))
+                     shm_struct_fname(P.SHM_NAME_UNITY_OUTPUT)))
     if "unityinput" in shm_args:
         args.extend(("--unityinput_shm_struc_fname", 
-                     constr_fname(P.SHM_NAME_UNITY_INPUT)))
+                     shm_struct_fname(P.SHM_NAME_UNITY_INPUT)))
     if "unitycam" in shm_args:
         args.extend(("--videoframe_shm_struc_fname", 
-                     constr_fname(P.SHM_NAME_UNITY_CAM)))
+                     shm_struct_fname(P.SHM_NAME_UNITY_CAM)))
        
     if logging_args:
         args.extend(("--logging_dir", P.LOGGING_DIRECTORY))

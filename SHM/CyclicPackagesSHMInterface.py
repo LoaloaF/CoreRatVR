@@ -61,7 +61,8 @@ class CyclicPackagesSHMInterface:
             package_start_idx = temp_r_pointer - self._package_nbytes
             
             self.L.logger.debug((f"Reading from SHM {package_start_idx}:"
-                                f"{temp_r_pointer}"))
+                                f"{temp_r_pointer}, WPointer at "
+                                f"{self._stored_write_pointer}"))
             item = bytearray(self._memory.buf[package_start_idx : temp_r_pointer])
             # self.L.logger.debug(f"All: {bytearray(self._memory.buf[0:self._total_nbytes])}")
 

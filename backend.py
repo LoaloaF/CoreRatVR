@@ -8,17 +8,11 @@ from typing import Any
 from Parameters import Parameters
 from CustomLogger import CustomLogger as Logger
 
-from SHM.shm_creation import create_cyclic_packages_shm
-from SHM.shm_creation import create_singlebyte_shm
 from SHM.shm_creation import delete_shm
 
 from FlagSHMInterface import FlagSHMInterface
-from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 
-from process_launcher import open_por2shm2por_proc
-from process_launcher import open_log_portenta_proc
-from process_launcher import open_stream_portenta_proc
-from process_launcher import open_por2shm2por_sim_proc
+from process_launcher import shm_struct_fname
 
 def GET_get_parameters():
     P = Parameters()
@@ -75,9 +69,7 @@ def validate_state(state, valid_initiated=None, valid_shm_created=None):
 
 def POST_raise_term_flag(open_shm_mem_names):
     P = Parameters()
-    shm_structure_JSON_fname = P.SHM_NAME_TERM_FLAG + "_shmstruct.json"
-    full_fname = os.path.join(P.SHM_STRUCTURE_DIRECTORY, shm_structure_JSON_fname)
-    interface = FlagSHMInterface(full_fname)
+    interface = FlagSHMInterface(shm_struct_fname(P.SHM_NAME_TERM_FLAG))
     interface.set()
     interface.close_shm()
 
@@ -86,9 +78,19 @@ def POST_raise_term_flag(open_shm_mem_names):
     sleep(1)
 
 # TODO - check if arduino is connceted before launching process or try to auto flash Portenta
+# TODO - Fix empty arduino package error in Unity
 # TODO - sudo chprio command passwordless
 # TODO - check if process is already running before launching (add to state?)
 # TODO - design and build protoype user web interface 
 # TODO - Unity input SHM: think of instructions to be sent to Unity (before and after session start)
-# TODO - Unity camera logger?
+# TODO - Unity start game with button
+# TODO - Unity link portenta input to FSM and UnityInputSHM
+# TODO - Unity UI
 # TODO - TTL camera logger
+# TODO - Unity state
+# TODO - log state when changed
+# TODO - create folder data and tmp_shm if not exist
+# TODO - add YAML file, use venv not conda
+# TODO - Unity fix lighting
+# TODO - Unity Start stop sesion state machine interaction
+# TODO - Unity Teleportation
