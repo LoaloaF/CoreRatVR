@@ -50,13 +50,13 @@ def test_endpoints():
 
     def run():
         
-        # POST /procs/open_por2shm2por_sim_proc
-        response = requests.post(f"{base_url}/procs/launch_por2shm2por_sim")
-        print("POST /procs/open_por2shm2por_sim_proc:", response.json())
+        # # POST /procs/open_por2shm2por_sim_proc
+        # response = requests.post(f"{base_url}/procs/launch_por2shm2por_sim")
+        # print("POST /procs/open_por2shm2por_sim_proc:", response.json())
         
-        # # POST /procs/open_por2shm2por_proc
-        # response = requests.post(f"{base_url}/procs/launch_por2shm2por")
-        # print("POST /procs/open_por2shm2por_proc:", response.json())
+        # POST /procs/open_por2shm2por_proc
+        response = requests.post(f"{base_url}/procs/launch_por2shm2por")
+        print("POST /procs/open_por2shm2por_proc:", response.json())
         
         # # POST /procs/open_log_portenta_proc
         # response = requests.post(f"{base_url}/procs/launch_log_portenta")
@@ -70,9 +70,9 @@ def test_endpoints():
         # response = requests.post(f"{base_url}/procs/launch_log_unity")
         # print("POST /procs/launch_log_unity:", response.json())
         
-        # POST /procs/launch_log_unity
-        response = requests.post(f"{base_url}/procs/launch_log_unitycam")
-        print("POST /procs/launch_log_unity:", response.json())
+        # # POST /procs/launch_log_unity
+        # response = requests.post(f"{base_url}/procs/launch_log_unitycam")
+        # print("POST /procs/launch_log_unity:", response.json())
 
 
     def run_cam():
