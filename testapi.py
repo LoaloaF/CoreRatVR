@@ -5,16 +5,6 @@ import time
 def test_endpoints():
     base_url = "http://localhost:8000"
 
-    # GET /parameters
-    # response = requests.get(f"{base_url}/parameters")
-    # print("GET /parameters:", response.json())
-
-    # PATCH /parameters/{key}
-    key = "LOGGING_LEVEL"  # replace with your key
-    new_value = "DEBUG"  # replace with your value
-    response = requests.patch(f"{base_url}/parameters/{key}?new_value={new_value}")
-    print(f"PATCH /parameters/{key}:", response.json())
-
     def createshm():
         # POST /initiate
         response = requests.post(f"{base_url}/initiate")
@@ -120,15 +110,29 @@ def test_endpoints():
             msg = input("Press Enter to send Unity input...")
             requests.post(f"{base_url}/unityinput/{msg}", json={"message": msg})
 
-    # run_cam()
+    # response = requests.post(f"{base_url}/initiate")
+    # print("POST /initiate:", response.json())
+
+    # # GET /parameters
+    # response = requests.get(f"{base_url}/parameters")
+    # print("GET /parameters:", response.json())
+
+    # # PATCH /parameters/{key}
+    # key = "LOGGING_LEVEL"  # replace with your key
+    # new_value = "DEBUG"  # replace with your value
+    # response = requests.patch(f"{base_url}/parameters/{key}?new_value={new_value}")
+    # print(f"PATCH /parameters/{key}:", response.json())
+            
     createshm()
+    run_cam()
+    # print(requests.get(f"{base_url}/state"))
     run()
     # run_cam()
     # sleep(50)
     # sleep(100)
     # term()
     
-    # sleep(6)
+    sleep(6)
     # term()
     inputloop()
     
