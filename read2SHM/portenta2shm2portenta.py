@@ -70,9 +70,8 @@ def _process_packet(L, ballvel_shm, portentaoutput_shm, bytes_packet, pc_ts,
     L.combi_msg += f"package: {bytes_packet}"
     L.logger.debug(L.combi_msg)
     
-    n_idx = bytes_packet.find(b"{N:")
-    name = bytes_packet[n_idx+4:n_idx+5]
-    if name == "B":
+    # portenta packages start like <{N:xxxxx - at index 4 there is the name
+    if bytes_packet[4:5].decode() == "B":
         ballvel_shm.push(bytes_packet)
     else:
         portentaoutput_shm.push(bytes_packet)
