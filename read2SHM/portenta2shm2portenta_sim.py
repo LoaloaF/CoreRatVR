@@ -40,9 +40,9 @@ def generate_test_package():
         N = "B"
         V_ID += 1
         ID = V_ID
-        Vr += int(0.1*np.random.randn()*-100)
-        Vy += int(0.1*np.random.randn()*100)
-        Vp += int(0.1*np.random.randn()*100)
+        Vr += int(np.random.randn()*.4)     # move sideways (unity z)
+        Vy += int(np.random.randn()*.4)     # move forward (unity z)
+        Vp += int(np.random.randn()*.5)     # rotate (around unity y axis)
         V = f"{Vr}_{Vy}_{Vp}"
     elif num <.98:
         N = "L"

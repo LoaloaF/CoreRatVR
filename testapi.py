@@ -40,21 +40,21 @@ def test_endpoints():
 
     def run():
         
-        # # POST /procs/open_por2shm2por_sim_proc
-        # response = requests.post(f"{base_url}/procs/launch_por2shm2por_sim")
-        # print("POST /procs/open_por2shm2por_sim_proc:", response.json())
+        # POST /procs/open_por2shm2por_sim_proc
+        response = requests.post(f"{base_url}/procs/launch_por2shm2por_sim")
+        print("POST /procs/open_por2shm2por_sim_proc:", response.json())
         
-        # POST /procs/open_por2shm2por_proc
-        response = requests.post(f"{base_url}/procs/launch_por2shm2por")
-        print("POST /procs/open_por2shm2por_proc:", response.json())
+        # # POST /procs/open_por2shm2por_proc
+        # response = requests.post(f"{base_url}/procs/launch_por2shm2por")
+        # print("POST /procs/open_por2shm2por_proc:", response.json())
         
         # # POST /procs/open_log_portenta_proc
         # response = requests.post(f"{base_url}/procs/launch_log_portenta")
         # print("POST /procs/open_log_portenta_proc:", response.json())
         
-        # # POST /procs/open_stream_portenta_proc
-        # response = requests.post(f"{base_url}/procs/launch_stream_portenta")
-        # print("POST /procs/open_stream_portenta_proc:", response.json())
+        # POST /procs/open_stream_portenta_proc
+        response = requests.post(f"{base_url}/procs/launch_stream_portenta")
+        print("POST /procs/open_stream_portenta_proc:", response.json())
         
         # # POST /procs/launch_log_unity
         # response = requests.post(f"{base_url}/procs/launch_log_unity")
@@ -124,7 +124,7 @@ def test_endpoints():
     # print(f"PATCH /parameters/{key}:", response.json())
             
     createshm()
-    run_cam()
+    # run_cam()
     # print(requests.get(f"{base_url}/state"))
     run()
     # run_cam()
@@ -132,9 +132,9 @@ def test_endpoints():
     # sleep(100)
     # term()
     
-    sleep(6)
+    # sleep(6)
     # term()
-    inputloop()
+    # inputloop()
     
     
 if __name__ == "__main__":

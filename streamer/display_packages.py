@@ -75,7 +75,7 @@ def _init_plot():
     axes[1].set_ylim(0,5000)
     axes[2].tick_params(axis='both', which='both', length=0, labelleft=False)
     axes[2].set_ylim(-1,3)
-    axes[3].set_ylim(-20,20)
+    axes[3].set_ylim(-50,50)
     axes[4].set_ylim(0,10000)
     axes[5].set_ylim(-100,100)
     axes[5].tick_params(axis='both', which='both', length=0, labelleft=False)
@@ -160,7 +160,7 @@ def update(i, axes, scatters, ballvel_shm, portentaout_shm, termflag_shm):
             Vr_offsets = np.column_stack((x, Vr))
             Vy_offsets = np.column_stack((x, Vy))
             Vp_offsets = np.column_stack((x, Vp))
-            y = Vp
+            y = Vr
 
             isFresh = np.array([p["F"] for p in packs], dtype=int)
             offsets = np.column_stack((np.array(x)[isFresh==0], isFresh[isFresh==0]))
