@@ -1,4 +1,5 @@
 import os 
+from pathlib import Path 
 import inspect
 import json
 from device_checker import get_all_system_info
@@ -144,6 +145,13 @@ class Parameters:
         cls._instance.GPU_MEM_TOTAL = info["GPU_MEM_TOTAL"]
         cls._instance.CAMERAS_BY_IDX = info["CAMERAS_BY_IDX"]
         cls._instance.ARDUINO_BY_PORT = info["ARDUINO_BY_PORT"]
+
+        if cls._instance.SYSTEM == "Windows":
+            p = "C:Program Files", ".platformio", "bin", "platformio"
+        else:
+            p = "~", ".platformio", "penv", "bin", "platformio"
+        cls._instance.PLATFORMIO_BIN = os.path.join(*p)
+
         
         # UNO_BAUD_RATE = 115200
         # UNO_COM_PORT = 'COM4'

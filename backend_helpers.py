@@ -65,7 +65,7 @@ def validate_state(state, valid_initiated=None, valid_shm_created=None):
                 L.logger.error(f"{shm_name} shm {msg}")
                 raise HTTPException(status_code=400, detail=f"{shm_name} shm {msg}")
 
-# TODO - check if arduino is connceted before launching process or try to auto flash Portenta:
+# DONETODO - check if arduino is connceted before launching process or try to auto flash Portenta:
 # end point with exec platformio run --target upload --environment portenta_h7_m7 --project-dir /home/loaloa/homedataXPS/projects/ratvr/VirtualReality/PlatformIO/Projects/PortentaRatVR
 # TODO - sudo chprio command passwordless - not important
 # DONETODO - FastAPI state control
@@ -77,10 +77,11 @@ def validate_state(state, valid_initiated=None, valid_shm_created=None):
     # DONETODO - Unity start game with button
     # DONETODO - Unity link portenta input to UnityInputSHM
     # DONETODO - Unity UI
+    # TODO - Unity gloabl sessionStarted conditinal for everything 9logging, state machine etc)
     # TODO - Unity fix lighting
     # TODO - Unity integrate Yuanzhao's FSM code
     # TODO - Unity Start stop sesion state machine interaction
     # DONETODO - Unity Teleportation
 # TODO - TTL camera logger, check libraries, drivers etc
 # DONETODO - create folder data and tmp_shm if not exist
-# TODO - add YAML file, use venv not conda
+# DONETODO - add YAML file, use venv not conda

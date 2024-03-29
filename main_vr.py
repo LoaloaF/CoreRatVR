@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Request
 import logging
 import uvicorn
 from typing import Any
+import subprocess
 
 from Parameters import Parameters
 from CustomLogger import CustomLogger as Logger
@@ -75,6 +76,23 @@ def attach_endpoints(app):
         L.logger.info("Session initiated.")
         L.logger.debug(L.fmtmsg(["Parameters", str(Parameters())]))
         L.spacer()
+    
+    @app.post("/flash_portenta/{core}")
+    def flash_portenta(request: Request, core: str):
+        validate_state(request.app.state.state, valid_initiated=True)
+        command = (f"{P.PLATFORMIO_BIN} run --target upload --environment "
+                   f"portenta_h7_{core} --project-dir ",
+                   f"{os.path.join(P.PROJECT_DIRECTORY)} ArduinoRatVR")
+
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, 
+                                   stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        L = Logger()
+
+        result = (f"Flashed Portenta: {command}\nSTDOUT: {stdout.decode()}\n"
+                  f"STDERR: {stderr.decode()}")
+        L.logger.debug(result)
+        return result
 
     @app.post("/unityinput/{msg}")
     def unityinput(msg: str, request: Request):
