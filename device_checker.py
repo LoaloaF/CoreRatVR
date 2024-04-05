@@ -3,20 +3,26 @@ import sys
 import psutil
 import GPUtil
 import cv2
-import json
+import os
 from glob import glob
 import serial
 import time
+import cpuinfo
 
 def _get_system_info():
+    cpu_info = cpuinfo.get_cpu_info()
     uname_info = platform.uname()
+    if uname_info.system == "Windows":
+        platformio_bin_path = "C:Program Files", ".platformio", "bin", "platformio.exe"
+    else:
+        platformio_bin_path = "~", ".platformio", "penv", "bin", "platformio"
     sys_info = {
         'SYSTEM': uname_info.system,
         'NAME': uname_info.node,
         'RELEASE': uname_info.release,
         'VERSION': uname_info.version,
         'MACHINE': uname_info.machine,
-        'PROCESSOR': uname_info.processor,
+        'PROCESSOR': cpu_info['brand_raw'].replace("Core(TM)", ""),
         'PHYSICAL_CORES': psutil.cpu_count(logical=False),
         'TOTAL_CORES': psutil.cpu_count(logical=True),
         'RAM_TOTAL': psutil.virtual_memory().total//1e6,
@@ -24,6 +30,8 @@ def _get_system_info():
         'RAM_USED': psutil.virtual_memory().used//1e6,
         'PYTHON_VERSION': platform.python_version(),
         'WHICH_PYTHON': sys.executable,
+        'WHICH_PYTHON': sys.executable,
+        'PLATFORMIO_BIN': os.path.join(*platformio_bin_path)
         }
     return sys_info
 
@@ -31,8 +39,7 @@ def _get_gpu_info():
     gpus = GPUtil.getGPUs()
     if not gpus:
         return {'GPU_NAME': "",
-                'GPU_MEM_AVAIL': "",
-                'GPU_MEM_TOTAL': ""}
+                'GPU_MEM_AVAIL': ""}
 
     gpu_info = {'GPU_NAME': gpus[0].name, 
                 'GPU_MEM_AVAIL': gpus[0].memoryFree, 
@@ -125,11 +132,9 @@ def get_all_system_info():
     try:
         sys_info = _get_system_info()
         gpu_info = _get_gpu_info()
-        cam_info = _get_camera_info(sys_info)
+        # cam_info = _get_camera_info(sys_info)
         # ard_info = _get_arduino_info()
-        # ard_info = {"ARDUINO_BY_PORT": {"COM3": "Working"}}
-        ard_info = {"ARDUINO_BY_PORT": {"/dev/ttyACM0": "Working"}}
     except Exception as e:
             print(f"Error getting System information: {e}")
-    all_info = {**sys_info,**gpu_info, **cam_info, **ard_info}
+    all_info = {**sys_info,**gpu_info,} #**cam_info, **ard_info}
     return all_info

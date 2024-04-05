@@ -48,21 +48,21 @@ def test_endpoints():
         # response = requests.post(f"{base_url}/procs/launch_por2shm2por")
         # print("POST /procs/open_por2shm2por_proc:", response.json())
         
-        # # POST /procs/open_log_portenta_proc
-        # response = requests.post(f"{base_url}/procs/launch_log_portenta")
-        # print("POST /procs/open_log_portenta_proc:", response.json())
+        # POST /procs/open_log_portenta_proc
+        response = requests.post(f"{base_url}/procs/launch_log_portenta")
+        print("POST /procs/open_log_portenta_proc:", response.json())
         
         # POST /procs/open_stream_portenta_proc
         response = requests.post(f"{base_url}/procs/launch_stream_portenta")
         print("POST /procs/open_stream_portenta_proc:", response.json())
         
-        # # POST /procs/launch_log_unity
-        # response = requests.post(f"{base_url}/procs/launch_log_unity")
-        # print("POST /procs/launch_log_unity:", response.json())
+        # POST /procs/launch_log_unity
+        response = requests.post(f"{base_url}/procs/launch_log_unity")
+        print("POST /procs/launch_log_unity:", response.json())
         
-        # # POST /procs/launch_log_unity
-        # response = requests.post(f"{base_url}/procs/launch_log_unitycam")
-        # print("POST /procs/launch_log_unity:", response.json())
+        # POST /procs/launch_log_unity
+        response = requests.post(f"{base_url}/procs/launch_log_unitycam")
+        print("POST /procs/launch_log_unity:", response.json())
 
 
     def run_cam():
@@ -123,10 +123,14 @@ def test_endpoints():
     # response = requests.patch(f"{base_url}/parameters/{key}?new_value={new_value}")
     # print(f"PATCH /parameters/{key}:", response.json())
             
-    createshm()
+    
+    # print(requests.get(f"{base_url}/parameters").json())
+    # print(requests.get(f"{base_url}/parameters/groups").json())
+    print(requests.get(f"{base_url}/parameters/locked").json())
+    # createshm()
     # run_cam()
     # print(requests.get(f"{base_url}/state"))
-    run()
+    # run()
     # run_cam()
     # sleep(50)
     # sleep(100)
@@ -136,6 +140,8 @@ def test_endpoints():
     # term()
     # inputloop()
     
+
+
     
 if __name__ == "__main__":
     test_endpoints()

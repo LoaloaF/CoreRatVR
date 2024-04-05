@@ -17,8 +17,8 @@ def patch_parameter(key: str, new_value: Any, was_initiated: bool):
         raise HTTPException(status_code=404, detail=f"Parameter {key} not found")
     if not isinstance(key, correct_type):
         raise HTTPException(status_code=400, detail=f"value must be of type {correct_type}")
-    if key == "SESSION_DATA_DIRECTORY":
-        raise HTTPException(status_code=400, detail=f"SESSION_DATA_DIRECTORY is not mutable")
+    if key in P.get_locked_parameters():
+        raise HTTPException(status_code=400, detail=f"{key} is not mutable")
     
     setattr(P, key, new_value)
     return {"message": f"Parameter {key} updated successfully"}

@@ -5,6 +5,8 @@ sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
 
 from time import sleep
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+
 import logging
 import uvicorn
 from typing import Any
@@ -54,6 +56,14 @@ def attach_endpoints(app):
     @app.get("/parameters")
     def get_parameters():
         return P.get_attributes()
+    
+    @app.get("/parameters/locked")
+    def locked_parameters():
+        return P.get_locked_parameters()
+    
+    @app.get("/parameters/groups")
+    def grouped_parameters():
+        return P.get_parameter_groups()
 
     @app.patch("/parameters/{key}")
     async def update_parameter(key: str, new_value: Any, request: Request):
@@ -377,6 +387,21 @@ async def lifespan(app: FastAPI):
     
 def main():
     app = FastAPI(lifespan=lifespan)
+
+    origins = [
+    "http://localhost:5173",  # Allow the Svelte dev server access
+    # "http://localhost:8000",  # Uncomment this if your FastAPI server is running on localhost
+    # "http://localhost:tld",  # Replace "tld" with the top-level domain where your app will be hosted
+    ]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     attach_endpoints(app)
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
