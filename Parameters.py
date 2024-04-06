@@ -201,6 +201,8 @@ class Parameters:
     def get_locked_parameters(self) -> dict[str, Any]:
         locked_keys = ["PROJECT_DIRECTORY", "SHM_STRUCTURE_DIRECTORY",
                        "SESSION_DATA_DIRECTORY"]
+        locked_keys.extend([key for key in self.get_attributes().keys() 
+                            if key.startswith("SHM_NAME")])
         [locked_keys.extend(self.get_parameter_groups()[key]) 
          for key in ('System', 'Hardware')]
         locked_keys = list(filter(lambda key: key!="ARDUINO_PORT", locked_keys))

@@ -8,6 +8,17 @@ from typing import Any
 from Parameters import Parameters
 from CustomLogger import CustomLogger as Logger
 
+def _parse2type(value: str, correct_type: type):
+    try:
+        if correct_type == int:
+            return int(value)
+        if correct_type == float:
+            return float(value)
+        if correct_type == bool:
+            return bool(value)
+    except ValueError:
+        return 
+    
 def patch_parameter(key: str, new_value: Any, was_initiated: bool):
     validate_state({"initiated": was_initiated}, valid_initiated=False)
     
@@ -15,8 +26,9 @@ def patch_parameter(key: str, new_value: Any, was_initiated: bool):
     correct_type = type(P.__getattribute__(key))
     if not hasattr(P, key):
         raise HTTPException(status_code=404, detail=f"Parameter {key} not found")
-    if not isinstance(key, correct_type):
-        raise HTTPException(status_code=400, detail=f"value must be of type {correct_type}")
+    if not isinstance(new_value, correct_type):
+        if (new_value := _parse2type(new_value, correct_type)) is None:
+            raise HTTPException(status_code=400, detail=f"value must be of type {correct_type}")
     if key in P.get_locked_parameters():
         raise HTTPException(status_code=400, detail=f"{key} is not mutable")
     
@@ -83,5 +95,6 @@ def validate_state(state, valid_initiated=None, valid_shm_created=None):
     # TODO - Unity Start stop sesion state machine interaction
     # DONETODO - Unity Teleportation
 # TODO - TTL camera logger, check libraries, drivers etc
+# TODO - from x from y integration into camera reader
 # DONETODO - create folder data and tmp_shm if not exist
 # DONETODO - add YAML file, use venv not conda

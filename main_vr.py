@@ -6,6 +6,8 @@ sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
 from time import sleep
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from starlette.staticfiles import StaticFiles
 
 import logging
 import uvicorn
@@ -350,6 +352,19 @@ def attach_endpoints(app):
     
     return app
 
+def attach_UI_endpoint(app):
+    @app.get("/ui")
+    async def root():
+        if os.path.isfile('./../UIRatVR/dist/index.html'):
+            return FileResponse('./../UIRatVR/dist/index.html')
+        else:
+            raise HTTPException(status_code=404)
+
+    # # Mount the 'dist' directory at the root of your app
+    app.mount("/ui", StaticFiles(directory="./../UIRatVR/dist"), name="dist")
+    app.mount("/assets", StaticFiles(directory="./../UIRatVR/dist/assets"), 
+              name="assets")
+
 async def lifespan(app: FastAPI):
     print("Initilizing server state, constructing parameters...")
     P = Parameters()
@@ -384,13 +399,13 @@ async def lifespan(app: FastAPI):
     }
     yield # application runs (function pauses here)
     print("Experiment Server shutting down.")
-    
+
 def main():
     app = FastAPI(lifespan=lifespan)
 
     origins = [
+    "http://localhost:8000",  # Uncomment this if your FastAPI server is running on localhost
     "http://localhost:5173",  # Allow the Svelte dev server access
-    # "http://localhost:8000",  # Uncomment this if your FastAPI server is running on localhost
     # "http://localhost:tld",  # Replace "tld" with the top-level domain where your app will be hosted
     ]
 
@@ -402,6 +417,7 @@ def main():
         allow_headers=["*"],
     )
 
+    attach_UI_endpoint(app)
     attach_endpoints(app)
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
