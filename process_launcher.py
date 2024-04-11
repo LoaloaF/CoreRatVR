@@ -83,7 +83,7 @@ def open_por2shm2por_proc():
         "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.PORTENTA2SHM2PORTENTA_PROC_PRIORITY),
         "--port_name", P.ARDUINO_PORT,
-        "--baud_rate", str(P.PORTENTA_BAUD_RATE),
+        "--baud_rate", str(P.ARDUINO_BAUD_RATE),
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
