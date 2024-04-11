@@ -51,8 +51,8 @@ def attach_endpoints(app):
     @app.get("/state")
     def get_state(request: Request):
         S = request.app.state.state.copy()
-        S['termflag_shm_interface'] = None if S['termflag_shm_interface'] is None else True
-        S['unityinput_shm_interface'] = None if S['unityinput_shm_interface'] is None else True
+        S['termflag_shm_interface'] = False if S['termflag_shm_interface'] is None else True
+        S['unityinput_shm_interface'] = False if S['unityinput_shm_interface'] is None else True
         return S
 
     @app.get("/parameters")
@@ -93,18 +93,19 @@ def attach_endpoints(app):
     def flash_portenta(request: Request, core: str):
         validate_state(request.app.state.state, valid_initiated=True)
         command = (f"{P.PLATFORMIO_BIN} run --target upload --environment "
-                   f"portenta_h7_{core} --project-dir ",
-                   f"{os.path.join(P.PROJECT_DIRECTORY)} ArduinoRatVR")
+                   f"portenta_h7_{core} --project-dir "
+                   f"{os.path.join(P.PROJECT_DIRECTORY, 'ArduinoRatVR')}")
 
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, 
                                    stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
-        L = Logger()
-
         result = (f"Flashed Portenta: {command}\nSTDOUT: {stdout.decode()}\n"
                   f"STDERR: {stderr.decode()}")
-        L.logger.debug(result)
-        return result
+        Logger().logger.debug(result)
+
+        if "FAILED" in stderr.decode():
+            raise HTTPException(status_code=400, detail=f"Failed to flash Portenta")
+        return True
 
     @app.post("/unityinput/{msg}")
     def unityinput(msg: str, request: Request):
@@ -116,8 +117,13 @@ def attach_endpoints(app):
     
     @app.post("/raise_term_flag")
     def raise_term_flag(request: Request):
+        L = Logger()
+        L.logger.warning("procs_state")
+
+        validate_state(request.app.state.state, valid_initiated=True, 
+                valid_shm_created={P.SHM_NAME_TERM_FLAG: True})
         shm_state = request.app.state.state['shm']
-        procs_state = request.app.state.state['shm']
+        procs_state = request.app.state.state['procs']
         termflag_shm_interface = request.app.state.state["termflag_shm_interface"]
         unityinput_shm_interface = request.app.state.state["unityinput_shm_interface"]
         
@@ -126,6 +132,9 @@ def attach_endpoints(app):
         # reset the termination flag interface
         termflag_shm_interface.close_shm()
         request.app.state.state["termflag_shm_interface"] = None
+        
+        request.app.state.state['procs'].update({proc_name: 0 for proc_name in procs_state.keys()})
+        L.logger.info(request.app.state.state['procs'])
 
         # delete all shared memory
         sleep(1)
@@ -323,6 +332,15 @@ def attach_endpoints(app):
         proc = pl.open_log_camera_proc(P.SHM_NAME_FACE_CAM)
         request.app.state.state["procs"]["log_facecam"] = proc.pid
     
+    @app.post("/procs/launch_log_bodycam")
+    def launch_log_bodycam(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                          P.SHM_NAME_BODY_CAM: True,
+                                          })
+        proc = pl.open_log_camera_proc(P.SHM_NAME_BODY_CAM)
+        request.app.state.state["procs"]["log_bodycam"] = proc.pid
+    
     @app.post("/procs/launch_stream_bodycam")
     def launch_stream_bodycam(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
@@ -378,6 +396,7 @@ async def lifespan(app: FastAPI):
             "bodycam2shm": 0,
             "stream_facecam": 0,
             "log_facecam": 0,
+            "log_bodycam": 0,
             "stream_bodycam": 0,
             "log_unity": 0,
             "log_unitycam": 0,

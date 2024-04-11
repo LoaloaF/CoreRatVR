@@ -126,7 +126,7 @@ def test_endpoints():
     
     # print(requests.get(f"{base_url}/parameters").json())
     # print(requests.get(f"{base_url}/parameters/groups").json())
-    print(requests.get(f"{base_url}/parameters/locked").json())
+    # print(requests.get(f"{base_url}/parameters/locked").json())
     # createshm()
     # run_cam()
     # print(requests.get(f"{base_url}/state"))

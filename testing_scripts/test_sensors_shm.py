@@ -33,8 +33,8 @@ from process_launcher import open_por2shm2por_sim_proc
 def test_portenta2shm2portenta(P):
     L = Logger()
     # setup the main logitech stream
-    if P.PORTENTA_PORT not in [p for p,v in P.ARDUINO_BY_PORT.items() if v == 'Working']:
-        L.logger.error(f"Port {P.PORTENTA_PORT} has no working Arudino connected")
+    if P.ARDUINO_PORT not in [p for p,v in P.ARDUINO_BY_PORT.items() if v == 'Working']:
+        L.logger.error(f"Port {P.ARDUINO_PORT} has no working Arudino connected")
         exit(1)
     
     # setup termination, triggered by input from here
@@ -53,8 +53,8 @@ def test_portenta2shm2portenta(P):
         "shm_structure_fname": sensors_shm_struc_fname,
         "termflag_shm_structure_fname": termflag_shm_struc_fname,
         "command_shm_structure_fname": command_shm_struc_fname,
-        "port_name": P.PORTENTA_PORT,
-        "baud_rate": P.PORTENTA_BAUD_RATE,
+        "port_name": P.ARDUINO_PORT,
+        "baud_rate": P.ARDUINO_BAUD_RATE,
         }
     log_portenta_kwargs = portenta2shm_kwargs.copy()
     log_portenta_kwargs.pop("command_shm_structure_fname")
@@ -135,11 +135,11 @@ def main():
     # P.LOGGING_LEVEL = logging.DEBUG
     
     if P.SYSTEM == "Linux":
-        P.PORTENTA_PORT = "/dev/ttyACM0"
+        P.ARDUINO_PORT = "/dev/ttyACM0"
         P.ARDUINO_BY_PORT = {"/dev/ttyACM0": "Working"}
         P.DATA_DIRECTORY = "~/"
     else:
-        P.PORTENTA_PORT = "COM3"
+        P.ARDUINO_PORT = "COM3"
         P.ARDUINO_BY_PORT = {"COM3": "Working"}
         P.DATA_DIRECTORY = "c://Users//RatVR//"
 
