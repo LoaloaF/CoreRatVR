@@ -151,6 +151,7 @@ class Parameters:
             cls._instance.ARDUINO_PORT = "COM3"
         else:
             cls._instance.ARDUINO_PORT = "/dev/ttyACM0"
+        cls._instance.ARDUINO_BAUD_RATE = 2000000
         
         
 

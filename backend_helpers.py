@@ -4,6 +4,8 @@ from datetime import datetime as dt
 
 from fastapi import HTTPException
 from typing import Any
+import psutil
+import json
 
 from Parameters import Parameters
 from CustomLogger import CustomLogger as Logger
@@ -59,7 +61,7 @@ def init_logger(session_save_dir):
     L.init_logger("__main__", log_dir, P.LOGGING_LEVEL)
     return log_dir
 
-def validate_state(state, valid_initiated=None, valid_shm_created=None):
+def validate_state(state, valid_initiated=None, valid_shm_created=None, valid_proc_running=None):
     L = Logger()
 
     # check if passed initiated var matches state
@@ -76,6 +78,27 @@ def validate_state(state, valid_initiated=None, valid_shm_created=None):
                 msg = "not created" if valid_shm_created[shm_name] else "already created"
                 L.logger.error(f"{shm_name} shm {msg}")
                 raise HTTPException(status_code=400, detail=f"{shm_name} shm {msg}")
+
+    if valid_proc_running is not None:
+        for proc_name, valid_state in valid_proc_running.items():
+            if state['procs'][proc_name] != valid_state:
+                msg = "not running" if valid_proc_running[proc_name] else "already running"
+                L.logger.error(f"{proc_name} process {msg}")
+                raise HTTPException(status_code=400, detail=f"{proc_name} process {msg}")
+
+def check_processes(app):
+    for proc_name, pid in app.state.state["procs"].items():
+        if pid != 0 and psutil.Process(pid).status() == psutil.STATUS_ZOMBIE:
+            # PID doesn't exist
+            app.state.state["procs"][proc_name] = 0
+            Logger().logger.warning(f"{proc_name} process terminated unexpectedly")
+
+def state2serializable(state):
+    S = state.copy()
+    S['termflag_shm_interface'] = False if S['termflag_shm_interface'] is None else True
+    S['unityinput_shm_interface'] = False if S['unityinput_shm_interface'] is None else True
+    return json.dumps(S)
+
 
 # DONETODO - check if arduino is connceted before launching process or try to auto flash Portenta:
 # end point with exec platformio run --target upload --environment portenta_h7_m7 --project-dir /home/loaloa/homedataXPS/projects/ratvr/VirtualReality/PlatformIO/Projects/PortentaRatVR

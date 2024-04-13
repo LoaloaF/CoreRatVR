@@ -40,13 +40,13 @@ def test_endpoints():
 
     def run():
         
-        # POST /procs/open_por2shm2por_sim_proc
-        response = requests.post(f"{base_url}/procs/launch_por2shm2por_sim")
-        print("POST /procs/open_por2shm2por_sim_proc:", response.json())
+        # # POST /procs/open_por2shm2por_sim_proc
+        # response = requests.post(f"{base_url}/procs/launch_por2shm2por_sim")
+        # print("POST /procs/open_por2shm2por_sim_proc:", response.json())
         
-        # # POST /procs/open_por2shm2por_proc
-        # response = requests.post(f"{base_url}/procs/launch_por2shm2por")
-        # print("POST /procs/open_por2shm2por_proc:", response.json())
+        # POST /procs/open_por2shm2por_proc
+        response = requests.post(f"{base_url}/procs/launch_por2shm2por")
+        print("POST /procs/open_por2shm2por_proc:", response.json())
         
         # POST /procs/open_log_portenta_proc
         response = requests.post(f"{base_url}/procs/launch_log_portenta")
@@ -110,8 +110,8 @@ def test_endpoints():
             msg = input("Press Enter to send Unity input...")
             requests.post(f"{base_url}/unityinput/{msg}", json={"message": msg})
 
-    # response = requests.post(f"{base_url}/initiate")
-    # print("POST /initiate:", response.json())
+    response = requests.post(f"{base_url}/initiate")
+    print("POST /initiate:", response.json())
 
     # # GET /parameters
     # response = requests.get(f"{base_url}/parameters")
@@ -127,10 +127,10 @@ def test_endpoints():
     # print(requests.get(f"{base_url}/parameters").json())
     # print(requests.get(f"{base_url}/parameters/groups").json())
     # print(requests.get(f"{base_url}/parameters/locked").json())
-    # createshm()
-    # run_cam()
+    createshm()
+    run_cam()
     # print(requests.get(f"{base_url}/state"))
-    # run()
+    run()
     # run_cam()
     # sleep(50)
     # sleep(100)

@@ -1,5 +1,5 @@
 import os
-import signal
+import asyncio
 import sys
 sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
 
@@ -8,9 +8,10 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from starlette.staticfiles import StaticFiles
+from sse_starlette.sse import EventSourceResponse
 
-import logging
 import uvicorn
+import json
 from typing import Any
 import subprocess
 
@@ -22,6 +23,8 @@ from backend_helpers import init_save_dir
 from backend_helpers import check_base_dirs
 from backend_helpers import init_logger
 from backend_helpers import validate_state
+from backend_helpers import check_processes
+from backend_helpers import state2serializable
 
 from process_launcher import shm_struct_fname
 
@@ -38,22 +41,29 @@ def attach_endpoints(app):
     # singlton class - reference to instance created in lifespan
     P = Parameters()
 
-    # @app.exception_handler(Exception)
-    # async def global_exception_handler(request, exc):
-    #     L = Logger()
-    #     L.spacer()
-    #     L.logger.error(exc)
-    #     L.spacer()
-    #     os.kill(os.getpid(), signal.SIGINT)  # Terminate the server
-    #     raise HTTPException(status_code=500, 
-    #                         detail=f"Server error:{exc} Terminating server.")
-    
+    @app.get('/statestream')
+    async def message_stream(request: Request):
+        STREAM_DELAY = .1  # second
+        async def event_generator():
+            prv_state = None
+            while True:
+                # If client closes connection, stop sending events
+                if await request.is_disconnected():
+                    break
+
+                # Checks if state has changed or first time request
+                check_processes(request.app)
+                cur_state = state2serializable(request.app.state.state)
+                if prv_state is None or prv_state != cur_state:
+                    prv_state = cur_state#.copy()
+                    yield {"data": cur_state}
+                
+                await asyncio.sleep(STREAM_DELAY)
+        return EventSourceResponse(event_generator())
+            
     @app.get("/state")
     def get_state(request: Request):
-        S = request.app.state.state.copy()
-        S['termflag_shm_interface'] = False if S['termflag_shm_interface'] is None else True
-        S['unityinput_shm_interface'] = False if S['unityinput_shm_interface'] is None else True
-        return S
+        return state2serializable(request.app.state.state)
 
     @app.get("/parameters")
     def get_parameters():
@@ -117,8 +127,7 @@ def attach_endpoints(app):
     
     @app.post("/raise_term_flag")
     def raise_term_flag(request: Request):
-        L = Logger()
-        L.logger.warning("procs_state")
+        Logger().logger.debug("Handling raised term flag")
 
         validate_state(request.app.state.state, valid_initiated=True, 
                 valid_shm_created={P.SHM_NAME_TERM_FLAG: True})
@@ -134,7 +143,6 @@ def attach_endpoints(app):
         request.app.state.state["termflag_shm_interface"] = None
         
         request.app.state.state['procs'].update({proc_name: 0 for proc_name in procs_state.keys()})
-        L.logger.info(request.app.state.state['procs'])
 
         # delete all shared memory
         sleep(1)
@@ -261,7 +269,8 @@ def attach_endpoints(app):
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_PORTENTA_OUTPUT: True,
                                           P.SHM_NAME_BALLVELOCITY: True,
-                                          })
+                                          },
+                       valid_proc_running={"por2shm2por_sim": False})
         proc = pl.open_por2shm2por_sim_proc()
         request.app.state.state["procs"]["por2shm2por_sim"] = proc.pid
 
@@ -272,7 +281,8 @@ def attach_endpoints(app):
                                           P.SHM_NAME_PORTENTA_OUTPUT: True,
                                           P.SHM_NAME_BALLVELOCITY: True,
                                           P.SHM_NAME_PORTENTA_INPUT: True,
-                                          })
+                                          },
+                       valid_proc_running={"por2shm2por": False})
         proc = pl.open_por2shm2por_proc()
         request.app.state.state["procs"]["por2shm2por"] = proc.pid
         
@@ -282,7 +292,8 @@ def attach_endpoints(app):
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_PORTENTA_OUTPUT: True,
                                           P.SHM_NAME_BALLVELOCITY: True,
-                                          })
+                                          },
+                       valid_proc_running={"log_portenta": False})
         proc = pl.open_log_portenta_proc()
         request.app.state.state["procs"]["log_portenta"] = proc.pid
 
@@ -292,7 +303,8 @@ def attach_endpoints(app):
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_PORTENTA_OUTPUT: True,
                                           P.SHM_NAME_BALLVELOCITY: True,
-                                          })
+                                          },
+                       valid_proc_running={"stream_portenta": False})
         proc = pl.open_stream_portenta_proc()
         request.app.state.state["procs"]["stream_portenta"] = proc.pid
     
@@ -301,7 +313,8 @@ def attach_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_FACE_CAM: True,
-                                          })
+                                          },
+                       valid_proc_running={"facecam2shm": False})
         proc = pl.open_camera2shm_proc(P.SHM_NAME_FACE_CAM)
         request.app.state.state["procs"]["facecam2shm"] = proc.pid
     
@@ -310,7 +323,8 @@ def attach_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_BODY_CAM: True,
-                                          })
+                                          },
+                       valid_proc_running={"bodycam2shm": False})
         proc = pl.open_camera2shm_proc(P.SHM_NAME_BODY_CAM)
         request.app.state.state["procs"]["bodycam2shm"] = proc.pid
     
@@ -319,7 +333,8 @@ def attach_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_FACE_CAM: True,
-                                          })
+                                          },
+                       valid_proc_running={"stream_facecam": False})
         proc = pl.open_shm2cam_stream_proc(P.SHM_NAME_FACE_CAM)
         request.app.state.state["procs"]["stream_facecam"] = proc.pid
 
@@ -328,7 +343,8 @@ def attach_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_FACE_CAM: True,
-                                          })
+                                          },
+                       valid_proc_running={"log_facecam": False})
         proc = pl.open_log_camera_proc(P.SHM_NAME_FACE_CAM)
         request.app.state.state["procs"]["log_facecam"] = proc.pid
     
@@ -337,7 +353,8 @@ def attach_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_BODY_CAM: True,
-                                          })
+                                          },
+                       valid_proc_running={"log_bodycam": False})
         proc = pl.open_log_camera_proc(P.SHM_NAME_BODY_CAM)
         request.app.state.state["procs"]["log_bodycam"] = proc.pid
     
@@ -346,7 +363,8 @@ def attach_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_BODY_CAM: True,
-                                          })
+                                          },
+                       valid_proc_running={"stream_bodycam": False})
         proc = pl.open_shm2cam_stream_proc(P.SHM_NAME_BODY_CAM)
         request.app.state.state["procs"]["stream_bodycam"] = proc.pid
     
@@ -355,7 +373,8 @@ def attach_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_UNITY_OUTPUT: True,
-                                          })
+                                          },
+                       valid_proc_running={"log_unity": False})
         proc = pl.open_log_unity_proc()
         request.app.state.state["procs"]["log_unity"] = proc.pid
 
@@ -364,7 +383,8 @@ def attach_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_UNITY_CAM: True,
-                                          })
+                                          },
+                       valid_proc_running={"log_unitycam": False})
         proc = pl.open_log_camera_proc(P.SHM_NAME_UNITY_CAM)
         request.app.state.state["procs"]["log_unitycam"] = proc.pid
     
