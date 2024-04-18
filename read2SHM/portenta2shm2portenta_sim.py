@@ -20,6 +20,7 @@ S_ID = 0
 F_ID = 0
 R_ID = 0
 P_ID = 0
+A_ID = 0
 
 Vr = 0
 Vy = 0
@@ -32,6 +33,7 @@ def generate_test_package():
     global F_ID
     global R_ID
     global P_ID
+    global A_ID
     global Vr
     global Vy
     global Vp
@@ -63,6 +65,11 @@ def generate_test_package():
         N = "R"
         R_ID += 1
         ID = R_ID
+        V = 1
+    elif num <.995:
+        N = "A"
+        A_ID += 1
+        ID = A_ID
         V = 1
     else:
         N = "P"
@@ -100,9 +107,9 @@ def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm):
         _handle_input(ballvel_shm, portentaoutput_shm)
         while True:
             dt = time.perf_counter()*1e6-t0
-            if dt > 500:
+            if dt > 5000:
                 t0 = time.perf_counter()*1e6
-                if dt > 1000:
+                if dt > 10000:
                     L.logger.warning(f"slow - dt: {dt}")
                 break
 

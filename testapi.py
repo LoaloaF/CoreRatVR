@@ -110,8 +110,8 @@ def test_endpoints():
             msg = input("Press Enter to send Unity input...")
             requests.post(f"{base_url}/unityinput/{msg}", json={"message": msg})
 
-    response = requests.post(f"{base_url}/initiate")
-    print("POST /initiate:", response.json())
+    # response = requests.post(f"{base_url}/initiate")
+    # print("POST /initiate:", response.json())
 
     # # GET /parameters
     # response = requests.get(f"{base_url}/parameters")
@@ -127,10 +127,10 @@ def test_endpoints():
     # print(requests.get(f"{base_url}/parameters").json())
     # print(requests.get(f"{base_url}/parameters/groups").json())
     # print(requests.get(f"{base_url}/parameters/locked").json())
-    createshm()
-    run_cam()
+    # createshm()
+    # run_cam()
     # print(requests.get(f"{base_url}/state"))
-    run()
+    # run()
     # run_cam()
     # sleep(50)
     # sleep(100)
@@ -140,6 +140,17 @@ def test_endpoints():
     # term()
     # inputloop()
     
+    # POST /initiate
+    response = requests.post(f"{base_url}/initiate")
+    print("POST /initiate:", response.json())
+
+    # POST /shm/create_termflag_shm
+    response = requests.post(f"{base_url}/shm/create_termflag_shm")
+    print("POST /shm/create_termflag_shm:", response.json())
+
+    # POST /shm/create_ballvelocity_shm
+    response = requests.post(f"{base_url}/shm/create_ballvelocity_shm")
+    print("POST /shm/create_ballvelocity_shm:", response.json())
 
 
     

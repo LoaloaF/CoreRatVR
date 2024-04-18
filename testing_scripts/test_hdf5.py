@@ -9,7 +9,7 @@ from datetime import datetime
 
 def load_hdf5_data(full_fname):
     # load data
-    key = "arduino_packages"
+    key = "portentaoutput"
     df = pd.read_hdf(full_fname, key=key)
     print(df)
     return df
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     import os
     base_path = '../data/'
     all_dirs = sorted(os.listdir(base_path))
-    full_fname = os.path.join(base_path, all_dirs[-1], "data.hdf5")
+    full_fname = os.path.join(base_path, all_dirs[-1], "portenta_output.hdf5")
     
     df = load_hdf5_data(full_fname)#.reset_index(drop=True)
     print(df[-50:])

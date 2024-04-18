@@ -26,19 +26,17 @@ def _check_package(ard_package, last_pack_id):
 
 def _process_ballvell_package(ard_package):
     ryp_values = [int(val) for val in ard_package["V"].split("_")]
-    ard_package["V"] = max([abs(v) for v in ryp_values])
     ard_package["Vr"] = ryp_values[0]
     ard_package["Vy"] = ryp_values[1]
     ard_package["Vp"] = ryp_values[2]
     return ard_package
 
-def _save_package_set(package_buf, full_fname):
+def _save_package_set(package_buf, full_fname, key):
     # write package buffer to hdf_file
     df = pd.DataFrame(package_buf)
     L.logger.debug(f"saving to hdf5:\n{df.to_string()}")
     try:
-        df.to_hdf(full_fname, key='packages', mode='a', 
-                  append=True, format="table")
+        df.to_hdf(full_fname, key=key, mode='a', append=True, format="table")
     except ValueError as e:
         L.logger.error(f"Error saving to hdf5:\n{e}\n\n{df.to_string()}")
 
@@ -54,7 +52,7 @@ def _log(termflag_shm, ballvel_shm, portentaout_shm, full_fname):
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
             if package_buf:
-                _save_package_set(package_buf, full_fname)
+                _save_package_set(package_buf, full_fname, "ballvelocity")
             sleep(.5)
             break
         
@@ -71,18 +69,21 @@ def _log(termflag_shm, ballvel_shm, portentaout_shm, full_fname):
             continue
         last_pack_id = _check_package(ard_package, last_pack_id)
         
+        # append to buffer and save to file every 256 elements
         if ard_package["N"] == "B":
             ard_package = _process_ballvell_package(ard_package)
-        # append to buffer and save to file every 256 elements
-        package_buf.append(ard_package)
+            package_buf.append(ard_package)
+        # general outputs comes much less frequently, always save directly
+        else:
+            _save_package_set([ard_package], full_fname, "portentaoutput")
 
         L.logger.debug(f"after {nchecks} SHM checks logging package:\n\t{ard_package}")
         if len(package_buf) >= package_buf_size:
-            _save_package_set(package_buf, full_fname)
+            _save_package_set(package_buf, full_fname, "ballvelocity")
             package_buf.clear()
         
         L.logger.debug((f"Packs in ballvel SHM: {ballvel_shm.usage}, in "
-                       f"portentaout SHM: {portentaout_shm.usage}"))
+                        f"portentaout SHM: {portentaout_shm.usage}"))
         L.spacer("debug")
         nchecks = 1
 
@@ -95,7 +96,8 @@ def run_log_portenta(termflag_shm_struc_fname, ballvelocity_shm_struc_fname,
 
     full_fname = os.path.join(session_data_dir, "portenta_output.hdf5")
     with pd.HDFStore(full_fname) as hdf:
-        hdf.put('packages', pd.DataFrame(), format='table', append=False)
+        hdf.put('ballvelocity', pd.DataFrame(), format='table', append=False)
+        hdf.put('portentaoutput', pd.DataFrame(), format='table', append=False)
     
     _log(termflag_shm, ballvel_shm, portentaout_shm, full_fname)
 
