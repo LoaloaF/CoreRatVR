@@ -29,6 +29,7 @@ def _process_ballvell_package(ard_package):
     ard_package["Vr"] = ryp_values[0]
     ard_package["Vy"] = ryp_values[1]
     ard_package["Vp"] = ryp_values[2]
+    ard_package.pop("V")
     return ard_package
 
 def _save_package_set(package_buf, full_fname, key):

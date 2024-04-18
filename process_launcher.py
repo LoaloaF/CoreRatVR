@@ -64,7 +64,8 @@ def open_por2shm2por_sim_proc():
     path = P.PROJECT_DIRECTORY, "CoreRatVR", "read2SHM", script
     stream_script = os.path.join(*path)
     
-    args = _make_proc_args()
+    args = _make_proc_args(shm_args=("termflag", "ballvelocity", 
+                                     "portentaoutput", "portentainput"))
     args.extend([
         "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.PORTENTA2SHM2PORTENTA_PROC_PRIORITY),
