@@ -61,8 +61,17 @@ def init_logger(session_save_dir):
     L.init_logger("__main__", log_dir, P.LOGGING_LEVEL)
     return log_dir
 
-def validate_state(state, valid_initiated=None, valid_shm_created=None, valid_proc_running=None):
+def validate_state(state, valid_initiated=None, valid_unitySessionRunning=None, 
+                   valid_shm_created=None, valid_proc_running=None):
     L = Logger()
+
+    # check if passed unitySessionRunning var matches state
+    if (valid_unitySessionRunning is not None and 
+        state["unitySessionRunning"] != valid_unitySessionRunning):
+        detail = "Unity session" 
+        detail += "not running" if valid_unitySessionRunning else "already running"
+        L.logger.error(detail)
+        raise HTTPException(status_code=400, detail=detail)
 
     # check if passed initiated var matches state
     if valid_initiated is not None and state["initiated"] != valid_initiated:

@@ -121,8 +121,12 @@ def attach_endpoints(app):
     def unityinput(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
-                                           P.SHM_NAME_UNITY_INPUT: True,
-                                           })
+                                          P.SHM_NAME_UNITY_INPUT: True,
+                                          })
+        if msg == "Start":
+            request.app.state.state["unitySessionRunning"] = True
+        elif msg == "Stop":
+            request.app.state.state["unitySessionRunning"] = False
         request.app.state.state["unityinput_shm_interface"].push(msg.encode())
     
     @app.post("/raise_term_flag")
@@ -155,10 +159,35 @@ def attach_endpoints(app):
                 if shm_name == "unityinput_shm_interface":
                     unityinput_shm_interface.close_shm()
                     request.app.state.state["unityinput_shm_interface"] = None
+        P.SESSION_DATA_DIRECTORY = "set-at-init"
         request.app.state.state["initiated"] = False
 
+    @app.get("/paradigms")
+    def paradigms():
+        dirname = os.path.join(P.PROJECT_DIRECTORY, "UnityRatVR", "Paradigms")
+        paradigms = [f for f in os.listdir(dirname) if f.endswith(".xlsx")]
+        return paradigms
 
-
+    @app.get("/animals")
+    def animals():
+        static_animals = ["rYL_001","rYL_002","rYL_003","rYL_004","rYL_005"]
+        return static_animals
+    
+    @app.post("/session/animal/{msg}")
+    def sessionanimal(msg: str, request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_unitySessionRunning=False, 
+                       valid_shm_created={P.SHM_NAME_TERM_FLAG: True})
+        print(msg)
+        # SessionParamters.animal = msg
+    
+    @app.post("/session/animalweight/{msg}")
+    def sessionanimal(msg: str, request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_unitySessionRunning=False, 
+                       valid_shm_created={P.SHM_NAME_TERM_FLAG: True})
+        print(msg)
+        # SessionParamters.animalweight = msg
 
     ############################################################################
     ############################## create SHM ##################################
@@ -433,6 +462,7 @@ async def lifespan(app: FastAPI):
             P.SHM_NAME_UNITY_CAM: False,
         },
         "initiated": False,
+        "unitySessionRunning": False,
         "termflag_shm_interface": None,
         "unityinput_shm_interface": None,
     }

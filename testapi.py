@@ -140,6 +140,8 @@ def test_endpoints():
     # term()
     # inputloop()
     
+    response = requests.get(f"{base_url}/paradigms")
+    print("GET /paradigms:", response.json())
     # POST /initiate
     response = requests.post(f"{base_url}/initiate")
     print("POST /initiate:", response.json())
