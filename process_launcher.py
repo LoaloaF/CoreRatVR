@@ -129,6 +129,25 @@ def open_log_unity_proc():
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
+def open_unity_proc():
+    P = Parameters()
+    path = P.PROJECT_DIRECTORY, "UnityRatVR", "build", P.UNITY_BUILD_NAME
+    script = os.path.join(*path)
+    
+    log_fullfname = os.path.join(P.LOGGING_DIRECTORY, "unity.log")
+    args = [
+        "-logfile", log_fullfname,
+    ]
+
+    print(script)
+    if not os.path.exists(script):
+        return -1
+    
+    L = Logger()
+    L.logger.info(f"Launching subprocess {os.path.basename(script)}") 
+    L.logger.info(f"Logging to {log_fullfname}")
+    return subprocess.Popen((script, *args))
+
 def shm_struct_fname(shm_name):
     P = Parameters()
     return os.path.join(P.SHM_STRUCTURE_DIRECTORY, shm_name+"_shmstruct.json")

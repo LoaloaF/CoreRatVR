@@ -120,13 +120,14 @@ def attach_endpoints(app):
     @app.post("/unityinput/{msg}")
     def unityinput(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
-                       valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
-                                          P.SHM_NAME_UNITY_INPUT: True,
+                       valid_shm_created={P.SHM_NAME_UNITY_INPUT: True,
                                           })
         if msg == "Start":
             request.app.state.state["unitySessionRunning"] = True
+            # TODO handle starting of unity session properly
         elif msg == "Stop":
             request.app.state.state["unitySessionRunning"] = False
+            # TODO handle stopping of unity session properly
         request.app.state.state["unityinput_shm_interface"].push(msg.encode())
     
     @app.post("/raise_term_flag")
@@ -176,18 +177,23 @@ def attach_endpoints(app):
     @app.post("/session/animal/{msg}")
     def sessionanimal(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
-                       valid_unitySessionRunning=False, 
-                       valid_shm_created={P.SHM_NAME_TERM_FLAG: True})
+                       valid_unitySessionRunning=False)
         print(msg)
         # SessionParamters.animal = msg
     
     @app.post("/session/animalweight/{msg}")
     def sessionanimal(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
-                       valid_unitySessionRunning=False, 
-                       valid_shm_created={P.SHM_NAME_TERM_FLAG: True})
+                       valid_unitySessionRunning=False)
         print(msg)
         # SessionParamters.animalweight = msg
+    
+    @app.post("/session/notes/{msg}")
+    def sessionnotes(msg: str, request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_unitySessionRunning=True)
+        print(msg)
+        # SessionParamters.notes = msg
 
     ############################################################################
     ############################## create SHM ##################################
@@ -416,7 +422,30 @@ def attach_endpoints(app):
                        valid_proc_running={"log_unitycam": False})
         proc = pl.open_log_camera_proc(P.SHM_NAME_UNITY_CAM)
         request.app.state.state["procs"]["log_unitycam"] = proc.pid
-    
+
+    @app.post("/procs/launch_unity")
+    def launch_unity(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                          P.SHM_NAME_BALLVELOCITY: True,
+                                          P.SHM_NAME_PORTENTA_OUTPUT: True,
+                                          P.SHM_NAME_PORTENTA_INPUT: True,
+                                          P.SHM_NAME_UNITY_OUTPUT: True,
+                                          P.SHM_NAME_UNITY_INPUT: True,
+                                          P.SHM_NAME_UNITY_CAM: True,
+                                          },
+                       valid_proc_running={"unity": False})
+        proc = pl.open_unity_proc()
+        if proc == -1:
+            msg = f"Unity binary `{P.UNITY_BUILD_NAME}` not found."
+            raise HTTPException(status_code=400, detail=msg)
+        else:
+            request.app.state.state["procs"]["unity"] = proc.pid
+            
+            
+            
+            
+            
     return app
 
 def attach_UI_endpoint(app):
@@ -449,6 +478,7 @@ async def lifespan(app: FastAPI):
             "stream_bodycam": 0,
             "log_unity": 0,
             "log_unitycam": 0,
+            "unity": 0,
         },
         "shm": {
             P.SHM_NAME_TERM_FLAG: False,
