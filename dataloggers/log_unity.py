@@ -59,8 +59,11 @@ def _log(termflag_shm, unityout_shm, full_fname):
             L.logger.error("Empty package!")
             continue
 
-        # check for ID discontinuity
-        check_package(unity_package, prv_id, prv_BVid)
+        if unity_package["N"] != "U":
+            pass
+        else:
+            # check for ID discontinuity
+            check_package(unity_package, prv_id, prv_BVid)
         unity_package.pop("N")
 
         # append to buffer and save to file every 256 elements

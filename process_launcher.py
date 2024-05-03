@@ -19,6 +19,7 @@ def open_camera2shm_proc(cam_name):
         "--camera_idx", cam_idx,
         # "--channels", P.FACE_CAM_IDX if cam_name == 'facecam' else P.BODY_CAM_IDX,
         "--fps", fps,
+        "--cam_name", cam_name
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
@@ -55,6 +56,7 @@ def open_log_camera_proc(cam_name):
         "--process_prio", str(P.LOG_CAMERA_PROC_PRIORITY),
         "--session_data_dir", P.SESSION_DATA_DIRECTORY,
         "--fps", fps,
+        "--cam_name", cam_name
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 

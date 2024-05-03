@@ -76,7 +76,7 @@ def _log(frame_shm, termflag_shm, full_fname, videowriter):
             package_buf.clear()
 
 def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname, 
-                   logging_name, session_data_dir, fps):
+                   logging_name, session_data_dir, fps, cam_name):
     # shm access
     frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
@@ -89,8 +89,13 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
         hdf.create_group('frames')
     # video saving
     fourcc = cv.VideoWriter_fourcc(*'mp4v')
-    videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
-                                 fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
+
+    if cam_name == "bodycam":
+        videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
+                                    fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
+    elif cam_name == "facecam":
+        videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
+                            fps, (frame_shm.x_res, frame_shm.y_res), isColor=False)
     
     Logger().logger.debug(full_fname)
     _log(frame_shm, termflag_shm, full_fname, videowriter)
@@ -102,6 +107,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level")
+    argParser.add_argument("--cam_name")
     argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--session_data_dir")
     argParser.add_argument("--fps", type=int)

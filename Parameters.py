@@ -64,8 +64,8 @@ class Parameters:
         cls._instance.SHM_PACKAGE_NBYTES_UNITY_INPUT = 32
 
         cls._instance.SHM_NAME_UNITY_CAM = 'unitycam'
-        cls._instance.UNITY_CAM_X_RES = 1070
-        cls._instance.UNITY_CAM_Y_RES = 800
+        cls._instance.UNITY_CAM_X_RES = 535
+        cls._instance.UNITY_CAM_Y_RES = 400
         cls._instance.UNITY_CAM_NCHANNELS = 3
         cls._instance.UNITY_CAM_FPS = 20
 
@@ -79,7 +79,7 @@ class Parameters:
         cls._instance.FACE_CAM_Y_FROM = 0
         cls._instance.FACE_CAM_X_RES = 640
         cls._instance.FACE_CAM_Y_RES = 480
-        cls._instance.FACE_CAM_NCHANNELS = 3
+        cls._instance.FACE_CAM_NCHANNELS = 1
         cls._instance.FACE_CAM_FPS = 30
 
         
