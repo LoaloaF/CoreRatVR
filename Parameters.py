@@ -102,6 +102,7 @@ class Parameters:
         cls._instance.LOG_CAMERA_PROC_PRIORITY = -1
         cls._instance.LOG_UNITY_PROC_PRIORITY = -1
 
+        cls._instance.UNITY_BUILD_NAME = "build00.x86_64"
 
         # laptop camera parameters for testing
         # cls._instance.FRONT_WEBCAM_IDX = 0
@@ -161,7 +162,7 @@ class Parameters:
         return {
             "Directories": (
                 "PROJECT_DIRECTORY", "SHM_STRUCTURE_DIRECTORY", "DATA_DIRECTORY", 
-                "LOGGING_DIRECTORY"),
+                "LOGGING_DIRECTORY", "UNITY_BUILD_NAME"),
             "Data/Log Saving": (
                 "SESSION_NAME_PREFIX", "SESSION_NAME_POSTFIX", "SESSION_DATA_DIRECTORY", 
                 "LOGGING_LEVEL", "LOG_TO_DATA_DIR", "CONSOLE_LOGGING_FMT", 
