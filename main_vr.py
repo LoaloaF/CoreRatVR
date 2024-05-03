@@ -16,6 +16,7 @@ from typing import Any
 import subprocess
 
 from Parameters import Parameters
+from SessionParamters import SessionParamters
 from CustomLogger import CustomLogger as Logger
 
 from backend_helpers import patch_parameter
@@ -40,6 +41,7 @@ from SHM.shm_creation import delete_shm
 def attach_endpoints(app):
     # singlton class - reference to instance created in lifespan
     P = Parameters()
+    session_paramters = SessionParamters()
 
     @app.get('/statestream')
     async def message_stream(request: Request):
@@ -122,12 +124,14 @@ def attach_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_UNITY_INPUT: True,
                                           })
+        if msg.startswith("Paradigm,"):
+            session_paramters.paradigm_name = msg.split(",")[1]
         if msg == "Start":
             request.app.state.state["unitySessionRunning"] = True
-            # TODO handle starting of unity session properly
+            session_paramters.handle_start_session()
         elif msg == "Stop":
             request.app.state.state["unitySessionRunning"] = False
-            # TODO handle stopping of unity session properly
+            session_paramters.handle_stop_session()
         request.app.state.state["unityinput_shm_interface"].push(msg.encode())
     
     @app.post("/raise_term_flag")
@@ -178,22 +182,21 @@ def attach_endpoints(app):
     def sessionanimal(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_unitySessionRunning=False)
-        print(msg)
-        # SessionParamters.animal = msg
+        session_paramters.animal = msg
     
     @app.post("/session/animalweight/{msg}")
     def sessionanimal(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_unitySessionRunning=False)
-        print(msg)
-        # SessionParamters.animalweight = msg
+        session_paramters.animal_weight = msg
     
     @app.post("/session/notes/{msg}")
     def sessionnotes(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_unitySessionRunning=True)
+        session_paramters.notes = msg
         print(msg)
-        # SessionParamters.notes = msg
+        
 
     ############################################################################
     ############################## create SHM ##################################
