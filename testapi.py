@@ -140,19 +140,23 @@ def test_endpoints():
     # term()
     # inputloop()
     
-    response = requests.get(f"{base_url}/paradigms")
-    print("GET /paradigms:", response.json())
-    # POST /initiate
-    response = requests.post(f"{base_url}/initiate")
-    print("POST /initiate:", response.json())
+    # response = requests.get(f"{base_url}/paradigms")
+    # print("GET /paradigms:", response.json())
+    # # POST /initiate
+    # response = requests.post(f"{base_url}/initiate")
+    # print("POST /initiate:", response.json())
 
-    # POST /shm/create_termflag_shm
-    response = requests.post(f"{base_url}/shm/create_termflag_shm")
-    print("POST /shm/create_termflag_shm:", response.json())
+    # # POST /shm/create_termflag_shm
+    # response = requests.post(f"{base_url}/shm/create_termflag_shm")
+    # print("POST /shm/create_termflag_shm:", response.json())
+
+    # # POST /shm/create_ballvelocity_shm
+    # response = requests.post(f"{base_url}/shm/create_ballvelocity_shm")
+    # print("POST /shm/create_ballvelocity_shm:", response.json())
 
     # POST /shm/create_ballvelocity_shm
-    response = requests.post(f"{base_url}/shm/create_ballvelocity_shm")
-    print("POST /shm/create_ballvelocity_shm:", response.json())
+    response = requests.post(f"{base_url}/procs/launch_stream_facecam")
+    print("POST /shm/launch_stream_facecam:", response.json())
 
 
     

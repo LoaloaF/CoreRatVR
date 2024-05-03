@@ -60,7 +60,7 @@ def _log(termflag_shm, unityout_shm, full_fname):
             continue
 
         if unity_package["N"] != "U":
-            pass
+            continue
         else:
             # check for ID discontinuity
             check_package(unity_package, prv_id, prv_BVid)
