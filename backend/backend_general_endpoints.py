@@ -119,10 +119,10 @@ def attach_general_endpoints(app):
             session_paramters.paradigm_name = msg.split(",")[1]
         if msg == "Start":
             request.app.state.state["unitySessionRunning"] = True
-            # session_paramters.handle_start_session()
+            session_paramters.handle_start_session()
         elif msg == "Stop":
             request.app.state.state["unitySessionRunning"] = False
-            # session_paramters.handle_stop_session()
+            session_paramters.handle_stop_session()
         request.app.state.state["unityinput_shm_interface"].push(msg.encode())
     
     @app.post("/raise_term_flag")
@@ -196,7 +196,7 @@ def attach_UI_endpoint(app):
     @app.get("/ui")
     async def root():
         if os.path.isfile(os.path.join(ui_dir, "index.html")):
-            return FileResponse(ui_fullfname)
+            return FileResponse(os.path.join(ui_dir, "index.html"))
         else:
             raise HTTPException(status_code=404)
 
