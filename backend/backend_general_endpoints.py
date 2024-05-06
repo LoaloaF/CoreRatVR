@@ -190,14 +190,17 @@ def attach_general_endpoints(app):
     return app
 
 def attach_UI_endpoint(app):
+    P = Parameters()
+    ui_dir = os.path.join(P.PROJECT_DIRECTORY, 'UIRatVR', 'dist')
+    
     @app.get("/ui")
     async def root():
-        if os.path.isfile('./../UIRatVR/dist/index.html'):
-            return FileResponse('./../UIRatVR/dist/index.html')
+        if os.path.isfile(os.path.join(ui_dir, "index.html")):
+            return FileResponse(ui_fullfname)
         else:
             raise HTTPException(status_code=404)
 
     # # Mount the 'dist' directory at the root of your app
-    app.mount("/ui", StaticFiles(directory="./../UIRatVR/dist"), name="dist")
-    app.mount("/assets", StaticFiles(directory="./../UIRatVR/dist/assets"), 
+    app.mount("/ui", StaticFiles(directory=ui_dir), name="dist")
+    app.mount("/assets", StaticFiles(directory=os.path.join(ui_dir, "assets")), 
               name="assets")
