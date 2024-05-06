@@ -90,7 +90,7 @@ def validate_state(state, valid_initiated=None, valid_unitySessionRunning=None,
 
     if valid_proc_running is not None:
         for proc_name, valid_state in valid_proc_running.items():
-            if state['procs'][proc_name] != valid_state:
+            if bool(state['procs'][proc_name]) != valid_state:
                 msg = "not running" if valid_proc_running[proc_name] else "already running"
                 L.logger.error(f"{proc_name} process {msg}")
                 raise HTTPException(status_code=400, detail=f"{proc_name} process {msg}")

@@ -55,13 +55,13 @@ async def get():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    watch_file = '../sensor_output.csv'
-    file = get_sensor_file(watch_file)
+    # watch_file = '../sensor_output.csv'
+    # file = get_sensor_file(watch_file)
     await websocket.accept()
     try:
         while True:
-            # last_line = read_last_line_dummy(file)
-            last_line = read_last_line(file)
+            last_line = "hmmm"
+            # last_line = read_last_line(file)
             print(last_line)
             await websocket.send_json(last_line)
             await asyncio.sleep(.001)

@@ -187,7 +187,8 @@ function initPlots() {
   return plotRefs
 }
 
-function setupWebsocket(url) {
+function setupWebsocket() {
+  var url = "ws://localhost:8000/ws"
   var ws = new WebSocket(url);
   ws.onmessage = function(messageEvent) {
     let newData = JSON.parse(messageEvent.data);

@@ -126,7 +126,8 @@ def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm,
         _handle_portentaoutput(ballvel_shm, portentaoutput_shm)
         while True:
             dt = time.perf_counter()*1e6-t0
-            if dt > 1250:
+            # if dt > 1250:
+            if dt > 3250:
                 t0 = time.perf_counter()*1e6
                 if dt > 10000:
                     L.logger.warning(f"slow - dt: {dt}")
