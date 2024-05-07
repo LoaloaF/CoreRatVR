@@ -133,7 +133,7 @@ def open_log_unity_proc():
 
 def open_unity_proc():
     P = Parameters()
-    path = P.PROJECT_DIRECTORY, "UnityRatVR", "build", P.UNITY_BUILD_NAME
+    path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", P.UNITY_BUILD_NAME
     script = os.path.join(*path)
     
     log_fullfname = os.path.join(P.LOGGING_DIRECTORY, "unity.log")
