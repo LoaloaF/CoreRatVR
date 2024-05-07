@@ -31,10 +31,9 @@ class CyclicPackagesSHMInterface:
 
     def push(self, item: bytearray) -> None:
         if len(item) > self._package_nbytes:
-            self.L.logger.debug((f"Item {item} of size {len(item)} > SHM size "
+            self.L.logger.error((f"Item {item} of size {len(item)} > SHM size "
                                 f"{self._package_nbytes}. Skipping."))
             return
-
         byte_encoded_array = bytearray(self._package_nbytes)
         byte_encoded_array[0:len(item)] = item
         
