@@ -96,6 +96,9 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
     elif cam_name == "facecam":
         videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
                             fps, (frame_shm.x_res, frame_shm.y_res), isColor=False)
+    elif cam_name == "unitycam":
+        videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
+                            fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
     
     Logger().logger.debug(full_fname)
     _log(frame_shm, termflag_shm, full_fname, videowriter)
