@@ -2,6 +2,7 @@
 SHM/tmp_shm_structure_JSONs/
 SHM/csTestInterface/obj/*
 SHM/csTestInterface/bin/*
+testing_scripts/Data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
