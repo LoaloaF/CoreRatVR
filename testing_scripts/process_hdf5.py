@@ -93,21 +93,23 @@ if __name__ == "__main__":
     unity_key = "packages"
     portenta_key = "portentaoutput"
     
-    folder_path = "./testing_scripts/Data/"
+    folder_path = "../data/"
     subfolders = []
     for subfolder in os.listdir(folder_path):
-        print("--------------------------------------------------------")
-        print(subfolder)
-        subfolder_path = os.path.join(folder_path, subfolder) 
+        if 'rotation' in subfolder or 'forward' in subfolder or 'sideways' in subfolder: 
+            
+            print("--------------------------------------------------------")
+            print(subfolder)
+            subfolder_path = os.path.join(folder_path, subfolder) 
 
-        unity_file_path = os.path.join(subfolder_path, "unity_output.hdf5")
-        df_unity = load_hdf5_data(unity_file_path, unity_key)
-        x_peaks, z_peaks, a_diffs = process_unity_file(df_unity, subfolder)
+            unity_file_path = os.path.join(subfolder_path, "unity_output.hdf5")
+            df_unity = load_hdf5_data(unity_file_path, unity_key)
+            x_peaks, z_peaks, a_diffs = process_unity_file(df_unity, subfolder)
 
-        
-        portenta_file_path = os.path.join(subfolder_path, "portenta_output.hdf5")
-        df_portenta = load_hdf5_data(portenta_file_path, portenta_key)
-        Vr_peaks, Vy_peaks, Vp_peaks = process_portenta_file(df_portenta, subfolder)
+            
+            portenta_file_path = os.path.join(subfolder_path, "portenta_output.hdf5")
+            df_portenta = load_hdf5_data(portenta_file_path, portenta_key)
+            Vr_peaks, Vy_peaks, Vp_peaks = process_portenta_file(df_portenta, subfolder)
         
     
     # plt.show()
