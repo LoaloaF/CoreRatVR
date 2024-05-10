@@ -34,7 +34,10 @@ def attach_stream_endpoints(app):
             ballvel_pkgs = []
             while True:
                 if ballvel_shm.usage > 0:
-                    ballvel_pkgs.append(ballvel_shm.popitem(return_type=dict))
+                    pack = ballvel_shm.popitem(return_type=dict)
+                    ryp = dict(zip(("raw", "yar", "pitch"), 
+                                   [int(v) for v in pack.pop("V").split("_")]))
+                    ballvel_pkgs.append({**pack, **ryp})
                     
                 if len(ballvel_pkgs) >= 10:
                     await websocket.send_json(ballvel_pkgs)
