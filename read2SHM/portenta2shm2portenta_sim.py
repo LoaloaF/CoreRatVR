@@ -42,16 +42,16 @@ def gen_ballvel_package():
     N = "B"
     V_ID += 1
     ID = V_ID
-    Vr = int(0.8*Vr + 0.2*(np.random.randn()*20))     # move sideways (unity z)
-    Vy = int(0.8*Vy + 0.2*(np.random.randn()*20))     # move forward (unity x)
-    Vp = int(0.8*Vp + 0.2*(np.random.randn()*20))     # rotate (around unity y axis)
+    Vr = int(Vr + 0.1*(np.random.randn()*20))     # move sideways (unity z)
+    Vy = int(Vy + 0.1*(np.random.randn()*20))     # move forward (unity x)
+    Vp = int(Vp + 0.1*(np.random.randn()*20))     # rotate (around unity y axis)
     V = f"{Vr}_{Vy}_{Vp}"
     return _gen_package(N, ID, V)
 
 def gen_L_package():
     global L_ID
     L_ID += 1
-    return _gen_package("L", L_ID, -int(np.random.randn()*100)) # length lick in ms into the past
+    return _gen_package("L", L_ID, int((np.random.randn()+2)*50)) # length lick in ms into the past
 
 def gen_A_package():
     global A_ID
@@ -75,7 +75,7 @@ def gen_P_package():
 
 def _handle_portentaoutput(ballvel_shm, portentaoutput_shm):
     num = np.random.rand()
-    if num < .995:
+    if num < .5:
         ballvel_pack, _ = gen_ballvel_package()
         Logger().logger.debug(f"ballvel_pack: {ballvel_pack}")
         ballvel_shm.push(ballvel_pack.encode())
@@ -127,7 +127,8 @@ def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm,
         while True:
             dt = time.perf_counter()*1e6-t0
             # if dt > 1250:
-            if dt > 1250:
+            # if dt > 1250:
+            if dt > 625:
                 t0 = time.perf_counter()*1e6
                 if dt > 3000:
                     L.logger.warning(f"slow - dt: {dt}")

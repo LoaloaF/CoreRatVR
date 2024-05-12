@@ -103,6 +103,11 @@ class CyclicPackagesSHMInterface:
     def _next_read_pointer(self) -> typing.Optional[int]:
         if self._read_pointer == self._stored_write_pointer:
             return None
+        self.L.logger.debug(self._read_pointer-self._stored_write_pointer)
+        if abs(self._read_pointer-self._stored_write_pointer) < self._package_nbytes*250:
+            self.L.logger.warning(f"Write pointer only 250 packages behind "
+                                  f"read pointer. About to outcycle and "
+                                  f"overwrite {self._npackages} packages!")
         self._read_pointer += self._package_nbytes
         self._read_pointer %= self._npackages * self._package_nbytes
         return self._read_pointer 
