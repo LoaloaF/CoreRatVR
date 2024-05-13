@@ -35,9 +35,9 @@ def process_unity_file(df_unity, file_name):
     z_peaks = find_all_peak_values(z_val)
     a_diffs = rotation_diff(a_val)
 
-    print("X RelativePeak: ", x_peaks.mean())
-    print("Z RelativePeak: ", z_peaks.mean())
-    print("A RelativePeak: ", a_diffs.mean())
+    print("X RelativePeak: ", x_peaks.mean(), f"gain: {157.079632679/x_peaks.mean()}")
+    print("Z RelativePeak: ", z_peaks.mean(), f"gain: {157.079632679/z_peaks.mean()}")
+    print("A RelativePeak: ", a_diffs.mean(), f"gain: {360/a_diffs.mean()}")
 
     return x_peaks, z_peaks, a_diffs
 
