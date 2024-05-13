@@ -46,6 +46,7 @@ def _log(termflag_shm, ballvel_shm, portentaout_shm, full_fname):
     L.logger.info("Reading Portenta packges from SHM and saving them...")
 
     package_buf = []
+    poutputpackage_buf = []
     last_pack_id = {}
     nchecks = 1
     package_buf_size = 256
@@ -54,35 +55,40 @@ def _log(termflag_shm, ballvel_shm, portentaout_shm, full_fname):
             L.logger.info("Termination flag raised")
             if package_buf:
                 _save_package_set(package_buf, full_fname, "ballvelocity")
+            if poutputpackage_buf:
+                _save_package_set(poutputpackage_buf, full_fname, "portentaoutput")
             sleep(.5)
             break
         
         if portentaout_shm.usage > 0:
-            ard_package = portentaout_shm.popitem(return_type=dict)
-        elif ballvel_shm.usage > 0:
-            ard_package = ballvel_shm.popitem(return_type=dict)
+            portentaoutput_package = portentaout_shm.popitem(return_type=dict)
+            poutputpackage_buf.append(portentaoutput_package)
         else:
             nchecks += 1
             continue
-        if ard_package == "":
-            # check for unexpected error cases when reading from SHM
-            L.logger.error("Empty package!")
-            continue
-        last_pack_id = _check_package(ard_package, last_pack_id)
+            
+        if ballvel_shm.usage > 0:
+            ballvel_package = ballvel_shm.popitem(return_type=dict)
+            ballvel_package = _process_ballvell_package(ballvel_package)
+            last_pack_id = _check_package(ballvel_package, last_pack_id)
+            package_buf.append(ballvel_package)
+        # if ard_package == "":
+        #     # check for unexpected error cases when reading from SHM
+        #     L.logger.error("Empty package!")
+        #     continue
         
-        # append to buffer and save to file every 256 elements
-        if ard_package["N"] == "B":
-            ard_package = _process_ballvell_package(ard_package)
-            package_buf.append(ard_package)
         # general outputs comes much less frequently, always save directly
-        else:
-            _save_package_set([ard_package], full_fname, "portentaoutput")
+        # else:
+        #     _save_package_set([ard_package], full_fname, "portentaoutput")
 
-        L.logger.debug(f"after {nchecks} SHM checks logging package:\n\t{ard_package}")
+        # L.logger.debug(f"after {nchecks} SHM checks logging package:\n\t{ard_package}")
         if len(package_buf) >= package_buf_size:
             _save_package_set(package_buf, full_fname, "ballvelocity")
             package_buf.clear()
-        
+        if len(portentaoutput_package) >= package_buf_size:
+            _save_package_set(package_buf, full_fname, "portentaoutput")
+            package_buf.clear()
+            
         L.logger.debug((f"Packs in ballvel SHM: {ballvel_shm.usage}, in "
                         f"portentaout SHM: {portentaout_shm.usage}"))
         L.spacer("debug")

@@ -74,7 +74,7 @@ class Parameters:
         
         #  camera shm parameters
         cls._instance.SHM_NAME_FACE_CAM = 'facecam'
-        cls._instance.FACE_CAM_IDX = 0
+        cls._instance.FACE_CAM_IDX = 2
         cls._instance.FACE_CAM_X_FROM = 0
         cls._instance.FACE_CAM_Y_FROM = 0
         cls._instance.FACE_CAM_X_RES = 640
@@ -84,7 +84,7 @@ class Parameters:
 
         
         cls._instance.SHM_NAME_BODY_CAM = 'bodycam'
-        cls._instance.BODY_CAM_IDX = 2
+        cls._instance.BODY_CAM_IDX = 0
         cls._instance.BODY_CAM_X_FROM = 0
         cls._instance.BODY_CAM_Y_FROM = 0
         cls._instance.BODY_CAM_X_RES = 640

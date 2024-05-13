@@ -81,9 +81,9 @@ def attach_stream_endpoints(app):
                     ballvel_pkgs.append(pack)
                     
                 if portentaout_shm.usage>10:
-                    L.logger.warning(f"sending to slowly: {portentaout_shm.usage}")
+                    L.logger.debug(f"sending to slowly: {portentaout_shm.usage}")
                 if  time.time() - t0 > 0.0333333: # 30 packages a second
-                    L.logger.info(f"sending {len(ballvel_pkgs)} packages")          
+                    L.logger.debug(f"sending {len(ballvel_pkgs)} packages")          
                     await websocket.send_json(ballvel_pkgs)
                     ballvel_pkgs.clear()
                     t0 = time.time()                
