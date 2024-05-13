@@ -2,6 +2,8 @@ import os
 import atexit
 import subprocess
 from Parameters import Parameters
+from SessionParamters import SessionParamters
+
 from CustomLogger import CustomLogger as Logger
 
 def open_camera2shm_proc(cam_name):
@@ -128,6 +130,7 @@ def open_log_unity_proc():
         "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.LOG_UNITY_PROC_PRIORITY),
         "--session_data_dir", P.SESSION_DATA_DIRECTORY,
+        "--paradigm_pillar_types", str(SessionParamters().paradigm_pillar_types),
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 

@@ -7,9 +7,11 @@ import matplotlib.dates as mdates
 from datetime import datetime
 
 
-def load_hdf5_data(full_fname):
+def load_hdf5_data(full_fnamem, key = "portentaoutput"):
     # load data
-    key = "portentaoutput"
+    with pd.HDFStore(full_fnamem) as store:
+        print(store.keys())
+    
     df = pd.read_hdf(full_fname, key=key)
     print(df)
     return df
@@ -89,9 +91,14 @@ if __name__ == "__main__":
     import os
     base_path = '../data/'
     all_dirs = sorted(os.listdir(base_path))
-    full_fname = os.path.join(base_path, all_dirs[-1], "portenta_output.hdf5")
+    full_fname = os.path.join(base_path, all_dirs[-1], "unity_output.hdf5")
+    # full_fname = os.path.join(base_path, all_dirs[-1], "portenta_output.hdf5")
     
-    df = load_hdf5_data(full_fname)#.reset_index(drop=True)
+    # df = load_hdf5_data(full_fname, key='trialstarts')#.reset_index(drop=True)
+    # print(df[-50:])
+    df = load_hdf5_data(full_fname, key='trialends')#.reset_index(drop=True)
+    print(df[-50:])
+    df = load_hdf5_data(full_fname, key='unityframes')#.reset_index(drop=True)
     print(df[-50:])
     exit()
     print((df.N).value_counts())

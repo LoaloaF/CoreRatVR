@@ -21,12 +21,12 @@ def check_package(package, prv_id, prv_BVid):
         L.logger.warning(f"BallVel package IDs between frames discontinuous; "
                          f"gap was {dif}")
 
-def _save_package_set(package_buf, full_fname):
+def _save_package_set(package_buf, full_fname, key):
     # write package buffer to hdf_file
     df = pd.DataFrame(package_buf)
     L.logger.debug(f"saving to hdf5:\n{df.to_string()}")
     try:
-        df.to_hdf(full_fname, key='packages', mode='a', 
+        df.to_hdf(full_fname, key=key, mode='a', 
                   append=True, format="table")
     except ValueError as e:
         L.logger.error(f"Error saving to hdf5:\n{e}\n\n{df.to_string()}")
@@ -44,7 +44,7 @@ def _log(termflag_shm, unityout_shm, full_fname):
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
             if package_buf:
-                _save_package_set(package_buf, full_fname)
+                _save_package_set(package_buf, full_fname, key="unityframes")
             sleep(.5)
             break
         
@@ -59,38 +59,57 @@ def _log(termflag_shm, unityout_shm, full_fname):
             L.logger.error("Empty package!")
             continue
 
-        if unity_package["N"] != "U":
-            continue
-        else:
+        L.logger.debug(unity_package)
+        if unity_package["N"] == "TN":
+            _save_package_set([unity_package], full_fname, key="trialstarts")
+        
+        elif unity_package["N"] == "TE":
+            _save_package_set([unity_package], full_fname, key="trialends")
+            
+        elif unity_package["N"] == "U":
             # check for ID discontinuity
             check_package(unity_package, prv_id, prv_BVid)
-        unity_package.pop("N")
+            # unity_package.pop("N")
 
-        # append to buffer and save to file every 256 elements
-        package_buf.append(unity_package)
+            # append to buffer and save to file every 256 elements
+            package_buf.append(unity_package)
 
-        L.logger.debug(f"after {nchecks} SHM checks logging package:\n\t{unity_package}")
-        if len(package_buf) >= package_buf_size:
-            _save_package_set(package_buf, full_fname)
-            package_buf.clear()
-        L.logger.debug((f"Packs in unity output SHM: {unityout_shm.usage}"))
+            if len(package_buf) >= package_buf_size:
+                _save_package_set(package_buf, full_fname, key="unityframes")
+                package_buf.clear()
+            L.logger.debug((f"Packs in unity output SHM: {unityout_shm.usage}"))
+            prv_id = unity_package["ID"]
+            prv_BVid = unity_package["BLP"]
         L.spacer("debug")
-        prv_id = unity_package["ID"]
-        prv_BVid = unity_package["BLP"]
+        L.logger.debug(f"after {nchecks} SHM checks logging package:\n\t{unity_package}")
         nchecks = 1
 
-
 def run_log_unity(termflag_shm_struc_fname, unityoutput_shm_struc_fname, 
-                  session_data_dir):
+                  session_data_dir, paradigm_pillar_types):
     # shm access
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     unityout_shm = CyclicPackagesSHMInterface(unityoutput_shm_struc_fname)
 
     full_fname = os.path.join(session_data_dir, "unity_output.hdf5")
     with pd.HDFStore(full_fname) as hdf:
-        df = pd.DataFrame(columns=["ID", "PCT", "X", "Z", "A", "S", "BFP", "BLP"],index=[])
-        hdf.put('packages', df, format='table', append=False)
-    
+        df = pd.DataFrame(columns=["N","ID","PCT","X","Z","A","S","FB","BFP","BLP"],index=[])
+        print(df)
+        hdf.put('unityframes', df, format='table', append=False)
+        
+        # trial start packages have information about pillar types
+        print(paradigm_pillar_types)
+        if ',' in paradigm_pillar_types:
+            pillar_cols = [el for p in paradigm_pillar_types.split(",") 
+                        for el in (f"P{p}R", f"P{p}T", f"P{p}P")]
+        else:
+            pillar_cols = []
+        df = pd.DataFrame(columns=["N", "ID", "FID", "PCT", *pillar_cols], index=[])
+        print(df)
+        hdf.put('trialstarts', df, format='table', append=False)
+        
+        df = pd.DataFrame(columns=["N","ID","FID","PCT","TD","P"], index=[])
+        print(df)
+        hdf.put('trialends', df, format='table', append=False)
     _log(termflag_shm, unityout_shm, full_fname)
 
 if __name__ == "__main__":
@@ -103,6 +122,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_level")
     argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--session_data_dir")
+    argParser.add_argument("--paradigm_pillar_types")
 
     kwargs = vars(argParser.parse_args())
     L = Logger()
