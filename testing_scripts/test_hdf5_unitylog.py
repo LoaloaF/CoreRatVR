@@ -97,17 +97,18 @@ if __name__ == "__main__":
     all_dirs = sorted(os.listdir(base_path))
     # full_fname = os.path.join(base_path, all_dirs[-1], "unity_output.hdf5")
 
-    full_fname = "/home/ntgroup/Project/CoreRatVR/testing_scripts/Data/2024-05-02_17-19-56_forward_P10000/unity_output.hdf5"    
-    df = load_hdf5_data(full_fname, "portentaoutput")
+    full_fname = "/home/vrmaster/projects/ratvr/VirtualReality/data/2024-05-15_13-29-50_goodone_9th_session/portenta_output.hdf5"    
+    df = pd.read_hdf(full_fname, key="portentaoutput")
+    print(df.columns)
 
 
 
-    full_fname = "/home/ntgroup/Project/CoreRatVR/testing_scripts/Data/2024-05-02_17-19-56_forward_P10000/unity_output.hdf5"    
+    # full_fname = "/home/ntgroup/Project/CoreRatVR/testing_scripts/Data/2024-05-02_17-19-56_forward_P10000/unity_output.hdf5"    
     
-    df = load_hdf5_data(full_fname, "packages")
-    z = df["Z"]
+    # df = load_hdf5_data(full_fname, "packages")
+    # z = df["Z"]
 
-    printMaxValues(z)
+    # printMaxValues(z)
 
 
 

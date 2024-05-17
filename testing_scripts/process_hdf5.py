@@ -110,6 +110,4 @@ if __name__ == "__main__":
             portenta_file_path = os.path.join(subfolder_path, "portenta_output.hdf5")
             df_portenta = load_hdf5_data(portenta_file_path, portenta_key)
             Vr_peaks, Vy_peaks, Vp_peaks = process_portenta_file(df_portenta, subfolder)
-        
     
-    # plt.show()

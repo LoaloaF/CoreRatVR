@@ -3,12 +3,11 @@ import os
 # when executed as a process add parent SHM dir to path again
 sys.path.insert(1, os.path.join(sys.path[0], '..')) # project dir
 sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
-
+import imageio
 import time
 import argparse
 import cv2
 from pymba import Vimba, VimbaException
-
 from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 
@@ -43,6 +42,7 @@ def _setup_capture(x_resolution, y_resolution, camera_idx, fps):
     
     return cap
 
+
 def _read_stream_loop(frame_shm, termflag_shm, cap):
     L = Logger()
     L.logger.info("Reading camera stream & writing to SHM...")
@@ -67,6 +67,42 @@ def _read_stream_loop(frame_shm, termflag_shm, cap):
             frame_i += 1
     finally:
         cap.release()
+
+
+def _setup_capture_imageio(x_resolution, y_resolution, camera_idx, fps):
+    # use imageio liberary to avoid the cpu overload of cv2
+    L = Logger()
+    L.logger.debug(f"Setting up video capture for cam {camera_idx}")
+    
+    cap = imageio.get_reader(f'<video{camera_idx}>', fps=fps)
+
+    
+    return cap
+
+
+def _read_stream_loop_imageio(frame_shm, termflag_shm, cap):
+    L = Logger()
+    L.logger.info("Reading camera stream & writing to SHM...")
+    try:
+        frame_i = 0
+        for frame in cap:
+            # define breaking condition for the thread/process
+            if termflag_shm.is_set():
+                L.logger.info("Termination flag raised")
+                break
+            
+
+            pack = "<{" + f"N:I,ID:{frame_i},PCT:{int(time.time()*1e6)}" + "}>\r\n"
+            L.logger.debug(f"New frame: {pack}")
+            
+            frame = frame[:frame_shm.y_res, :frame_shm.x_res, :frame_shm.nchannels]
+            frame = frame.transpose(1,0,2)
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)# cv2: y-x-rgb, everywhere: x-y-rgb
+            frame_shm.add_frame(frame, pack.encode('utf-8'))
+            frame_i += 1
+    finally:
+        cap.release()
+
 
 
 
@@ -115,8 +151,8 @@ def run_camera2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname, cam_nam
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
 
     if cam_name == "bodycam":
-        cap = _setup_capture(frame_shm.x_res, frame_shm.y_res, camera_idx, fps)
-        _read_stream_loop(frame_shm, termflag_shm, cap)
+        cap = _setup_capture_imageio(frame_shm.x_res, frame_shm.y_res, camera_idx, fps)
+        _read_stream_loop_imageio(frame_shm, termflag_shm, cap)
     elif cam_name == "facecam":
         _read_stream_faceCam(frame_shm, termflag_shm)
 
@@ -142,4 +178,5 @@ if __name__ == "__main__":
     if sys.platform.startswith('linux'):
         if (prio := kwargs.pop("process_prio")) != -1:
             os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
+            
     run_camera2shm(**kwargs)

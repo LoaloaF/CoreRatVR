@@ -33,7 +33,7 @@ def _get_serial_input(L, ser, packets_buf):
     L.combi_msg += f"{len(ser_data)} chars, ser_data={ser_data}\n\t"
     next_p_start_idx = _find_packet_start_char(ser_data)
     if next_p_start_idx != -1:
-        pc_ts = int(time.perf_counter()*1e6)
+        pc_ts = int(time.time()*1e6)
         L.combi_msg += f'`<` found, ts={(pc_ts/1e6-int(pc_ts/1e6))*1000:.2f}(ms part)\n\t'
     else:
         pc_ts = None

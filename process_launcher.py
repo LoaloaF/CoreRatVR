@@ -215,6 +215,7 @@ def _launch(exec, script, *args):
     proc = subprocess.Popen((exec, script, *args), stderr=log_file, stdout=log_file)
 
     L.logger.info(f"With PID {proc.pid}") 
+        
     return proc
 
 def _close_log_file(file):

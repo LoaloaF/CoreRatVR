@@ -64,7 +64,7 @@ class Parameters:
         cls._instance.SHM_PACKAGE_NBYTES_UNITY_INPUT = 64
 
         cls._instance.SHM_NAME_UNITY_CAM = 'unitycam'
-        cls._instance.UNITY_CAM_X_RES = 535
+        cls._instance.UNITY_CAM_X_RES = 500
         cls._instance.UNITY_CAM_Y_RES = 400
         cls._instance.UNITY_CAM_NCHANNELS = 3
         cls._instance.UNITY_CAM_FPS = 20
