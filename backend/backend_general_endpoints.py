@@ -5,6 +5,7 @@ sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
 sys.path.insert(1, os.path.join(sys.path[0], 'backend'))
 
 from time import sleep
+import json
 from fastapi import HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -144,6 +145,8 @@ def attach_general_endpoints(app):
         
         request.app.state.state['procs'].update({proc_name: 0 for proc_name in procs_state.keys()})
 
+        session_paramters.clear()
+
         # delete all shared memory
         sleep(1)
         for shm_name, shm_created in shm_state.items():
@@ -168,7 +171,38 @@ def attach_general_endpoints(app):
     def animals():
         static_animals = ["rYL_001","rYL_002","rYL_003","rYL_004","rYL_005"]
         return static_animals
-    
+
+    @app.get("/paradigm_fsm")
+    def paradigm_fsm():
+        path = os.path.join(P.PROJECT_DIRECTORY, "UnityRatVR", "builds", "paradigmFSMs")
+        if not os.path.exists(os.path.join(path, "fsm_states.json")):
+            msg = ("FSM structure has not been extracted from Unity Assets yet."
+                   " Run extractParadigmFSM.py first.")
+            raise HTTPException(status_code=400, detail=msg)
+        
+        if session_paramters.paradigm_name is None:
+            raise HTTPException(status_code=400, detail="Paradigm has not been set yet")
+        
+        paradigm = session_paramters.paradigm_name
+        paradigm_id = session_paramters.paradigm_id
+        with open(os.path.join(path, "fsm_states.json")) as f:
+            fsm_states = {key: val for key, val in json.load(f).items() 
+                          if val["paradigm"] == paradigm_id}
+        with open(os.path.join(path, "fsm_transitions.json")) as f:
+            fsm_transitions = json.load(f)
+        with open(os.path.join(path, "fsm_decisions.json")) as f:
+            fsm_decisions = json.load(f)
+        with open(os.path.join(path, "fsm_actions.json")) as f:
+            fsm_actions = json.load(f)
+        return {"states": fsm_states, "transitions": fsm_transitions, 
+                "decisions": fsm_decisions, "actions": fsm_actions}
+
+    @app.get("/paradigm_env")
+    def paradigm_environment():
+        if session_paramters.paradigm_name is None:
+            raise HTTPException(status_code=400, detail="Paradigm has not been set yet")
+        return session_paramters.excel_paradigm_definions
+        
     @app.post("/session/animal/{msg}")
     def sessionanimal(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 

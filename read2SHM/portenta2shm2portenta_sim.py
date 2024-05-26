@@ -28,7 +28,7 @@ Vp = 0
 
 def _gen_package(N, ID, V):
     T = int(time.perf_counter()*1e6)
-    F = int(np.random.rand()>.2)
+    F = int(np.random.rand()>.99)
 
     pack = "<{" + f"N:{N},ID:{ID},T:{T},PCT:{T},V:{V},F:{F}" + "}>\r\n"
     return pack, N
@@ -51,7 +51,8 @@ def gen_ballvel_package():
 def gen_L_package():
     global L_ID
     L_ID += 1
-    return _gen_package("L", L_ID, int((np.random.randn()+2)*50)) # length lick in ms into the past
+    # return _gen_package("L", L_ID, -int((np.random.rand())*1000)) # length lick in ms into the past
+    return _gen_package("L", L_ID, 1) # length lick in ms into the past
 
 def gen_A_package():
     global A_ID
@@ -71,13 +72,13 @@ def gen_R_package():
 def gen_P_package():
     global P_ID
     P_ID += 1
-    return _gen_package("P", P_ID, 1) # length punishment in ms
+    return _gen_package("P", P_ID, 1) # length punishment in msF
 
 def _handle_portentaoutput(ballvel_shm, portentaoutput_shm):
     num = np.random.rand()
-    if num < .5:
+    if num < .995:
         ballvel_pack, _ = gen_ballvel_package()
-        Logger().logger.debug(f"ballvel_pack: {ballvel_pack}")
+        Logger().logger.debug(F"ballvel_pack: {ballvel_pack}")
         ballvel_shm.push(ballvel_pack.encode())
     else:
         lickpack, _ = gen_L_package()
@@ -127,8 +128,8 @@ def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm,
         while True:
             dt = time.perf_counter()*1e6-t0
             # if dt > 1250:
-            # if dt > 1250:
-            if dt > 625:
+            if dt > 1250:
+            # if dt > 625:
                 t0 = time.perf_counter()*1e6
                 if dt > 3000:
                     L.logger.warning(f"slow - dt: {dt}")
