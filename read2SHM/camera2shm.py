@@ -3,11 +3,15 @@ import os
 # when executed as a process add parent SHM dir to path again
 sys.path.insert(1, os.path.join(sys.path[0], '..')) # project dir
 sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
-import imageio
 import time
 import argparse
 import cv2
+import pygame
+import pygame.camera
+from pygame.locals import *
 from pymba import Vimba, VimbaException
+import threading
+import queue
 from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 
@@ -37,13 +41,17 @@ def _setup_capture(x_resolution, y_resolution, camera_idx, fps):
         new_width += 30
         new_height += 30
     L.logger.debug((f"Capturing at resolution X={cap.get(cv2.CAP_PROP_FRAME_WIDTH)} "
-                    f"Y={cap.get(cv2.CAP_PROP_FRAME_WIDTH)} and "
+                    f"Y={cap.get(cv2.CAP_PROP_FRAME_HEIGHT)} and "
                     f"FPS={cap.get(cv2.CAP_PROP_FPS)}"))
     
     return cap
 
 
+
+        
+
 def _read_stream_loop(frame_shm, termflag_shm, cap):
+        
     L = Logger()
     L.logger.info("Reading camera stream & writing to SHM...")
     try:
@@ -58,6 +66,7 @@ def _read_stream_loop(frame_shm, termflag_shm, cap):
                 L.logger.info("Capture didn't return a frame, exiting.")
                 break
 
+            
             pack = "<{" + f"N:I,ID:{frame_i},PCT:{int(time.time()*1e6)}" + "}>\r\n"
             L.logger.debug(f"New frame: {pack}")
             
@@ -67,42 +76,6 @@ def _read_stream_loop(frame_shm, termflag_shm, cap):
             frame_i += 1
     finally:
         cap.release()
-
-
-def _setup_capture_imageio(x_resolution, y_resolution, camera_idx, fps):
-    # use imageio liberary to avoid the cpu overload of cv2
-    L = Logger()
-    L.logger.debug(f"Setting up video capture for cam {camera_idx}")
-    
-    cap = imageio.get_reader(f'<video{camera_idx}>', fps=fps)
-
-    
-    return cap
-
-
-def _read_stream_loop_imageio(frame_shm, termflag_shm, cap):
-    L = Logger()
-    L.logger.info("Reading camera stream & writing to SHM...")
-    try:
-        frame_i = 0
-        for frame in cap:
-            # define breaking condition for the thread/process
-            if termflag_shm.is_set():
-                L.logger.info("Termination flag raised")
-                break
-            
-
-            pack = "<{" + f"N:I,ID:{frame_i},PCT:{int(time.time()*1e6)}" + "}>\r\n"
-            L.logger.debug(f"New frame: {pack}")
-            
-            frame = frame[:frame_shm.y_res, :frame_shm.x_res, :frame_shm.nchannels]
-            frame = frame.transpose(1,0,2)
-            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)# cv2: y-x-rgb, everywhere: x-y-rgb
-            frame_shm.add_frame(frame, pack.encode('utf-8'))
-            frame_i += 1
-    finally:
-        cap.release()
-
 
 
 
@@ -142,6 +115,33 @@ def _read_stream_faceCam(frame_shm, termflag_shm):
             camera.disarm()
             camera.close()
 
+def _read_stream_bodyCam_pygame(frame_shm, termflag_shm):
+    L = Logger()
+    L.logger.info("Reading camera stream & writing to SHM...pygame")
+    
+    pygame.init()
+    pygame.camera.init()
+    cam = pygame.camera.Camera("/dev/video0", (frame_shm.x_res, frame_shm.y_res))
+    cam.start()
+    
+    try:
+        frame_i = 0
+        while True:
+            if termflag_shm.is_set():
+                L.logger.info("Termination flag raised")
+                break
+            image = cam.get_image()
+            frame = pygame.surfarray.array3d(image)
+
+            pack = "<{" + f"N:I,ID:{frame_i},PCT:{int(time.time()*1e6)}" + "}>\r\n"
+            L.logger.debug(f"New frame: {pack}")
+            
+            frame_shm.add_frame(frame, pack.encode('utf-8'))
+            frame_i += 1
+    finally:
+        cam.stop()
+        pygame.camera.quit()
+        pygame.quit()
 
 
 def run_camera2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname, cam_name,
@@ -151,8 +151,9 @@ def run_camera2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname, cam_nam
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
 
     if cam_name == "bodycam":
-        cap = _setup_capture_imageio(frame_shm.x_res, frame_shm.y_res, camera_idx, fps)
-        _read_stream_loop_imageio(frame_shm, termflag_shm, cap)
+        cap = _setup_capture(frame_shm.x_res, frame_shm.y_res, camera_idx, fps)
+        _read_stream_loop(frame_shm, termflag_shm, cap)
+        # _read_stream_bodyCam_pygame(frame_shm, termflag_shm)
     elif cam_name == "facecam":
         _read_stream_faceCam(frame_shm, termflag_shm)
 

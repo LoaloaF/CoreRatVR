@@ -4,13 +4,15 @@ import os
 sys.path.insert(1, os.path.join(sys.path[0], '..')) # project dir
 sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 sys.path.insert(1, os.path.join(sys.path[0], '..', 'read2shm')) # read2SHM dir
-
+import time
 import cv2
 import argparse
 import matplotlib.pyplot as plt
 
 from CustomLogger import CustomLogger as Logger
-
+import PIL.Image as Image
+import threading
+import queue
 from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 
@@ -19,8 +21,10 @@ def _stream(frame_shm, termflag_shm):
 
     L.logger.info("Starting camera stream")
     prv_frame_package = b''
+
     try:
-        cv2.startWindowThread()
+        # cv2.startWindowThread()
+        cv2.namedWindow(frame_shm._shm_name)
         while True: 
             if termflag_shm.is_set():
                 L.logger.info("Termination flag raised")
@@ -34,15 +38,18 @@ def _stream(frame_shm, termflag_shm):
 
             frame = frame_shm.get_frame()
             L.logger.debug(f"New frame {frame.shape} read from SHM: {frame_package}")
-
+            
             # if frame_shm.nchannels < 3:
             #     frame = frame[:,:,0:1]
-
-            cv2.namedWindow(frame_shm._shm_name)
+            
             cv2.imshow(frame_shm._shm_name, frame)
             cv2.waitKey(1)
+            # time.sleep(0.1)
     finally:
         cv2.destroyAllWindows()
+
+
+
 
 def run_display_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname):
     # shm access

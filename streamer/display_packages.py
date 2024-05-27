@@ -78,7 +78,7 @@ def _init_plot():
     axes[2].tick_params(axis='both', which='both', length=0, labelleft=False)
     axes[2].set_ylim(-1,3)
     axes[3].set_ylim(-50,50)
-    axes[4].set_ylim(0,256)
+    axes[4].set_ylim(0,1024)
     axes[5].set_ylim(-100,100)
     axes[5].tick_params(axis='both', which='both', length=0, labelleft=False)
     axes[6].set_ylim(-100,100)
