@@ -3,7 +3,7 @@ from time import sleep
 import time
 
 def test_endpoints():
-    base_url = "http://localhost:8000"
+    base_url = "http://localhost:8001"
 
     def createshm():
         # POST /initiate
@@ -155,7 +155,7 @@ def test_endpoints():
     # print("POST /shm/create_ballvelocity_shm:", response.json())
 
     # POST /shm/create_ballvelocity_shm
-    response = requests.post(f"{base_url}/procs/launch_stream_facecam")
+    response = requests.get(f"{base_url}/paradigm_env")
     print("POST /shm/launch_stream_facecam:", response.json())
 
 

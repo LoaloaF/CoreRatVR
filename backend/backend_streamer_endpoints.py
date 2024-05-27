@@ -36,6 +36,7 @@ def attach_stream_endpoints(app):
             ballvel_pkgs = []
             t0 = time.time()                
             while True:
+                await asyncio.sleep(0.00001) # check memory every 1ms
                 if ballvel_shm.usage > 0:
                     pack = ballvel_shm.popitem(return_type=dict)
                     ryp = dict(zip(("raw", "yaw", "pitch"), 
@@ -43,14 +44,15 @@ def attach_stream_endpoints(app):
                     ballvel_pkgs.append({**pack, **ryp})
                     
                 if ballvel_shm.usage>10:
-                    L.logger.warning(f"sending to slowly: {ballvel_shm.usage}")
+                    L.logger.warning(f"sending ball vell too slowly: {ballvel_shm.usage}")
                 if  time.time() - t0 > 0.0333333: # 30 packages a second
                     # L.logger.info(f"sending {len(ballvel_pkgs)} packages")          
                     await websocket.send_json(ballvel_pkgs)
                     ballvel_pkgs.clear()
-                    t0 = time.time()                
+                    t0 = time.time()             
+                    await asyncio.sleep(0.0005) # check memory every 1ms
+                       
                     
-                    await asyncio.sleep(0.001)
         except:
             pass
         finally:
@@ -71,26 +73,63 @@ def attach_stream_endpoints(app):
         
         L = Logger()
         portentaout_shm = CyclicPackagesSHMInterface(shm_struct_fname(P.SHM_NAME_PORTENTA_OUTPUT))
+        while portentaout_shm.popitem():
+            pass
         await websocket.accept()
         try:
             ballvel_pkgs = []
             t0 = time.time()                
             while True:
+                await asyncio.sleep(0.001) # check memory every 1ms
                 if portentaout_shm.usage > 0:
                     pack = portentaout_shm.popitem(return_type=dict)
                     ballvel_pkgs.append(pack)
                     
                 if portentaout_shm.usage>10:
-                    L.logger.debug(f"sending to slowly: {portentaout_shm.usage}")
-                if  time.time() - t0 > 0.0333333: # 30 packages a second
-                    L.logger.debug(f"sending {len(ballvel_pkgs)} packages")          
+                    L.logger.info(f"sending lick too slowly: {portentaout_shm.usage}")
+                if  ballvel_pkgs and time.time() - t0 > 0.0333333: # 30 packages a second
+                    L.logger.info(f"sending {len(ballvel_pkgs)} packages")          
                     await websocket.send_json(ballvel_pkgs)
                     ballvel_pkgs.clear()
-                    t0 = time.time()                
+                    t0 = time.time()
                     
-                    await asyncio.sleep(0.001)
         except:
             pass
         finally:
             portentaout_shm.close_shm()
+            websocket.close()
+    
+    @app.websocket("/stream/unityoutput")
+    async def stream_unityoutput(websocket: WebSocket):
+        validate_state(app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_UNITY_OUTPUT: True},
+                       valid_proc_running=None)
+                    #    valid_proc_running={"unity": True,})
+        
+        L = Logger()
+        unityout_shm = CyclicPackagesSHMInterface(shm_struct_fname(P.SHM_NAME_UNITY_OUTPUT))
+        await websocket.accept()
+        while unityout_shm.popitem():
+            pass
+        try:
+            unity_pkgs = []
+            t0 = time.time()                
+            while True:
+                await asyncio.sleep(0.01) # check memory every 10ms
+                if unityout_shm.usage > 0:
+                    pack = unityout_shm.popitem(return_type=dict)
+                    unity_pkgs.append(pack)
+                    
+                if unityout_shm.usage>10:
+                    L.logger.debug(f"sending to slowly: {unityout_shm.usage}")
+                if  unity_pkgs and time.time() - t0 > 0.0333333: # sending packge pack every 30ms
+                    L.logger.debug(f"sending {len(unity_pkgs)} packages")
+                    await websocket.send_json(unity_pkgs)
+                    unity_pkgs.clear()
+                    t0 = time.time()                
+                    
+        except:
+            pass
+        finally:
+            unityout_shm.close_shm()
             websocket.close()
