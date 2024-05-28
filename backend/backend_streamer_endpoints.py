@@ -36,7 +36,7 @@ def attach_stream_endpoints(app):
             ballvel_pkgs = []
             t0 = time.time()                
             while True:
-                await asyncio.sleep(0.00001) # check memory every 1ms
+                await asyncio.sleep(0.000001) # check memory every 1us
                 if ballvel_shm.usage > 0:
                     pack = ballvel_shm.popitem(return_type=dict)
                     ryp = dict(zip(("raw", "yaw", "pitch"), 
@@ -50,7 +50,7 @@ def attach_stream_endpoints(app):
                     await websocket.send_json(ballvel_pkgs)
                     ballvel_pkgs.clear()
                     t0 = time.time()             
-                    await asyncio.sleep(0.0005) # check memory every 1ms
+                    # await asyncio.sleep(0.0005) # check memory every 1ms
                        
                     
         except:
@@ -80,10 +80,12 @@ def attach_stream_endpoints(app):
             ballvel_pkgs = []
             t0 = time.time()                
             while True:
-                await asyncio.sleep(0.001) # check memory every 1ms
+                await asyncio.sleep(0.010) # check memory every 1ms
                 if portentaout_shm.usage > 0:
                     pack = portentaout_shm.popitem(return_type=dict)
                     ballvel_pkgs.append(pack)
+                else:
+                    continue
                     
                 if portentaout_shm.usage>10:
                     L.logger.info(f"sending lick too slowly: {portentaout_shm.usage}")
