@@ -60,11 +60,8 @@ def _log(termflag_shm, unityout_shm, full_fname):
             continue
 
         L.logger.debug(unity_package)
-        if unity_package["N"] == "TN":
-            _save_package_set([unity_package], full_fname, key="trialstarts")
-        
-        elif unity_package["N"] == "TE":
-            _save_package_set([unity_package], full_fname, key="trialends")
+        if unity_package["N"] == "T":
+            _save_package_set([unity_package], full_fname, key="trialPackages")
             
         elif unity_package["N"] == "U":
             # check for ID discontinuity
@@ -85,7 +82,7 @@ def _log(termflag_shm, unityout_shm, full_fname):
         nchecks = 1
 
 def run_log_unity(termflag_shm_struc_fname, unityoutput_shm_struc_fname, 
-                  session_data_dir, paradigm_pillar_types):
+                  session_data_dir, trial_package_variables):
     # shm access
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     unityout_shm = CyclicPackagesSHMInterface(unityoutput_shm_struc_fname)
@@ -96,20 +93,19 @@ def run_log_unity(termflag_shm_struc_fname, unityoutput_shm_struc_fname,
         print(df)
         hdf.put('unityframes', df, format='table', append=False)
         
-        # trial start packages have information about pillar types
-        print(paradigm_pillar_types)
-        if ',' in paradigm_pillar_types:
-            pillar_cols = [el for p in paradigm_pillar_types.split(",") 
-                        for el in (f"P{p}R", f"P{p}T", f"P{p}P")]
-        else:
-            pillar_cols = []
-        df = pd.DataFrame(columns=["N", "ID", "FID", "PCT", *pillar_cols], index=[])
+        # the following commented line is what it should be with dynamic assignemnt, which comes the problem of execuation order
+        # trialPackages_columns_list = ["N","ID","SFID","SPCT", "EFID", "EPCT","TD","O"]
+        # for each_variable in trial_package_variables.split(","):
+        #     trialPackages_columns_list.append(each_variable)
+
+        # Below is the hard coded one
+        trialPackages_columns_list = ["N","ID","SFID","SPCT", "EFID", "EPCT","TD","O", "PA", "PD"]
+
+        df = pd.DataFrame(columns=trialPackages_columns_list, index=[])
         print(df)
-        hdf.put('trialstarts', df, format='table', append=False)
-        
-        df = pd.DataFrame(columns=["N","ID","FID","PCT","TD","P"], index=[])
-        print(df)
-        hdf.put('trialends', df, format='table', append=False)
+        hdf.put('trialPackages', df, format='table', append=False)
+
+
     _log(termflag_shm, unityout_shm, full_fname)
 
 if __name__ == "__main__":
@@ -122,7 +118,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_level")
     argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--session_data_dir")
-    argParser.add_argument("--paradigm_pillar_types")
+    argParser.add_argument("--trial_package_variables")
 
     kwargs = vars(argParser.parse_args())
     L = Logger()

@@ -130,7 +130,7 @@ def open_log_unity_proc():
         "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.LOG_UNITY_PROC_PRIORITY),
         "--session_data_dir", P.SESSION_DATA_DIRECTORY,
-        "--paradigm_pillar_types", str(SessionParamters().paradigm_pillar_types),
+        "--trial_package_variables", str(SessionParamters().session_parameters_dict["trialPackageVariables"]),
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 

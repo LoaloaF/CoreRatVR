@@ -6,14 +6,6 @@ import shutil
 import pandas as pd
 import numpy as np
 
-# class SessionParamters(object):
-#     def __init__(self):
-#         self.session_id = None
-#         self.paradigm_name = None
-#         self.animal = None
-#         self.animal_weight = None
-#         self.paradigm_dataframe
-
 class SessionParamters:
     _instance = None
 
@@ -27,11 +19,13 @@ class SessionParamters:
         cls._instance.paradigm_id = None
         cls._instance.animal = None
         cls._instance.animal_weight = None
-        cls._instance.paradigm_df = None
-        cls._instance.environment_df = None
-        cls._instance.paradigm_pillar_types = None
-        
-        cls._instance.excel_paradigm_definions = {}
+
+        # These 2 dictionarys stores everything from the 3 excel sheets
+        cls._instance.session_parameters_dict = {}
+        cls._instance.environment_parameters_dict = {}
+
+        # the below code is temporary due to the execuation order problem; now is hard coded
+        cls._instance.session_parameters_dict["trialPackageVariables"] = "PA,PD"
 
         return cls._instance
 
@@ -40,8 +34,9 @@ class SessionParamters:
         self.paradigm_name = None
         self.animal = None
         self.animal_weight = None
-        self.paradigm_df = None
-        self.paradigm_pillar_types = None
+
+        self._instance.session_parameters = None
+        self._instance.environment_parameters = None
         
     def handle_start_session(self):
         self.session_id = str(uuid.uuid4())[:16]
@@ -51,6 +46,7 @@ class SessionParamters:
     def handle_stop_session(self):
         self._save_session_parameters()
     
+
     def _copy_paradigm_excel_to_session_dir(self):
         P = Parameters()
         p = P.PROJECT_DIRECTORY, "UnityRatVR", "Paradigms", self.paradigm_name+".xlsx"
@@ -58,18 +54,25 @@ class SessionParamters:
         dst_paradigm_excelfullfname = os.path.join(P.SESSION_DATA_DIRECTORY, 
                                                    self.paradigm_name+".xlsx")
         shutil.copy(src_paradigm_excelfullfname, dst_paradigm_excelfullfname)
-        self.paradigm_df = pd.read_excel(dst_paradigm_excelfullfname,
-                                                sheet_name="SessionParameters").set_index("Session parameters", drop=True)
-        environment_df = pd.read_excel(dst_paradigm_excelfullfname,
+
+        # read the 3 excel sheets
+        env_df = pd.read_excel(dst_paradigm_excelfullfname,
                                        sheet_name="Environment").set_index("Unnamed: 0")
         env_params_df = pd.read_excel(dst_paradigm_excelfullfname,
                                       sheet_name="EnvParameters")
-        self.extract_paradigm_parameters(environment_df, env_params_df)
+        session_df = pd.read_excel(dst_paradigm_excelfullfname,
+                                        sheet_name="SessionParameters").set_index("Session parameters")
         
-    def extract_paradigm_parameters(self, environment_df, env_params_df):
+        # extract environment dictionary from the 1st and 2nd sheets
+        self.extract_env_dict(env_df, env_params_df)
+        # extract session dictionary from the 3rd sheet
+        self.extract_session_dict(session_df)
+
+        
+    def extract_env_dict(self, env_df, env_params_df):
         # print(environment_df, env_params_df)
-        x_indices_pillar, y_indices_pillar = np.where(environment_df.notna())
-        pillars = {i: {"id":int(environment_df.iloc[x,y]), "x":int(x), "y":int(y)}
+        x_indices_pillar, y_indices_pillar = np.where(env_df.notna())
+        pillars = {i: {"id":int(env_df.iloc[x,y]), "x":int(x), "y":int(y)}
                    for i, (x,y) in enumerate(zip(x_indices_pillar, y_indices_pillar))}
         print(pillars)
         
@@ -80,34 +83,26 @@ class SessionParamters:
         print(pillar_details)
         
         envX_size, envY_size = env_params_df.iloc[0,14:16]
-        wallzone_size = env_params_df.iloc[1,14]
-        wallzone_collider_size = env_params_df.iloc[2,14]
-        print(envX_size,envY_size,wallzone_size,wallzone_collider_size)
+        base_length = env_params_df.iloc[1,14]
+        wallzone_size = env_params_df.iloc[2,14]
+        wallzone_collider_size = env_params_df.iloc[3,14]
+        print(envX_size,envY_size, base_length, wallzone_size,wallzone_collider_size)
         
-        # self.excel_paradigm_definions = {
-        #     "pillars": pillars,
-        #     "pillar_details": pillar_details,
-        #     "envX_size": envX_size,
-        #     "envY_size": envY_size,
-        #     "wallzone_size": wallzone_size,
-        #     "wallzone_collider_size": wallzone_collider_size
-        # }
-        self.excel_paradigm_definions = {
-            # "pillars": {int(k): (int(v[0]), int(v[1])) for k, v in pillars.items()},
+        self.environment_parameters_dict = {
             "pillars": pillars,
             "pillar_details": {int(k): {str(kk): int(vv) if isinstance(vv, np.int64) else vv for kk, vv in v.items()} for k, v in pillar_details.items()},
             "envX_size": int(envX_size),
             "envY_size": int(envY_size),
+            "base_length": int(base_length),
             "wallzone_size": int(wallzone_size),
             "wallzone_collider_size": int(wallzone_collider_size)
         }
         
-        rp_min = self.paradigm_df.loc["rewardedPillarsMin"].iloc[0]
-        rp_max = self.paradigm_df.loc["rewardedPillarsMax"].iloc[0]
-        if rp_min == -1 and rp_max == -1:
-            self.paradigm_pillar_types = "none"
-        else:
-            self.paradigm_pillar_types = ",".join([p for p in range(rp_min,rp_max+1)])
+    def extract_session_dict(self, session_df):
+        session_params_df = session_df.iloc[1:, 0:1]
+        session_params_dict = session_params_df.to_dict()
+        session_paramsdict = session_params_dict["Values"]
+        self.session_parameters_dict = session_paramsdict
         
         
     def _save_session_parameters(self):
@@ -118,6 +113,10 @@ class SessionParamters:
             "animal": self.animal,
             "animal_weight": self.animal_weight,
         }
+
+        # here we also append the session parameter dictionary we generated before
+        params.update(self.session_parameters_dict)
+
         fullffname = os.path.join(P.SESSION_DATA_DIRECTORY, "session_parameters.json")
         with open(fullffname, 'w') as f:
             json.dump(params, f)
