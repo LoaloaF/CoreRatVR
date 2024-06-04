@@ -82,28 +82,15 @@ def _log(termflag_shm, unityout_shm, full_fname):
         nchecks = 1
 
 def run_log_unity(termflag_shm_struc_fname, unityoutput_shm_struc_fname, 
-                  session_data_dir, trial_package_variables):
+                  session_data_dir):
     # shm access
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     unityout_shm = CyclicPackagesSHMInterface(unityoutput_shm_struc_fname)
 
     full_fname = os.path.join(session_data_dir, "unity_output.hdf5")
     with pd.HDFStore(full_fname) as hdf:
-        df = pd.DataFrame(columns=["N","ID","PCT","X","Z","A","S","FB","BFP","BLP"],index=[])
-        print(df)
-        hdf.put('unityframes', df, format='table', append=False)
-        
-        # the following commented line is what it should be with dynamic assignemnt, which comes the problem of execuation order
-        # trialPackages_columns_list = ["N","ID","SFID","SPCT", "EFID", "EPCT","TD","O"]
-        # for each_variable in trial_package_variables.split(","):
-        #     trialPackages_columns_list.append(each_variable)
-
-        # Below is the hard coded one
-        trialPackages_columns_list = ["N","ID","SFID","SPCT", "EFID", "EPCT","TD","O", "PA", "PD"]
-
-        df = pd.DataFrame(columns=trialPackages_columns_list, index=[])
-        print(df)
-        hdf.put('trialPackages', df, format='table', append=False)
+        hdf.put('unityframes', pd.DataFrame(), format='table', append=False)
+        hdf.put('trialPackages', pd.DataFrame(), format='table', append=False)
 
 
     _log(termflag_shm, unityout_shm, full_fname)
@@ -118,7 +105,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_level")
     argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--session_data_dir")
-    argParser.add_argument("--trial_package_variables")
+    # argParser.add_argument("--trial_package_variables")
 
     kwargs = vars(argParser.parse_args())
     L = Logger()
