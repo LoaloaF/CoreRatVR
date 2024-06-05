@@ -201,7 +201,8 @@ def attach_general_endpoints(app):
     def paradigm_environment():
         if session_paramters.paradigm_name is None:
             raise HTTPException(status_code=400, detail="Paradigm has not been set yet")
-        return session_paramters.environment_parameters
+        print(session_paramters.environment_parameters_dict)
+        return session_paramters.environment_parameters_dict
         
     @app.post("/session/animal/{msg}")
     def sessionanimal(msg: str, request: Request):
