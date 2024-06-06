@@ -24,6 +24,8 @@ class SessionParamters:
         cls._instance.session_parameters_dict = {}
         cls._instance.environment_parameters_dict = {}
 
+        # the below code is temporary due to the execuation order problem; now is hard coded
+        cls._instance.session_parameters_dict["trialPackageVariables"] = "PA,PD"
 
         return cls._instance
 
@@ -97,7 +99,7 @@ class SessionParamters:
         }
         
     def extract_session_dict(self, session_df):
-        session_params_df = session_df.iloc[1:, 0:1]
+        session_params_df = session_df.iloc[:, 0:1]
         session_params_dict = session_params_df.to_dict()
         session_paramsdict = session_params_dict["Values"]
         self.session_parameters_dict = session_paramsdict
@@ -114,7 +116,6 @@ class SessionParamters:
 
         # here we also append the session parameter dictionary we generated before
         params.update(self.session_parameters_dict)
-        params.update(self.environment_parameters_dict)
 
         fullffname = os.path.join(P.SESSION_DATA_DIRECTORY, "session_parameters.json")
         with open(fullffname, 'w') as f:
