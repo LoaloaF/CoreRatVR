@@ -4,6 +4,7 @@ from starlette.types import Scope
 
 import asyncio
 import time
+import cv2
 from CustomLogger import CustomLogger as Logger
 
 from Parameters import Parameters
@@ -13,6 +14,7 @@ from requests import request
 import process_launcher as pl
 from process_launcher import shm_struct_fname
 from SHM.CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
+from SHM.VideoFrameSHMInterface import VideoFrameSHMInterface
 
 def attach_stream_endpoints(app):
     # singlton class - reference to instance created in lifespan
@@ -36,21 +38,25 @@ def attach_stream_endpoints(app):
             ballvel_pkgs = []
             t0 = time.time()                
             while True:
-                await asyncio.sleep(0.000001) # check memory every 1us
-                if ballvel_shm.usage > 0:
+                await asyncio.sleep(0.001) # check memory every 100us
+
+                maxpops = 3
+                while ballvel_shm.usage > 0 and maxpops > 0:
                     pack = ballvel_shm.popitem(return_type=dict)
                     ryp = dict(zip(("raw", "yaw", "pitch"), 
                                    [int(v) for v in pack.pop("V").split("_")]))
                     ballvel_pkgs.append({**pack, **ryp})
+                    # L.logger.warning(f"pop took {time.time()*1e6 - _t0}us, pckg delta: {pack['PCT']-pckg_t0}us")
+                    pckg_t0 = pack["PCT"]
+                    maxpops -= 1
                     
-                if ballvel_shm.usage>10:
+                if ballvel_shm.usage>10 and time.time() - t0 > 0.0333333:
                     L.logger.warning(f"sending ball vell too slowly: {ballvel_shm.usage}")
                 if  time.time() - t0 > 0.0333333: # 30 packages a second
-                    # L.logger.info(f"sending {len(ballvel_pkgs)} packages")          
+                    # L.logger.info(f"\n\nSending {len(ballvel_pkgs)} packages")          
                     await websocket.send_json(ballvel_pkgs)
                     ballvel_pkgs.clear()
                     t0 = time.time()             
-                    # await asyncio.sleep(0.0005) # check memory every 1ms
                        
                     
         except:
@@ -135,3 +141,103 @@ def attach_stream_endpoints(app):
         finally:
             unityout_shm.close_shm()
             websocket.close()
+        
+    @app.websocket("/stream/bodycam")
+    async def stream_unityoutput(websocket: WebSocket):
+        validate_state(app.state.state, valid_initiated=True, 
+                    valid_shm_created={P.SHM_NAME_BODY_CAM: True},
+                    valid_proc_running={"bodycam2shm": True,})
+        
+        L = Logger()
+        frame_shm = VideoFrameSHMInterface(shm_struct_fname(P.SHM_NAME_BODY_CAM))
+        
+        await websocket.accept()
+        
+        prv_frame_package = b''
+        try:
+            t0 = time.time()                
+            while True:
+                await asyncio.sleep(0.01) # check memory every 10ms
+                L.logger.debug(f"Checking for new frame")
+                # wait until new frame is available
+                if (frame_package := frame_shm.get_package()) == prv_frame_package:
+                    L.logger.debug(f"Same package: {frame_package}")
+                    continue
+                prv_frame_package = frame_package
+
+                frame = frame_shm.get_frame()
+                L.logger.debug(f"New frame {frame.shape} read from SHM: {frame_package}")
+                
+                frame_encoded = cv2.imencode('.jpg', frame)[1].tobytes()  # Encode the frame as JPEG
+                await websocket.send_bytes(frame_encoded)  # Send the encoded frame
+        except Exception as e:
+            L.logger.warning(f"Error in bodycam stream: {e}")
+        finally:
+            # frame_shm.close_shm()
+            websocket.close()
+
+    @app.websocket("/stream/facecam")
+    async def stream_unityoutput(websocket: WebSocket):
+        validate_state(app.state.state, valid_initiated=True, 
+                    valid_shm_created={P.SHM_NAME_FACE_CAM: True},
+                    valid_proc_running={"facecam2shm": True,})
+        
+        L = Logger()
+        frame_shm = VideoFrameSHMInterface(shm_struct_fname(P.SHM_NAME_FACE_CAM))
+        
+        await websocket.accept()
+        
+        prv_frame_package = b''
+        try:
+            t0 = time.time()                
+            while True:
+                await asyncio.sleep(0.01) # check memory every 10ms
+                
+                # wait until new frame is available
+                if (frame_package := frame_shm.get_package()) == prv_frame_package:
+                    continue
+                prv_frame_package = frame_package
+
+                frame = frame_shm.get_frame()
+                L.logger.debug(f"New frame {frame.shape} read from SHM: {frame_package}")
+                
+                frame_encoded = cv2.imencode('.jpg', frame)[1].tobytes()  # Encode the frame as JPEG
+                await websocket.send_bytes(frame_encoded)  # Send the encoded frame
+        except:
+            pass
+        finally:
+            # frame_shm.close_shm()
+            websocket.close()
+
+    @app.websocket("/stream/unitycam")
+    async def stream_unityoutput(websocket: WebSocket):
+        validate_state(app.state.state, valid_initiated=True, 
+                    valid_shm_created={P.SHM_NAME_UNITY_CAM: True},
+                    valid_proc_running={"unity": True,})
+        
+        L = Logger()
+        frame_shm = VideoFrameSHMInterface(shm_struct_fname(P.SHM_NAME_UNITY_CAM))
+        
+        await websocket.accept()
+        
+        prv_frame_package = b''
+        try:
+            t0 = time.time()                
+            while True:
+                await asyncio.sleep(0.01) # check memory every 10ms
+                
+                # wait until new frame is available
+                if (frame_package := frame_shm.get_package()) == prv_frame_package:
+                    continue
+                prv_frame_package = frame_package
+
+                frame = frame_shm.get_frame()
+                L.logger.debug(f"New frame {frame.shape} read from SHM: {frame_package}")
+                
+                frame_encoded = cv2.imencode('.jpg', frame)[1].tobytes()  # Encode the frame as JPEG
+                await websocket.send_bytes(frame_encoded)  # Send the encoded frame
+        except:
+            pass
+        finally:
+            # frame_shm.close_shm()
+            websocket.close() 
