@@ -153,6 +153,16 @@ def open_unity_proc():
     L.logger.info(f"Logging to {log_fullfname}")
     return subprocess.Popen((script, *args))
 
+def open_process_session_proc():
+    P = Parameters()
+    script = os.path.join(P.PROJECT_DIRECTORY, "CoreRatVR", 'process_session.py')
+    
+    args = _make_proc_args(shm_args=())
+    args.extend([
+        "--logging_name", script.replace(".py", ""),
+    ])
+    return _launch(P.WHICH_PYTHON, script, *args)
+
 def shm_struct_fname(shm_name):
     P = Parameters()
     return os.path.join(P.SHM_STRUCTURE_DIRECTORY, shm_name+"_shmstruct.json")

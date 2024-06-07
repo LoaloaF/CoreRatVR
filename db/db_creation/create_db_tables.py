@@ -220,6 +220,9 @@ def create_ratvr_db(db_name):
     cursor.execute("CREATE INDEX paradigm_p0200_session_id_index ON paradigm_P0200(session_id);")
     cursor.execute("CREATE INDEX paradigm_p0200_trial_id_index ON paradigm_P0200(trial_id);")
 
+    # -S-
+    # Put picture or svg of database schema in  directory 
+    # -S-
 
     # Commit changes and close the connection
     conn.commit()
@@ -227,6 +230,9 @@ def create_ratvr_db(db_name):
 
 
 if __name__ == "__main__":
+    # -S-
+    # Throw error if file exists
+    # -S-
     create_ratvr_db('rat_vr.db')
     create_ratvr_db('rat_vr_test.db')
     print("rat_vr database created successfully.")

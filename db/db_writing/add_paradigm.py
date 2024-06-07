@@ -26,6 +26,10 @@ if __name__ == "__main__":
         # 'paradigm_description': ''
     }
 
+    # -S-
+    # see add_animal comments
+    # -S-
+
 
     add_paradigm("rat_vr.db", paradigm_dict)
     add_paradigm("rat_vr_test.db", paradigm_dict)

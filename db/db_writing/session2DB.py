@@ -10,7 +10,6 @@ from add_variable import add_variable
 from add_utils import *
 from datetime import datetime
 
-
 def read_session_json_file(cursor, parent_folder_path, session_folder_name):
 
     session_info = session_folder_name.split('_')  
@@ -89,10 +88,13 @@ def add_data(parent_folder_path, session_folder_name, db_name):
     conn.commit()
     conn.close()
 
-
-if __name__ == "__main__":
-
-
+def session2DB(session_dir):
+    # -S-
+    # Use session_dir everywhere instead of folder_path etc
+    # -S-
+    print(session_dir)
+    print()
+    
     parent_folder_path = '/home/ntgroup/Project/DBRatVR/SQLite/TestData'
     session_folder_name = '2024-06-04_12-06-04_goodone_Tuesday_1'
     folder_path = os.path.join(parent_folder_path, session_folder_name)
@@ -100,6 +102,9 @@ if __name__ == "__main__":
     conn = None
 
     try:
+        # -S-
+        # Add logging statements at INFO level
+        # -S-
         add_data(parent_folder_path, session_folder_name, 'rat_vr_test.db')
         conn = sqlite3.connect('rat_vr_test.db')
         clear_tables(conn)
@@ -115,5 +120,28 @@ if __name__ == "__main__":
     finally:
         if conn is not None:
             conn.close()
+            
+            
+# -S- 
+# I added the overhead archetecture for this procedure. Here is what i changed:
+# I added a file called process_session.py to the Core root dir. This is the 
+# file that will be exectued by the user. It import the session2DB function from
+# this module and calls it. In the future, more things will be called from there 
+# (like validation). I also added the API endpoints for calling process_session.py
+# You can run the vr server, and then testapi.py to initiate then run the process_session.py
+# This will create a new session directory and put the log file of process_session in it.
 
-        
+# if you want to directly see the logs in the terminal, you can also run it explicitly,
+# but you need to pass the logger arugments. Excample below:
+#   python process_session.py --logging_dir "../logs" --logging_name "sesion_proc.log" --logging_level "DEBUG"
+
+# We will handle the exact path handling later. For now you can expect to get 
+# the directory passed to the session2DB function.
+
+# I won't check all add_* files in detail, but I think you got my points;)
+# Add logging where necessary (you can just pass L around or recreate, it will
+# reference the same logger object, so no overhead) Then, add # comments where 
+# things are maybe not so clear, cleanup imports, limit line length to 80 chars
+
+# But it really looks very nice, thanks a lot!!
+# -S- 

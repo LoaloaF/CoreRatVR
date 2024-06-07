@@ -109,55 +109,17 @@ def test_endpoints():
         while True:
             msg = input("Press Enter to send Unity input...")
             requests.post(f"{base_url}/unityinput/{msg}", json={"message": msg})
-
-    # response = requests.post(f"{base_url}/initiate")
-    # print("POST /initiate:", response.json())
-
-    # # GET /parameters
-    # response = requests.get(f"{base_url}/parameters")
-    # print("GET /parameters:", response.json())
-
-    # # PATCH /parameters/{key}
-    # key = "LOGGING_LEVEL"  # replace with your key
-    # new_value = "DEBUG"  # replace with your value
-    # response = requests.patch(f"{base_url}/parameters/{key}?new_value={new_value}")
-    # print(f"PATCH /parameters/{key}:", response.json())
             
-    
-    # print(requests.get(f"{base_url}/parameters").json())
-    # print(requests.get(f"{base_url}/parameters/groups").json())
-    # print(requests.get(f"{base_url}/parameters/locked").json())
-    # createshm()
-    # run_cam()
-    # print(requests.get(f"{base_url}/state"))
-    # run()
-    # run_cam()
-    # sleep(50)
-    # sleep(100)
-    # term()
-    
-    # sleep(6)
-    # term()
-    # inputloop()
-    
-    # response = requests.get(f"{base_url}/paradigms")
-    # print("GET /paradigms:", response.json())
-    # # POST /initiate
-    # response = requests.post(f"{base_url}/initiate")
-    # print("POST /initiate:", response.json())
-
-    # # POST /shm/create_termflag_shm
-    # response = requests.post(f"{base_url}/shm/create_termflag_shm")
-    # print("POST /shm/create_termflag_shm:", response.json())
-
-    # # POST /shm/create_ballvelocity_shm
-    # response = requests.post(f"{base_url}/shm/create_ballvelocity_shm")
-    # print("POST /shm/create_ballvelocity_shm:", response.json())
-
-    # POST /shm/create_ballvelocity_shm
-    response = requests.get(f"{base_url}/paradigm_env")
-    print("POST /shm/launch_stream_facecam:", response.json())
-
+    def test_proc_session():
+        
+        # POST /initiate
+        response = requests.post(f"{base_url}/initiate")
+        print("POST /initiate:", response.json())
+        
+        response = requests.post(f"{base_url}/procs/launch_process_session")
+        print("POST /procs/launch_process_session:", response.json())
+        
+    test_proc_session()
 
     
 if __name__ == "__main__":
