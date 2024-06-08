@@ -67,7 +67,7 @@ def attach_proc_endpoints(app):
                                           P.SHM_NAME_FACE_CAM: True,
                                           },
                        valid_proc_running={"facecam2shm": False})
-        proc = pl.open_camera2shm_proc(P.SHM_NAME_FACE_CAM)
+        proc = pl.open_vimbacam2shm_proc(P.SHM_NAME_FACE_CAM)
         request.app.state.state["procs"]["facecam2shm"] = proc.pid
     
     @app.post("/procs/launch_bodycam2shm")
