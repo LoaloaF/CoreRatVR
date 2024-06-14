@@ -1,10 +1,11 @@
 import sqlite3
+import os
+
 
 def create_ratvr_db(db_name):
     # Connect to SQLite database (or create it if it doesn't exist)
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
-
     # SQL statements for creating tables and adding indexes/constraints
 
     # animal table
@@ -12,7 +13,7 @@ def create_ratvr_db(db_name):
         CREATE TABLE animal (
             animal_id INTEGER PRIMARY KEY AUTOINCREMENT,
             animal_name TEXT NOT NULL,
-            animal_gender TEXT NOT NULL,
+            animal_gender TEXT,
             animal_description TEXT
         );
     """)
@@ -68,8 +69,6 @@ def create_ratvr_db(db_name):
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
-
-
 
     # ball_velocity table
     cursor.execute("""
@@ -225,14 +224,33 @@ def create_ratvr_db(db_name):
     # -S-
 
     # Commit changes and close the connection
-    conn.commit()
+    # conn.commit()
     conn.close()
 
 
 if __name__ == "__main__":
-    # -S-
-    # Throw error if file exists
-    # -S-
-    create_ratvr_db('rat_vr.db')
-    create_ratvr_db('rat_vr_test.db')
-    print("rat_vr database created successfully.")
+
+    # if os.path.exists('smb://yaniklab-data.ee.ethz.ch/large/Simon/nas_vrdata/rat_vr.db'):
+    #     raise ValueError("rat_vr.db already exists.")
+    # else:
+    #     create_ratvr_db('smb://yaniklab-data.ee.ethz.ch/large/Simon/nas_vrdata/rat_vr.db')
+    #     print("rat_vr database created successfully.")
+    
+    # if os.path.exists('smb://yaniklab-data.ee.ethz.ch/large/Simon/nas_vrdata/rat_vr_test.db'):
+    #     raise ValueError("rat_vr_test.db already exists.")
+    # else:
+    #     create_ratvr_db('smb://yaniklab-data.ee.ethz.ch/large/Simon/nas_vrdata/rat_vr_test.db')
+    #     print("rat_vr_test database created successfully.")
+
+    if os.path.exists('rat_vr.db'):
+        raise ValueError("rat_vr.db already exists.")
+    else:
+        create_ratvr_db('rat_vr.db')
+        print("rat_vr database created successfully.")
+
+    if os.path.exists('rat_vr_test.db'):
+        raise ValueError("rat_vr_test.db already exists.")
+    else:
+        create_ratvr_db('rat_vr_test.db')
+        print("rat_vr_test database created successfully.")
+   
