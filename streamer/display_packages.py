@@ -212,7 +212,8 @@ if __name__ == "__main__":
     L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
                   kwargs.pop("logging_level"))
     
+    prio = kwargs.pop("process_prio")
     if sys.platform.startswith('linux'):
-        if (prio := kwargs.pop("process_prio")) != -1:
+        if prio != -1:
             os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
     run_stream_packages(**kwargs)

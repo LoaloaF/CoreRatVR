@@ -119,8 +119,20 @@ def test_endpoints():
         response = requests.post(f"{base_url}/procs/launch_process_session")
         print("POST /procs/launch_process_session:", response.json())
         
-    test_proc_session()
+    # POST /initiate
+    response = requests.post(f"{base_url}/initiate")
+    print("POST /initiate:", response.json())
 
+    # POST /shm/create_termflag_shm
+    response = requests.post(f"{base_url}/shm/create_termflag_shm")
+    print("POST /shm/create_termflag_shm:", response.json())
+    
+    # POST /shm/create_ballvelocity_shm
+    response = requests.post(f"{base_url}/shm/create_ballvelocity_shm")
+    print("POST /shm/create_ballvelocity_shm:", response.json())
+
+    
+    term()
     
 if __name__ == "__main__":
     test_endpoints()
