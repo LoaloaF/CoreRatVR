@@ -153,19 +153,23 @@ def open_log_unity_proc():
 
 def open_unity_proc():
     P = Parameters()
-    path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", P.UNITY_BUILD_NAME
+
+    if "Apple" in P.PROCESSOR:
+        path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", "build00.app/Contents/MacOS/build00"
+    else:
+        path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", P.UNITY_BUILD_NAME
     script = os.path.join(*path)
     
-    # for mac:
-    # path + ".app"
-    args = [
-        "-a", script,
-        "-n",
-        "-W",
-        "--args",
-        "-logfile", log_fullfname,
-    ]
-    subprocess.Popen(("open", *args))
+    # # for mac:
+    # # path + ".app"
+    # args = [
+    #     "-a", script,
+    #     "-n",
+    #     "-W",
+    #     "--args",
+    #     # "-logfile", log_fullfname,
+    # ]
+    # subprocess.Popen(("open", *args))
     
     log_fullfname = os.path.join(P.LOGGING_DIRECTORY, "unity.log")
     args = [
