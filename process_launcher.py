@@ -157,7 +157,7 @@ def open_unity_proc():
     if "Apple" in P.PROCESSOR:
         path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", "build00.app/Contents/MacOS/build00"
     else:
-        path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", P.UNITY_BUILD_NAME
+        path = P.PROJECT_DIRECTORY, "UnityRatVR", "Build", P.UNITY_BUILD_NAME
     script = os.path.join(*path)
     
     # # for mac:

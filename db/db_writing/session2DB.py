@@ -92,15 +92,14 @@ def add_data(L, session_dir, db_name):
                                             df_session, use_frame_for_trial_time=True)
     
     add_unity_output(L, conn, cursor, session_dir, df_trialPackage)
-    add_camera(conn, cursor, session_dir, df_trialPackage, 'face')
-    add_camera(conn, cursor, session_dir, df_trialPackage, 'body')
-    add_camera(conn, cursor, session_dir, df_trialPackage, 'unity')
+    add_camera(L, conn, cursor, session_dir, df_trialPackage, 'face')
+    add_camera(L, conn, cursor, session_dir, df_trialPackage, 'body')
+    add_camera(L, conn, cursor, session_dir, df_trialPackage, 'unity')
     add_ball_velocity(L, conn, cursor, session_dir, df_trialPackage)
     add_event(L, conn, cursor, session_dir, df_trialPackage)
     add_variable(L, conn, cursor, session_dir, df_session)
 
     L.logger.info(f"Data added successfully for path: {session_dir} into database {db_name}")
-
 
     conn.commit()
     conn.close()

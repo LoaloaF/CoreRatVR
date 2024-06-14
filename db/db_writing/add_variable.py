@@ -11,9 +11,12 @@ def add_variable(L, conn, cursor, folder_path, df_session):
 
     paradigm_name = cursor.fetchall()[0][0]
 
-    # TODO: check if the variable table already exists
+    # check if the variable table already exists
     variable_table_name = "paradigm_" + paradigm_name.split('_')[0]
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (variable_table_name,))
 
+    if (len(cursor.fetchall()) == 0):
+        raise Exception(f"Variable table {variable_table_name} does not exist. Please add the paradigm first.")
     
     try:
         unity_output_path = os.path.join(folder_path, 'unity_output.hdf5')
