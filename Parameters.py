@@ -21,11 +21,17 @@ class Parameters:
         cls._instance.SHM_STRUCTURE_DIRECTORY = os.path.join(*p)
         p = cls._instance.PROJECT_DIRECTORY, "data"
         cls._instance.DATA_DIRECTORY = os.path.join(*p)
-
+        if os.name == 'nt':
+            # Windows
+            cls._instance.TRASH_DIRECTORY = os.path.join(os.path.expanduser("~"), 
+                                                         "$Recycle.Bin")
+        else:
+            # Linux and MacOS
+            cls._instance.TRASH_DIRECTORY = os.path.join(os.path.expanduser("~"), 
+                                                         ".local/share/Trash/files")
 
         # data saving / logging parameters
-        cls._instance.SESSION_NAME_PREFIX = "%Y-%m-%d_%H-%M-%S"
-        cls._instance.SESSION_NAME_POSTFIX = ""
+        cls._instance.SESSION_NAME_TEMPLATE = "%Y-%m-%d_%H-%M-%S_active"
         cls._instance.SESSION_DATA_DIRECTORY = "set-at-init"   # set at runtime
         # logging parameters
         p = cls._instance.PROJECT_DIRECTORY, "logs"
@@ -164,7 +170,7 @@ class Parameters:
                 "PROJECT_DIRECTORY", "SHM_STRUCTURE_DIRECTORY", "DATA_DIRECTORY", 
                 "LOGGING_DIRECTORY", "UNITY_BUILD_NAME"),
             "Data/Log Saving": (
-                "SESSION_NAME_PREFIX", "SESSION_NAME_POSTFIX", "SESSION_DATA_DIRECTORY", 
+                "SESSION_NAME_TEMPLATE", "SESSION_DATA_DIRECTORY", 
                 "LOGGING_LEVEL", "LOG_TO_DATA_DIR", "CONSOLE_LOGGING_FMT", 
                 "FILE_LOGGING_FMT"),
             "Portenta shared memory": (

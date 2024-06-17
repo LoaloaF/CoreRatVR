@@ -1,9 +1,10 @@
 import os
-import asyncio
 import sys
 sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
 sys.path.insert(1, os.path.join(sys.path[0], 'backend'))
 
+import asyncio
+import shutil
 from time import sleep
 import json
 from fastapi import HTTPException, Request
@@ -28,6 +29,8 @@ from backend_helpers import check_processes
 from backend_helpers import state2serializable
 
 from SHM.shm_creation import delete_shm
+
+import process_launcher
 
 
 def attach_general_endpoints(app):
@@ -133,9 +136,9 @@ def attach_general_endpoints(app):
         # send message to unity through shared memory
         request.app.state.state["unityinput_shm_interface"].push(msg.encode())
     
-    @app.post("/raise_term_flag")
-    def raise_term_flag(request: Request):
-        Logger().logger.debug("Handling raised term flag")
+    @app.post("/raise_term_flag/{msg}")
+    def raise_term_flag(msg: str, request: Request):
+        Logger().logger.info(f"Handling raised term flag with msg={msg}")
 
         validate_state(request.app.state.state, valid_initiated=True, 
                 valid_shm_created={P.SHM_NAME_TERM_FLAG: True})
@@ -165,8 +168,23 @@ def attach_general_endpoints(app):
                 if shm_name == "unityinput_shm_interface":
                     unityinput_shm_interface.close_shm()
                     request.app.state.state["unityinput_shm_interface"] = None
-        P.SESSION_DATA_DIRECTORY = "set-at-init"
+        
         request.app.state.state["initiated"] = False
+
+        if msg == "delete":
+            if not os.path.exists(P.TRASH_DIRECTORY):
+                err_msg = f"Trash directory `{P.TRASH_DIRECTORY}` does not exist"
+                raise HTTPException(status_code=400, detail=err_msg)
+            
+            Logger().logger.info(f"Deleting session {P.SESSION_DATA_DIRECTORY}")
+            shutil.move(P.SESSION_DATA_DIRECTORY, P.TRASH_DIRECTORY)
+
+        elif msg == "post-process":
+            Logger().logger.info(f"Processing session {P.SESSION_DATA_DIRECTORY}")
+            proc = process_launcher.open_process_session_proc(P.SESSION_DATA_DIRECTORY)
+            request.app.state.state["procs"]["process_session"] = proc.pid
+            
+        P.SESSION_DATA_DIRECTORY = "set-at-init"
 
     @app.get("/paradigms")
     def paradigms():
@@ -228,7 +246,6 @@ def attach_general_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_unitySessionRunning=True)
         session_paramters.notes = msg
-        print(msg)
     return app
 
 def attach_UI_endpoint(app):

@@ -32,6 +32,7 @@ async def lifespan(app: FastAPI):
             "log_unity": 0,
             "log_unitycam": 0,
             "unity": 0,
+            "process_session": 0,
         },
         "shm": {
             P.SHM_NAME_TERM_FLAG: False,

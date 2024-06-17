@@ -30,6 +30,7 @@ class SessionParamters:
         # at end paradigm button clicked
         cls._instance.stop_time = None
         cls._instance.duration = None
+        cls._instance.notes = None
 
         # These 2 dictionarys stores everything from the 3 excel sheets
         cls._instance.session_parameters_dict = {}
@@ -52,6 +53,7 @@ class SessionParamters:
         
         self.stop_time = None
         self.duration = None
+        self.notes = None
         
     def handle_start_session(self):
         self.start_time = datetime.now()
@@ -64,7 +66,6 @@ class SessionParamters:
         self.stop_time = datetime.now()
         self.duration = self.stop_time - self.start_time
         self._save_session_parameters()
-    
 
     def _copy_paradigm_excel_to_session_dir(self):
         P = Parameters()
@@ -140,6 +141,7 @@ class SessionParamters:
             "start_time": self.start_time.strftime("%Y-%m-%d_%H-%M-%S"),
             "stop_time": self.stop_time.strftime("%Y-%m-%d_%H-%M-%S"),
             "duration": f"{int(self.duration.total_seconds()/60)}min",
+            "notes": self.notes,
         }
         
         # append the meta data dictionaries from excel sheets

@@ -45,4 +45,5 @@ def add_session_parameters(L, conn, cursor, df):
     df_session_parameters['pillar_details'] = df_session_parameters['pillar_details'].astype(str)
     df_session_parameters.to_sql('session_parameter', conn, if_exists='append', index=False)
 
+    return df_session_parameters
     L.logger.info("Session parameters added successfully.")

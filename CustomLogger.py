@@ -17,10 +17,15 @@ class CustomLogger:
         self.logger = logging.getLogger("__main__")
         self.combi_msg = ""
         
+        # equivalent to Parameters class, defaults if nothing passed
+        self.CONSOLE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
+        self.FILE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
+        self.LOGGING_DIRECTORY_RUN = './'
+        self.LOGGING_LEVEL = "INFO"
+        
     def init_logger(self, logging_fname, logging_dir, logging_level):
-        P = Parameters()
-
-        ll = logging_level if logging_level is not None else P.LOGGING_LEVEL
+        print(logging_fname, logging_dir, logging_level)
+        ll = logging_level if logging_level is not None else self.LOGGING_LEVEL
         self.logger.setLevel(ll)
 
         # setup logging to console
@@ -28,7 +33,7 @@ class CustomLogger:
         self.logger.addHandler(console_hdlr)
 
         # ensusre filenames/ paths exist
-        logging_dir = logging_dir if logging_dir is not None else P.LOGGING_DIRECTORY_RUN
+        logging_dir = logging_dir if logging_dir is not None else self.LOGGING_DIRECTORY_RUN
         logging_fname = logging_fname if logging_fname is not None else "default"
         
         # setup logging to file
@@ -51,9 +56,8 @@ class CustomLogger:
         """
         Set up console logging with the default formatter.
         """
-        P = Parameters()
         console_handler = logging.StreamHandler()
-        console_handler.setFormatter(self._create_formatter(P.CONSOLE_LOGGING_FMT))
+        console_handler.setFormatter(self._create_formatter(self.CONSOLE_LOGGING_FMT))
         return console_handler
     
     def _create_logfile_handler(self, logging_fname, write_to_directory):
@@ -64,11 +68,10 @@ class CustomLogger:
         - write_to_directory (str): The directory where log files will be written.
         """
         try:
-            P = Parameters()
             log_fullfname = os.path.join(write_to_directory, f"{logging_fname}.log")
             
             file_handler = logging.FileHandler(log_fullfname)
-            file_handler.setFormatter(self._create_formatter(P.FILE_LOGGING_FMT))
+            file_handler.setFormatter(self._create_formatter(self.FILE_LOGGING_FMT))
             return file_handler
         
         except FileNotFoundError as e:
@@ -78,15 +81,14 @@ class CustomLogger:
         """
         Toggle between default formatter and spacer formatter for all handlers.
         """
-        P = Parameters()
 
-        is_default = self.logger.handlers[0].formatter._fmt == P.CONSOLE_LOGGING_FMT
+        is_default = self.logger.handlers[0].formatter._fmt == self.CONSOLE_LOGGING_FMT
         if is_default:
             spacer_format = f"%(message)s{'=' * spacer_length}\n"
             spacer_fmtr = self._create_formatter(spacer_format)
             [han.setFormatter(spacer_fmtr) for han in self.logger.handlers]
         else:
-            fmts = P.CONSOLE_LOGGING_FMT, P.FILE_LOGGING_FMT
+            fmts = self.CONSOLE_LOGGING_FMT, self.FILE_LOGGING_FMT
             [han.setFormatter(self._create_formatter(fmt)) 
              for han, fmt in zip(self.logger.handlers, fmts)]
 
@@ -124,31 +126,31 @@ class CustomLogger:
             msg = msg.replace("\n", "\n\t")
         return msg
 
-# class ColorfulFormatter(logging.Formatter):
-#     COLORS = {
-#         logging.DEBUG: '\033[0;36m',  # CYAN
-#         logging.INFO: '\033[0;37m',  # WHITE
-#         logging.WARNING: '\033[1;33m',  # YELLOW
-#         logging.ERROR: '\033[1;31m',  # RED
-#         logging.CRITICAL: '\033[1;41m',  # RED BACKGROUND
-#     }
+# # class ColorfulFormatter(logging.Formatter):
+# #     COLORS = {
+# #         logging.DEBUG: '\033[0;36m',  # CYAN
+# #         logging.INFO: '\033[0;37m',  # WHITE
+# #         logging.WARNING: '\033[1;33m',  # YELLOW
+# #         logging.ERROR: '\033[1;31m',  # RED
+# #         logging.CRITICAL: '\033[1;41m',  # RED BACKGROUND
+# #     }
 
-#     RESET = '\033[0m'
+# #     RESET = '\033[0m'
 
-#     def format(self, record):
-#         color = self.COLORS.get(record.levelno)
-#         message = super().format(record)
+# #     def format(self, record):
+# #         color = self.COLORS.get(record.levelno)
+# #         message = super().format(record)
 
-#         if color:
-#             message = f"{color}{message}{self.RESET}"
+# #         if color:
+# #             message = f"{color}{message}{self.RESET}"
 
-#         return message
+# #         return message
 
-if __name__ == "__main__":
-    P = Parameters()
-    Logger = CustomLogger()
-    Logger.init_logger(__name__, "./", 10)
-    Logger.spacer()
-    Logger.logger.info('This is a regular log message.')
-    Logger.spacer()
-    Logger.logger.critical(['This is another regular ',"sdfsd"])
+# if __name__ == "__main__":
+#     P = Parameters()
+#     Logger = CustomLogger()
+#     Logger.init_logger(__name__, "./", 10)
+#     Logger.spacer()
+#     Logger.logger.info('This is a regular log message.')
+#     Logger.spacer()
+#     Logger.logger.critical(['This is another regular ',"sdfsd"])

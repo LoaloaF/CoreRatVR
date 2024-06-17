@@ -17,7 +17,10 @@ def _parse2type(value: str, correct_type: type):
         if correct_type == float:
             return float(value)
         if correct_type == bool:
-            return bool(value)
+            if value.lower() in ('false', '0'):
+                return False
+            else:
+                return True
     except ValueError:
         return 
     
@@ -39,7 +42,7 @@ def patch_parameter(key: str, new_value: Any, was_initiated: bool):
 
 def init_save_dir():
     P = Parameters()
-    dirname = dt.now().strftime(P.SESSION_NAME_PREFIX)+P.SESSION_NAME_POSTFIX
+    dirname = dt.now().strftime(P.SESSION_NAME_TEMPLATE)
     full_path = os.path.join(P.DATA_DIRECTORY, dirname)
     os.mkdir(full_path)
     return full_path

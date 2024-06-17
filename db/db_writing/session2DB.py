@@ -82,10 +82,15 @@ def clear_tables(L, conn):
 def add_data(L, session_dir, db_name):
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
+    
+    
+    # all of this should be indepdant of the DB/ cursor  - unless there is a big mismatch 
 
     # read the session json file and convert it into a dataframe
     df_session = read_session_json_file(cursor, session_dir)
-    add_session(L, df_session, conn, cursor)
+    
+    # get session meatada back, or write to final hdf5 file
+    df_session_parameters = add_session(L, df_session, conn, cursor)
 
     # extract the trial package from the unity output hdf5 file
     df_trialPackage = extract_trial_package(cursor, session_dir, 
