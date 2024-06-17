@@ -97,7 +97,7 @@ def _create_shm(shm_name, total_nbytes):
         shm = shared_memory.SharedMemory(name=shm_name, create=True, 
                                          size=total_nbytes)
 
-        shm.buf[:] = bytearray(total_nbytes)
+        shm.buf[:total_nbytes] = bytearray(total_nbytes)
         atexit.register(_cleanup, shm, shm_name)
     
     except FileExistsError:

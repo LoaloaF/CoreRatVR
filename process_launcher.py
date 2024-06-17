@@ -25,6 +25,23 @@ def open_camera2shm_proc(cam_name):
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
+def open_vimbacam2shm_proc(cam_name):
+    P = Parameters()
+    script = "vimbacam2shm.py"
+    path = P.PROJECT_DIRECTORY, "CoreRatVR", "read2SHM", script
+    stream_script = os.path.join(*path)
+    
+    args = _make_proc_args(shm_args=("termflag", cam_name))
+    cam_idx = str(P.FACE_CAM_IDX) if cam_name == 'facecam' else str(P.BODY_CAM_IDX)
+    args.extend([
+        "--logging_name", cam_name+"2shm",
+        "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
+        "--camera_idx", cam_idx,
+        # "--channels", P.FACE_CAM_IDX if cam_name == 'facecam' else P.BODY_CAM_IDX,
+        "--cam_name", cam_name
+    ])
+    return _launch(P.WHICH_PYTHON, stream_script, *args)
+
 def open_shm2cam_stream_proc(cam_name):
     P = Parameters()
     script = "display_camera.py"
@@ -136,8 +153,23 @@ def open_log_unity_proc():
 
 def open_unity_proc():
     P = Parameters()
-    path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", P.UNITY_BUILD_NAME
+
+    if "Apple" in P.PROCESSOR:
+        path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", "build00.app/Contents/MacOS/build00"
+    else:
+        path = P.PROJECT_DIRECTORY, "UnityRatVR", "Build", P.UNITY_BUILD_NAME
     script = os.path.join(*path)
+    
+    # # for mac:
+    # # path + ".app"
+    # args = [
+    #     "-a", script,
+    #     "-n",
+    #     "-W",
+    #     "--args",
+    #     # "-logfile", log_fullfname,
+    # ]
+    # subprocess.Popen(("open", *args))
     
     log_fullfname = os.path.join(P.LOGGING_DIRECTORY, "unity.log")
     args = [
@@ -152,6 +184,16 @@ def open_unity_proc():
     L.logger.info(f"Launching subprocess {os.path.basename(script)}") 
     L.logger.info(f"Logging to {log_fullfname}")
     return subprocess.Popen((script, *args))
+
+def open_process_session_proc():
+    P = Parameters()
+    script = os.path.join(P.PROJECT_DIRECTORY, "CoreRatVR", 'process_session.py')
+    
+    args = _make_proc_args(shm_args=())
+    args.extend([
+        "--logging_name", script.replace(".py", ""),
+    ])
+    return _launch(P.WHICH_PYTHON, script, *args)
 
 def shm_struct_fname(shm_name):
     P = Parameters()

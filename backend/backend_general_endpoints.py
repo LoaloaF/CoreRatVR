@@ -118,12 +118,19 @@ def attach_general_endpoints(app):
                                           })
         if msg.startswith("Paradigm,"):
             session_paramters.paradigm_name = msg.split(",")[1]
+        
         if msg == "Start":
             request.app.state.state["unitySessionRunning"] = True
+            # here, the session flag is raised - portenta2shm.py will send pause
+            # command to portenta - loggers and shm writers will listen to this 
+            # flag as well
             session_paramters.handle_start_session()
+        
         elif msg == "Stop":
             request.app.state.state["unitySessionRunning"] = False
             session_paramters.handle_stop_session()
+        
+        # send message to unity through shared memory
         request.app.state.state["unityinput_shm_interface"].push(msg.encode())
     
     @app.post("/raise_term_flag")

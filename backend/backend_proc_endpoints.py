@@ -67,7 +67,7 @@ def attach_proc_endpoints(app):
                                           P.SHM_NAME_FACE_CAM: True,
                                           },
                        valid_proc_running={"facecam2shm": False})
-        proc = pl.open_camera2shm_proc(P.SHM_NAME_FACE_CAM)
+        proc = pl.open_vimbacam2shm_proc(P.SHM_NAME_FACE_CAM)
         request.app.state.state["procs"]["facecam2shm"] = proc.pid
     
     @app.post("/procs/launch_bodycam2shm")
@@ -139,6 +139,13 @@ def attach_proc_endpoints(app):
                        valid_proc_running={"log_unitycam": False})
         proc = pl.open_log_camera_proc(P.SHM_NAME_UNITY_CAM)
         request.app.state.state["procs"]["log_unitycam"] = proc.pid
+    
+    @app.post("/procs/launch_process_session")
+    def launch_log_unitycam(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True)
+        proc = pl.open_process_session_proc()
+        # TODO add process session to state
+        # request.app.state.state["procs"]["log_unitycam"] = proc.pid
 
     @app.post("/procs/launch_unity")
     def launch_unity(request: Request):

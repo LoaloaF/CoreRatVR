@@ -138,7 +138,7 @@ def _open_serial_port(port_name, baud_rate):
         return ser
     except serial.SerialException as e:
         L.logger.error(f"Error opening serial port: {e}")
-        return None
+        sys.exit(1)
 
 def _close_serial_port(sport):
     if sport and sport.is_open:
@@ -201,8 +201,10 @@ if __name__ == "__main__":
                   kwargs.pop("logging_level"))
     L.logger.info("Subprocess started")
     
+    
+    prio = kwargs.pop("process_prio")
     if sys.platform.startswith('linux'):
-        if (prio := kwargs.pop("process_prio")) != -1:
+        if prio != -1:
             os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
     run_portenta2shm2portenta(**kwargs)
 
