@@ -25,6 +25,6 @@ if __name__ == "__main__":
         # 'animal_description': ''
     }
 
-    add_animal("rat_vr.db", animal_dict)
-    add_animal("rat_vr_test.db", animal_dict)
+    add_animal("/home/vrmaster/projects/ratvr/VirtualReality/data/rat_vr.db", animal_dict)
+    add_animal("/home/vrmaster/projects/ratvr/VirtualReality/data/rat_vr_test.db", animal_dict)
     print("Animal added successfully.")

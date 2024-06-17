@@ -27,6 +27,6 @@ if __name__ == "__main__":
     }
 
 
-    add_paradigm("rat_vr.db", paradigm_dict)
-    add_paradigm("rat_vr_test.db", paradigm_dict)
+    add_paradigm("/home/vrmaster/projects/ratvr/VirtualReality/data/rat_vr.db", paradigm_dict)
+    add_paradigm("/home/vrmaster/projects/ratvr/VirtualReality/data/rat_vr_test.db", paradigm_dict)
     print("Paradigm added successfully.")

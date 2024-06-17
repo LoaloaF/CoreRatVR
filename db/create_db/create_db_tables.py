@@ -227,6 +227,6 @@ def create_ratvr_db(db_name):
 
 
 if __name__ == "__main__":
-    create_ratvr_db('rat_vr.db')
-    create_ratvr_db('rat_vr_test.db')
+    create_ratvr_db('/home/vrmaster/projects/ratvr/VirtualReality/data/rat_vr.db')
+    create_ratvr_db('/home/vrmaster/projects/ratvr/VirtualReality/data/rat_vr_test.db')
     print("rat_vr database created successfully.")

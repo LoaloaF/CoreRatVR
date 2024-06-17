@@ -71,14 +71,15 @@ def add_data(parent_folder_path, session_folder_name, db_name):
     conn = sqlite3.connect(db_name)
 
     cursor = conn.cursor()
+    
     df_session = read_session_json_file(cursor, parent_folder_path, session_folder_name)
     add_session(df_session, conn, cursor)
     df_trialPackage = extract_trial_package(cursor, folder_path, df_session, use_frame_for_trial_time=True)
     
     add_unity_output(conn, cursor, folder_path, df_trialPackage)
-    # add_camera(conn, cursor, folder_path, df_trialPackage, 'face')
-    # add_camera(conn, cursor, folder_path, df_trialPackage, 'body')
-    # add_camera(conn, cursor, folder_path, df_trialPackage, 'unity')
+    add_camera(conn, cursor, folder_path, df_trialPackage, 'face')
+    add_camera(conn, cursor, folder_path, df_trialPackage, 'body')
+    add_camera(conn, cursor, folder_path, df_trialPackage, 'unity')
     add_ball_velocity(conn, cursor, folder_path, df_trialPackage)
     add_event(conn, cursor, folder_path, df_trialPackage)
     add_variable(conn, cursor, folder_path, df_session)
@@ -93,18 +94,16 @@ def add_data(parent_folder_path, session_folder_name, db_name):
 if __name__ == "__main__":
 
 
-    parent_folder_path = '/home/ntgroup/Project/DBRatVR/SQLite/TestData'
-    session_folder_name = '2024-06-04_12-06-04_goodone_Tuesday_1'
+    parent_folder_path = '/home/vrmaster/projects/ratvr/VirtualReality/data'
+    session_folder_name = '2024-06-05_18-09-34_goodone_wednes2'
     folder_path = os.path.join(parent_folder_path, session_folder_name)
     
     conn = None
 
     try:
-        add_data(parent_folder_path, session_folder_name, 'rat_vr_test.db')
-        conn = sqlite3.connect('rat_vr_test.db')
-        clear_tables(conn)
-        conn.close()
-        add_data(parent_folder_path, session_folder_name, 'rat_vr.db')
+        add_data(parent_folder_path, session_folder_name, '/home/vrmaster/projects/ratvr/VirtualReality/data/rat_vr_test.db')
+
+        add_data(parent_folder_path, session_folder_name, '/home/vrmaster/projects/ratvr/VirtualReality/data/rat_vr.db')
 
     except Exception as e:
         print("-----------------------------------------")
@@ -115,5 +114,8 @@ if __name__ == "__main__":
     finally:
         if conn is not None:
             conn.close()
+        conn = sqlite3.connect('/home/vrmaster/projects/ratvr/VirtualReality/data/rat_vr_test.db')
+        clear_tables(conn)
+        conn.close()
 
         
