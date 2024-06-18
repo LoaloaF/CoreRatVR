@@ -1,8 +1,8 @@
 import os
 import pandas as pd
-from add_utils import *
+from merge_utils import *
 
-def add_unity_frame(L, cursor, conn, df_unity_frame, df_trialPackage):
+def merge_unity_frame_hdf5(L, session_dir, df_unity_frame, df_trialPackage):
     df_unity_frame.drop(columns=['N'], inplace=True)
     
     # add trial info into df
@@ -15,19 +15,14 @@ def add_unity_frame(L, cursor, conn, df_unity_frame, df_trialPackage):
                                    "S": 's',"FB": "fb", 
                                    "BFP": "bfp", "BLP": 'blp'}, inplace=True)
     
-    # add session info into df
-    df_unity_frame = add_session_into_df(cursor, df_unity_frame)
-
-    df_unity_frame.to_sql('unity_frame', conn, if_exists='append', index=False)
-    L.logger.info("Unity frame added successfully.")
+    merge_into_hdf5(L, session_dir, df_unity_frame, 'unity_frame')
 
 
-def generate_trial_package_from_frame(cursor, df_unity_frame, df_session):
 
-    # extract the paradigm name from the session
-    paradigm_id = df_session['paradigm_id'].values[0]
-    cursor.execute(f"SELECT paradigm_name from paradigm WHERE paradigm_id={paradigm_id}")
-    paradigm_name = cursor.fetchall()[0][0]
+def generate_trial_package_from_frame(df_unity_frame, df_session):
+
+    paradigm_name = df_session["paradigm_name"][0]
+
     start_state_id = -1
 
     # based on the paradigm name, set the start state id and inter trial state id
@@ -90,11 +85,10 @@ def generate_trial_package_from_frame(cursor, df_unity_frame, df_session):
     df_trialPackage.loc[df_trialPackage["trial_duration"] >= maximum_trial_duration * 10**6, "trial_outcome"] = 0
 
     df_trialPackage["trial_outcome"] = df_trialPackage["trial_outcome"].astype(int)
-    df_trialPackage = add_session_into_df(cursor, df_trialPackage)
     
     return df_trialPackage
 
-def generate_trial_package_from_hdf5(cursor, unity_output_path):
+def generate_trial_package_from_hdf5(unity_output_path):
 
     # read the trialPackage from the hdf5 file
     df_trialPackage = pd.read_hdf(unity_output_path, key='trialPackages')
@@ -109,15 +103,17 @@ def generate_trial_package_from_hdf5(cursor, unity_output_path):
                                     "EFID": "trial_end_frame", "EPCT": "trial_end_timestamp",
                                     "TD": "trial_duration", "O": "trial_outcome"}, inplace=True)
 
-    df_trialPackage = add_session_into_df(cursor, df_trialPackage)
-
     return df_trialPackage
 
 
-def extract_trial_package(cursor, folder_path, df_session, use_frame_for_trial_time):
+def extract_trial_package(session_dir, df_session, use_frame_for_trial_time):
 
     # read the dataframe of unity frames
-    unity_output_path = os.path.join(folder_path, 'unity_output.hdf5')
+    unity_output_path = os.path.join(session_dir, 'unity_output.hdf5')
+
+    if not os.path.exists(unity_output_path):
+        raise FileNotFoundError(f"unity_output.hdf5 file not found in {session_dir}")
+
     df_unity_frame = pd.read_hdf(unity_output_path, key='unityframes')
     df_unity_frame.reset_index(drop=True, inplace=True)
     df_unity_frame = df_unity_frame.reset_index(drop=True)
@@ -127,24 +123,28 @@ def extract_trial_package(cursor, folder_path, df_session, use_frame_for_trial_t
     # Notice that for the 1st case, it should only applied to deprecated data (early version) and 
     # should be treated manually and carefully
     if use_frame_for_trial_time:
-        df_trialPackage = generate_trial_package_from_frame(cursor, df_unity_frame, df_session)
+        df_trialPackage = generate_trial_package_from_frame(df_unity_frame, df_session)
     else:
-        df_trialPackage = generate_trial_package_from_hdf5(cursor, unity_output_path)
+        df_trialPackage = generate_trial_package_from_hdf5(unity_output_path)
 
     return df_trialPackage
 
 
-def add_unity_output(L, conn, cursor, folder_path, df_trialPackage):
+def merge_unity_output_hdf5(L, session_dir, df_trialPackage):
 
-    unity_output_path = os.path.join(folder_path, 'unity_output.hdf5')
+    unity_output_path = os.path.join(session_dir, 'unity_output.hdf5')
+
+    if not os.path.exists(unity_output_path):
+        raise FileNotFoundError(f"unity_output.hdf5 file not found in {session_dir}")
 
     df_unity_frame = pd.read_hdf(unity_output_path, key='unityframes')
     df_unity_frame.reset_index(drop=True, inplace=True)
     df_unity_frame = df_unity_frame.reset_index(drop=True)
 
-    df_trialPackage.to_sql('unity_trial', conn, if_exists='append', index=False)
-    L.logger.info("Unity trial added successfully.")
+    # merge the unity frame into the hdf5 file
+    merge_unity_frame_hdf5(L, session_dir, df_unity_frame, df_trialPackage)
 
-    add_unity_frame(L, cursor, conn, df_unity_frame, df_trialPackage)
+    # merge the unity trial into the hdf5 file
+    merge_into_hdf5(L, session_dir, df_trialPackage, 'unity_trial')
+    L.logger.info("Unity trial merged into hdf5 successfully.")
 
-    return df_trialPackage

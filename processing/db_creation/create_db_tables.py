@@ -37,6 +37,10 @@ def create_ratvr_db(db_name):
             paradigm_id INT NOT NULL,
             animal_id INT NOT NULL,
             animal_weight DOUBLE NOT NULL,
+            start_time DATE,
+            end_time DATE,
+            duration DOUBLE,
+            notes TEXT,
             FOREIGN KEY (animal_id) REFERENCES animal(animal_id)
             FOREIGN KEY (paradigm_id) REFERENCES paradigm(paradigm_id)
         );

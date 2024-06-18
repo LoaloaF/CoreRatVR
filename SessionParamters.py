@@ -36,8 +36,6 @@ class SessionParamters:
         cls._instance.session_parameters_dict = {}
         cls._instance.environment_parameters_dict = {}
 
-        # # the below code is temporary due to the execuation order problem; now is hard coded
-        # cls._instance.session_parameters_dict["trialPackageVariables"] = "PA,PD"
 
         return cls._instance
     
