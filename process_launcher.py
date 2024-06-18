@@ -20,6 +20,8 @@ def open_camera2shm_proc(cam_name):
         "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
         "--camera_idx", cam_idx,
         # "--channels", P.FACE_CAM_IDX if cam_name == 'facecam' else P.BODY_CAM_IDX,
+        "--x_topleft", str(P.FACE_CAM_X_TOPLEFT),
+        "--y_topleft", str(P.FACE_CAM_Y_TOPLEFT),
         "--fps", fps,
         "--cam_name", cam_name
     ])
@@ -38,6 +40,8 @@ def open_vimbacam2shm_proc(cam_name):
         "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
         "--camera_idx", cam_idx,
         # "--channels", P.FACE_CAM_IDX if cam_name == 'facecam' else P.BODY_CAM_IDX,
+        "--x_topleft", str(P.BODY_CAM_X_TOPLEFT),
+        "--y_topleft", str(P.BODY_CAM_Y_TOPLEFT),
         "--cam_name", cam_name
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
@@ -157,26 +161,14 @@ def open_unity_proc():
     if "Apple" in P.PROCESSOR:
         path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", "build00.app/Contents/MacOS/build00"
     else:
-        path = P.PROJECT_DIRECTORY, "UnityRatVR", "Build", P.UNITY_BUILD_NAME
+        path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", P.UNITY_BUILD_NAME
     script = os.path.join(*path)
-    
-    # # for mac:
-    # # path + ".app"
-    # args = [
-    #     "-a", script,
-    #     "-n",
-    #     "-W",
-    #     "--args",
-    #     # "-logfile", log_fullfname,
-    # ]
-    # subprocess.Popen(("open", *args))
     
     log_fullfname = os.path.join(P.LOGGING_DIRECTORY, "unity.log")
     args = [
         "-logfile", log_fullfname,
     ]
 
-    print(script)
     if not os.path.exists(script):
         return -1
     

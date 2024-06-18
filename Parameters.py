@@ -80,9 +80,9 @@ class Parameters:
         
         #  camera shm parameters
         cls._instance.SHM_NAME_FACE_CAM = 'facecam'
-        cls._instance.FACE_CAM_IDX = 2
-        cls._instance.FACE_CAM_X_FROM = 0
-        cls._instance.FACE_CAM_Y_FROM = 0
+        cls._instance.FACE_CAM_IDX = 0
+        cls._instance.FACE_CAM_X_TOPLEFT = 0
+        cls._instance.FACE_CAM_Y_TOPLEFT = 0
         cls._instance.FACE_CAM_X_RES = 640
         cls._instance.FACE_CAM_Y_RES = 480
         cls._instance.FACE_CAM_NCHANNELS = 1
@@ -91,8 +91,8 @@ class Parameters:
         
         cls._instance.SHM_NAME_BODY_CAM = 'bodycam'
         cls._instance.BODY_CAM_IDX = 0
-        cls._instance.BODY_CAM_X_FROM = 0
-        cls._instance.BODY_CAM_Y_FROM = 0
+        cls._instance.BODY_CAM_X_TOPLEFT = 0
+        cls._instance.BODY_CAM_Y_TOPLEFT = 0
         cls._instance.BODY_CAM_X_RES = 640
         cls._instance.BODY_CAM_Y_RES = 480
         cls._instance.BODY_CAM_NCHANNELS = 3
@@ -186,12 +186,12 @@ class Parameters:
                 "SHM_NAME_UNITY_CAM", "UNITY_CAM_X_RES", "UNITY_CAM_Y_RES", 
                 "UNITY_CAM_NCHANNELS"),
             "Face Camera": (
-                "SHM_NAME_FACE_CAM", "FACE_CAM_IDX", "FACE_CAM_X_FROM", 
-                "FACE_CAM_Y_FROM", "FACE_CAM_X_RES", 
+                "SHM_NAME_FACE_CAM", "FACE_CAM_IDX", "FACE_CAM_X_TOPLEFT", 
+                "FACE_CAM_Y_TOPLEFT", "FACE_CAM_X_RES", 
                 "FACE_CAM_Y_RES", "FACE_CAM_NCHANNELS"),
             "Body Camera": (
                 "SHM_NAME_BODY_CAM", "BODY_CAM_IDX", "BODY_CAM_X_RES", 
-                "BODY_CAM_Y_RES", "FACE_CAM_X_FROM", "FACE_CAM_Y_FROM", 
+                "BODY_CAM_Y_RES", "BODY_CAM_X_TOPLEFT", "BODY_CAM_Y_TOPLEFT", 
                 "BODY_CAM_NCHANNELS"),
             "Process Priorities": (
                 "CAMERA2SHM_PROC_PRIORITY", "CAMERA_STREAM_PROC_PRIORITY", 

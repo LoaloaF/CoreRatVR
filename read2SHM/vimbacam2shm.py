@@ -12,50 +12,47 @@ from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 from CustomLogger import CustomLogger as Logger
 
-def _setup_capture(camera_idx):
+def _read_vimbastream(frame_shm, termflag_shm):
     L = Logger()
-    L.logger.debug(f"Setting up video capture for cam {camera_idx}")
+    L.logger.info("Reading camera stream & writing to SHM...")
 
     with Vimba() as vimba:
         vimbacam = vimba.camera(0)
         vimbacam.open()
 
         vimbacam.arm('SingleFrame')
-    return vimbacam
-    
-def _read_vimbastream(frame_shm, termflag_shm, vimbacam):
-    try:
-        frame_i = 0
-        while True:
-            if termflag_shm.is_set():
-                L.logger.info("Termination flag raised")
-                break
-            
-            frame = vimbacam.acquire_frame()
-            image = frame.buffer_data_numpy()
 
-            pack = "<{" + f"N:I,ID:{frame_i},PCT:{int(time.time()*1e6)}" + "}>\r\n"
-            L.logger.debug(f"New frame: {pack}")
-            
-            image = image[:frame_shm.y_res, :frame_shm.x_res]
-            image = image.reshape(image.shape[0], image.shape[1], 1)
-            image = image.transpose(1, 0, 2) # cv2: y-x-rgb, everywhere: x-y-rgb
+        try:
+            frame_i = 0
+            while True:
+                if termflag_shm.is_set():
+                    L.logger.info("Termination flag raised")
+                    break
+                
+                frame = vimbacam.acquire_frame()
+                image = frame.buffer_data_numpy()
 
-            frame_shm.add_frame(image, pack.encode('utf-8'))
-            frame_i += 1
+                pack = "<{" + f"N:I,ID:{frame_i},PCT:{int(time.time()*1e6)}" + "}>\r\n"
+                L.logger.debug(f"New frame: {pack}")
+                
+                image = image[:frame_shm.y_res, :frame_shm.x_res]
+                image = image.reshape(image.shape[0], image.shape[1], 1)
+                image = image.transpose(1, 0, 2) # cv2: y-x-rgb, everywhere: x-y-rgb
 
-    finally:
-        vimbacam.disarm()
-        vimbacam.close()
+                frame_shm.add_frame(image, pack.encode('utf-8'))
+                frame_i += 1
 
-def run_vimbacam2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname,
-                     camera_idx):
+        finally:
+            vimbacam.disarm()
+            vimbacam.close()
+
+def run_vimbacam2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname, cam_name,
+                     x_topleft, y_topleft, camera_idx):
     # shm access
     frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     
-    vimbacam = _setup_capture(camera_idx)
-    _read_vimbastream(frame_shm, termflag_shm, vimbacam)
+    _read_vimbastream(frame_shm, termflag_shm)
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Read camera stream, timestamp, ",
@@ -65,6 +62,9 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level")
+    argParser.add_argument("--cam_name")
+    argParser.add_argument("--x_topleft", type=int)
+    argParser.add_argument("--y_topleft", type=int)
     argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--camera_idx", type=int)
     kwargs = vars(argParser.parse_args())
