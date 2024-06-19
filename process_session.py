@@ -1,18 +1,34 @@
+import json
 import sys
 import os
 # when executed as a process add parent SHM dir to path again
-sys.path.insert(1, os.path.join(sys.path[0], 'db', 'db_writing'))
+sys.path.insert(1, os.path.join(sys.path[0], 'db'))
 
 import argparse
 import shutil
 
 from CustomLogger import CustomLogger as Logger
-from session2DB import session2DB
+# from session2DB import session2DB
+
+import session_files_checking as sfc
 
 def process_session(session_dir):
-    
     L = Logger()
     L.logger.info(f"Processing session {session_dir}")
+    
+    fnames = os.listdir(session_dir)
+    fnames_result = sfc.check_file_existence(session_dir, fnames.copy())
+    L.logger.info(L.fmtmsg(fnames_result))
+    
+    logs_result = sfc.check_log_files(session_dir, [fn for fn in fnames if fn.endswith(".log")])
+    
+    L.logger.info(L.fmtmsg(logs_result))
+    
+    
+    # renaming?
+    # user deciding what to do with session after seeing logs? ALso for processing this pile of shit
+    
+    
     #-S-
     # other things will go here
     # -S-
@@ -36,9 +52,9 @@ def process_session(session_dir):
     
     
     
-    shutil.move(session_dir, session_dir[:-7])
-    
-    L.logger.info(f"Processing session {session_dir}")
+    # L.logger.info("test1")
+    # shutil.move(session_dir, session_dir[:-7])
+    # L.logger.info("test2")
     
 
 if __name__ == "__main__":

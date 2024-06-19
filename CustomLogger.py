@@ -17,14 +17,13 @@ class CustomLogger:
         self.logger = logging.getLogger("__main__")
         self.combi_msg = ""
         
-        # equivalent to Parameters class, defaults if nothing passed
+        # equivalent to Parameters class, defaults if nothing passed - shound't happen
         self.CONSOLE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
         self.FILE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
         self.LOGGING_DIRECTORY_RUN = './'
         self.LOGGING_LEVEL = "INFO"
         
     def init_logger(self, logging_fname, logging_dir, logging_level):
-        print(logging_fname, logging_dir, logging_level)
         ll = logging_level if logging_level is not None else self.LOGGING_LEVEL
         self.logger.setLevel(ll)
 
@@ -40,9 +39,6 @@ class CustomLogger:
         file_hdlr = self._create_logfile_handler(logging_fname, logging_dir)
         self.logger.addHandler(file_hdlr)
         
-    # def _create_formatter(self, fmt):
-    #     return ColorfulFormatter(fmt)
-    
     def reset_logger(self):
         handlers = self.logger.handlers[:]
         for handler in handlers:
@@ -92,16 +88,6 @@ class CustomLogger:
             [han.setFormatter(self._create_formatter(fmt)) 
              for han, fmt in zip(self.logger.handlers, fmts)]
 
-    # def extend_fmt(self, exten):
-    #     P = Parameters()
-    #     console_fmt = P.CONSOLE_LOGGING_FMT + exten + P.LOGGING_FMT_MSG
-    #     self._default_console_fmtr = self._create_formatter(console_fmt)
-    #     self._console_hdlr.setFormatter(self._default_console_fmtr)
-
-    #     file_fmt = P.CONSOLE_LOGGING_FMT + exten + P.LOGGING_FMT_MSG
-    #     self._default_file_fmtr = self._create_formatter(file_fmt)
-    #     self._file_hdlr.setFormatter(self._default_file_fmtr)
-
     def spacer(self, level="info", spacer_length=80):
         """
         Insert a separator line in the log to visually separate log entries.
@@ -126,31 +112,23 @@ class CustomLogger:
             msg = msg.replace("\n", "\n\t")
         return msg
 
-# # class ColorfulFormatter(logging.Formatter):
-# #     COLORS = {
-# #         logging.DEBUG: '\033[0;36m',  # CYAN
-# #         logging.INFO: '\033[0;37m',  # WHITE
-# #         logging.WARNING: '\033[1;33m',  # YELLOW
-# #         logging.ERROR: '\033[1;31m',  # RED
-# #         logging.CRITICAL: '\033[1;41m',  # RED BACKGROUND
-# #     }
+# class ColorfulFormatter(logging.Formatter):
+#     COLORS = {
+#         logging.DEBUG: '\033[0;36m',  # CYAN
+#         logging.INFO: '\033[0;37m',  # WHITE
+#         logging.WARNING: '\033[1;33m',  # YELLOW
+#         logging.ERROR: '\033[1;31m',  # RED
+#         logging.CRITICAL: '\033[1;41m',  # RED BACKGROUND
+#     }
 
-# #     RESET = '\033[0m'
+#     RESET = '\033[0m'
 
-# #     def format(self, record):
-# #         color = self.COLORS.get(record.levelno)
-# #         message = super().format(record)
+#     def format(self, record):
+#         color = self.COLORS.get(record.levelno)
+#         message = super().format(record)
 
-# #         if color:
-# #             message = f"{color}{message}{self.RESET}"
+#         if color:
+#             message = f"{color}{message}{self.RESET}"
 
-# #         return message
-
-# if __name__ == "__main__":
-#     P = Parameters()
-#     Logger = CustomLogger()
-#     Logger.init_logger(__name__, "./", 10)
-#     Logger.spacer()
-#     Logger.logger.info('This is a regular log message.')
-#     Logger.spacer()
-#     Logger.logger.critical(['This is another regular ',"sdfsd"])
+     
+#         return message

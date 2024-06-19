@@ -25,7 +25,7 @@ def test_camera2shm(P):
     L = Logger()
     # setup the main logitech stream
     if P.BUILTIN_WEBCAM_IDX not in P.CAMERAS_BY_IDX:
-        L.logger.critical(f"Camera with index {P.FRONT_WEBCAM_IDX} not found.")
+        L.logger.error(f"Camera with index {P.FRONT_WEBCAM_IDX} not found.")
         L.spacer()
         exit(1)
     

@@ -43,7 +43,7 @@ def access_shm(shm_name):
         L.logger.debug(f"SHM interface (R/W) successfully linked `{shm_name}`")
 
     except FileNotFoundError:
-        L.logger.critical(f"Trying to access SHM `{shm_name}` that has not been created.")
+        L.logger.error(f"Trying to access SHM `{shm_name}` that has not been created.")
         L.spacer()
         exit(1)
     return shm
