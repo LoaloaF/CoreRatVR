@@ -1,12 +1,12 @@
 import os
 import pandas as pd
-from merge_utils import *
+import merge_utils as utils
 
 def merge_unity_frame_hdf5(L, session_dir, df_unity_frame, df_trialPackage):
     df_unity_frame.drop(columns=['N'], inplace=True)
     
     # add trial info into df
-    df_unity_frame = add_trial_into_df(df_trialPackage, df_unity_frame)
+    df_unity_frame = utils.add_trial_into_df(df_trialPackage, df_unity_frame)
 
     # rename columns to match the table
     df_unity_frame.rename(columns={"ID": "frame_id", 
@@ -15,7 +15,7 @@ def merge_unity_frame_hdf5(L, session_dir, df_unity_frame, df_trialPackage):
                                    "S": 's',"FB": "fb", 
                                    "BFP": "bfp", "BLP": 'blp'}, inplace=True)
     
-    merge_into_hdf5(L, session_dir, df_unity_frame, 'unity_frame')
+    utils.merge_into_hdf5(L, session_dir, df_unity_frame, 'unity_frame')
 
 
 
@@ -145,6 +145,6 @@ def merge_unity_output_hdf5(L, session_dir, df_trialPackage):
     merge_unity_frame_hdf5(L, session_dir, df_unity_frame, df_trialPackage)
 
     # merge the unity trial into the hdf5 file
-    merge_into_hdf5(L, session_dir, df_trialPackage, 'unity_trial')
+    utils.merge_into_hdf5(L, session_dir, df_trialPackage, 'unity_trial')
     L.logger.info("Unity trial merged into hdf5 successfully.")
 

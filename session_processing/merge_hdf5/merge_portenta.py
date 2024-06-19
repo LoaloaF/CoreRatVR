@@ -1,5 +1,5 @@
 import pandas as pd
-from merge_utils import *
+import merge_utils as utils
 import os
 
 
@@ -23,7 +23,7 @@ def merge_ball_velocity_hdf5(L, session_dir, df_trialPackage):
     df_ball_velocity.reset_index(drop=True, inplace=True)
 
     # add session and trial info into df
-    df_ball_velocity = add_trial_into_df(df_trialPackage, df_ball_velocity)
+    df_ball_velocity = utils.add_trial_into_df(df_trialPackage, df_ball_velocity)
 
     # rename the columns
     df_ball_velocity.rename(columns={"ID": "ball_velocity_package_id", 
@@ -33,7 +33,7 @@ def merge_ball_velocity_hdf5(L, session_dir, df_trialPackage):
                                      "Vr": "vr", "Vy": "vy", "Vp":"vp"}, inplace=True)
 
 
-    merge_into_hdf5(L, session_dir, df_ball_velocity, 'ball_velocity')
+    utils.merge_into_hdf5(L, session_dir, df_ball_velocity, 'ball_velocity')
 
 
 
@@ -55,7 +55,7 @@ def merge_event_hdf5(L, session_dir, df_trialPackage):
     df_event.reset_index(drop=True, inplace=True)
 
     # add session and trial info into df
-    df_event = add_trial_into_df(df_trialPackage, df_event)
+    df_event = utils.add_trial_into_df(df_trialPackage, df_event)
 
     # rename the columns
     df_event.rename(columns={"ID": "event_package_id", 
@@ -66,4 +66,4 @@ def merge_event_hdf5(L, session_dir, df_trialPackage):
                              "N": "event_type"}, inplace=True)
 
 
-    merge_into_hdf5(L, session_dir, df_event, 'event')
+    utils.merge_into_hdf5(L, session_dir, df_event, 'event')

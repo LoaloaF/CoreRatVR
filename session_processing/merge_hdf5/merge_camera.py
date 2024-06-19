@@ -1,5 +1,5 @@
 import pandas as pd
-from merge_utils import *
+import merge_utils as utils
 import os
 import h5py
 
@@ -25,11 +25,11 @@ def merge_camera_hdf5(L, session_dir, df_trialPackage, camera_type):
 
     
     # add trial info into df
-    df_cam = add_trial_into_df(df_trialPackage, df_cam)
+    df_cam = utils.add_trial_into_df(df_trialPackage, df_cam)
 
     # rename the columns
     cam_name_prefix = camera_type + '_cam_'
     df_cam.rename(columns={"ID": cam_name_prefix + "package_id", 
                            "PCT": cam_name_prefix + "timestamp"}, inplace=True)
 
-    merge_into_hdf5(L, session_dir, df_cam, camera_type + '_cam')
+    utils.merge_into_hdf5(L, session_dir, df_cam, camera_type + '_cam')

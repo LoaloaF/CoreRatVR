@@ -1,11 +1,11 @@
 import os
 
-def merge_into_hdf5(L, session_dir, df, data_type):
+def merge_into_hdf5(L, session_dir, df, hdf5_key):
 
    behavior_hdf5 = os.path.join(session_dir, 'behavior.hdf5')
-   df.to_hdf(behavior_hdf5, key=data_type, mode='a', format='table', append=True)
-   L.logger.info(f"{data_type} merged into hdf5 successfully.")
-   print(f"{data_type} merged into hdf5 successfully.")
+   df.to_hdf(behavior_hdf5, key=hdf5_key, mode='a', format='table', append=True)
+   L.logger.info(f"{hdf5_key} merged into hdf5 successfully.")
+   print(f"{hdf5_key} merged into hdf5 successfully.")
 
 def camel_to_snake(camel_case_string):
    # transform camel case to snake case

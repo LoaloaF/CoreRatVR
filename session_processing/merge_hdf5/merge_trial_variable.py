@@ -1,5 +1,5 @@
 import pandas as pd
-from merge_utils import *
+import merge_utils as utils
 import os
 
 
@@ -23,4 +23,4 @@ def merge_trial_variable_hdf5(L, session_dir):
     df_variable.rename(columns={'ID': 'trial_id'}, inplace=True)
     df_variable.columns = df_variable.columns.str.lower()
 
-    merge_into_hdf5(L, session_dir, df_variable, 'trial_variable')
+    utils.merge_into_hdf5(L, session_dir, df_variable, 'trial_variable')

@@ -109,4 +109,4 @@ def check_file_existence(session_dir, fnames):
         
     fsizes = [get_fsize(os.path.join(session_dir,fn)) for fn in fnames]
     result['Surplus-Files'] = dict(zip(fnames, fsizes))
-    return format_data(result)  
+    return result, format_data(result)
