@@ -1,15 +1,11 @@
 import pandas as pd
-from add_utils import *
+from db_utils import *
 import os
 
 
-def add_variable(L, conn, cursor, folder_path, df_session):
+def db_variable(L, conn, cursor, session_dir, df_session):
 
-    # read the dataframe of variable
-    paradigm_id = df_session['paradigm_id'][0]
-    cursor.execute(f"SELECT paradigm_name FROM paradigm WHERE paradigm_id={paradigm_id}")
-
-    paradigm_name = cursor.fetchall()[0][0]
+    paradigm_name = df_session["paradigm_name"][0] 
 
     # check if the variable table already exists
     variable_table_name = "paradigm_" + paradigm_name.split('_')[0]
@@ -18,13 +14,14 @@ def add_variable(L, conn, cursor, folder_path, df_session):
     if (len(cursor.fetchall()) == 0):
         raise Exception(f"Variable table {variable_table_name} does not exist. Please add the paradigm first.")
     
+    # TODO check integrity of the following code
     try:
-        unity_output_path = os.path.join(folder_path, 'unity_output.hdf5')
-        df_variable = pd.read_hdf(unity_output_path, key='trialPackages')
-        df_variable = df_variable.reset_index(drop=True)
-        df_variable.drop(columns=['N', 'SFID', 'SPCT', 'SPCT', 'EFID', 'EPCT', 'TD', 'O'], inplace=True)
-        df_variable.rename(columns={'ID': 'trial_id'}, inplace=True)
-        df_variable.columns = df_variable.columns.str.lower()
+        unity_output_path = os.path.join(session_dir, 'unity_output.hdf5')
+        df_variable = read_file_from_hdf5(L, session_dir, 'trial_variable')
+
+        if df_variable is None:
+            return
+
         df_variable = add_session_into_df(cursor, df_variable)
 
         df_variable.to_sql(variable_table_name, conn, if_exists='append', index=False)

@@ -1,19 +1,28 @@
 import pandas as pd
-from add_utils import *
+from merge_utils import *
 import os
 
 
-def add_ball_velocity(L, conn, cursor, folder_path, df_trialPackage):
+def merge_ball_velocity_hdf5(L, session_dir, df_trialPackage):
 
     # read the dataframe of ball velocity
-    df_ball_velocity = pd.read_hdf(os.path.join(folder_path, 'portenta_output.hdf5'), key='ballvelocity')
+    portenta_output_hdf5 = os.path.join(session_dir, 'portenta_output.hdf5')
+
+    if not os.path.exists(portenta_output_hdf5):
+        L.logger.error(f"Failed to find portenta_output.hdf5 file: {portenta_output_hdf5}")
+        return
+
+    try:
+        df_ball_velocity = pd.read_hdf(portenta_output_hdf5, key='ballvelocity')
+    except:
+        L.logger.error(f"Failed to read ballvelocity from portenta_output.hdf5 file: {portenta_output_hdf5}")
+        return
 
     # drop the unused identifier column
     df_ball_velocity.drop(columns=['N'], inplace=True)
     df_ball_velocity.reset_index(drop=True, inplace=True)
 
     # add session and trial info into df
-    df_ball_velocity = add_session_into_df(cursor, df_ball_velocity)
     df_ball_velocity = add_trial_into_df(df_trialPackage, df_ball_velocity)
 
     # rename the columns
@@ -23,20 +32,29 @@ def add_ball_velocity(L, conn, cursor, folder_path, df_trialPackage):
                                      "PCT": "ball_velocity_timestamp", 
                                      "Vr": "vr", "Vy": "vy", "Vp":"vp"}, inplace=True)
 
-    df_ball_velocity.to_sql('ball_velocity', conn, if_exists='append', index=False)
 
-    L.logger.info("Ball velocity added successfully.")
-
+    merge_into_hdf5(L, session_dir, df_ball_velocity, 'ball_velocity')
 
 
-def add_event(L, conn, cursor, folder_path, df_trialPackage):
+
+def merge_event_hdf5(L, session_dir, df_trialPackage):
     
+    portenta_output_hdf5 = os.path.join(session_dir, 'portenta_output.hdf5')
+
+    if not os.path.exists(portenta_output_hdf5):
+        L.logger.error(f"Failed to find portenta_output.hdf5 file: {portenta_output_hdf5}")
+        return
+
     # read the dataframe of event
-    df_event = pd.read_hdf(os.path.join(folder_path, 'portenta_output.hdf5'), key='portentaoutput')
+    try:
+        df_event = pd.read_hdf(portenta_output_hdf5, key='portentaoutput')
+    except:
+        L.logger.error(f"Failed to read portentaoutput from portenta_output.hdf5 file: {portenta_output_hdf5}")
+        return
+    
     df_event.reset_index(drop=True, inplace=True)
 
     # add session and trial info into df
-    df_event = add_session_into_df(cursor, df_event)
     df_event = add_trial_into_df(df_trialPackage, df_event)
 
     # rename the columns
@@ -47,6 +65,5 @@ def add_event(L, conn, cursor, folder_path, df_trialPackage):
                              "F": "event_f", 
                              "N": "event_type"}, inplace=True)
 
-    df_event.to_sql('event', conn, if_exists='append', index=False)
 
-    L.logger.info("Event added successfully.")
+    merge_into_hdf5(L, session_dir, df_event, 'event')
