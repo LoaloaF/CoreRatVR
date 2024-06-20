@@ -12,7 +12,7 @@ from CustomLogger import CustomLogger as Logger
 # from session2DB import session2DB
 
 import session_files_checking as sfc
-import session_files_merging
+import session_files_merging as sfm
 
 def process_session(session_dir):
     L = Logger()
@@ -28,7 +28,7 @@ def process_session(session_dir):
     
     
     
-    session_files_merging.session_data2single_hdf5(session_dir, filelist)
+    sfm.session_data2single_hdf5(session_dir, filelist)
     
     # 2024-06-13_11-37-32_ANIMAL_PARADIGM_DURATION
     

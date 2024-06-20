@@ -1,7 +1,7 @@
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '..', '..')) # project dir
-sys.path.insert(1, os.path.join(sys.path[0], 'session_processing', 'merge_hdf5')) # project dir
+sys.path.insert(1, os.path.join(sys.path[0], '..')) # project dir
+sys.path.insert(1, os.path.join(sys.path[0], '..', 'session_processing', 'merge_hdf5')) # project dir
 
 from datetime import datetime
 import json
@@ -62,7 +62,11 @@ def session_data2single_hdf5(session_dir, filelist):
         # read the session json file (excel metadata) and convert it into a dataframe
         if filelist["JSON-Files"]["parameters.json"] != "Missing!":
             # load json here and add it
-            pass
+            with open(os.path.join(session_dir, 'parameters.json'), 'r') as file:
+                parameters_json = json.load(file)
+                parameters_str = f'{parameters_json}'
+                df_session_metadata['session_parameter'] = parameters_str
+            # pass
         utils.merge_into_hdf5(L, session_dir, df_session_metadata, hdf5_key='session')
     
     # extract the trial package from the unity output hdf5 file
@@ -86,4 +90,4 @@ def session_data2single_hdf5(session_dir, filelist):
 
 
 if __name__ == "__main__":
-    session_data2single_hdf5("/home/ntgroup/Project/data/2024-06-13_12-59-52_goodone_Thursday_1")
+    session_data2single_hdf5("/home/ntgroup/Project/data/2024-06-13_12-59-52_goodone_Thursday_1", [])

@@ -63,6 +63,7 @@ def create_ratvr_db(db_name):
             trial_package_variables TEXT,
             trial_package_variables_default TEXT,
             session_description TEXT,
+            session_parameter TEXT,
             pillars TEXT,
             pillar_details TEXT,
             env_x_size INT,

@@ -1,3 +1,6 @@
 {
-    "dotnet.defaultSolution": "disable"
+    "dotnet.defaultSolution": "disable",
+    "python.analysis.extraPaths": [
+        "./session_processing/merge_hdf5"
+    ]
 }
