@@ -22,6 +22,9 @@ def _setup_capture(x_resolution, y_resolution, camera_idx, fps):
         exit(1)
     cap.set(cv2.CAP_PROP_FPS, fps)
 
+    #TODO adjust recording size by startfrom xy and end at xy, to allow cropping
+    #TODO unity stream is upside and wrong color rgb bgr
+
     # by default the capture receives frames from the camera closest to the 
     # requested/ set resolution. The code below ensures that the recorded 
     # resolution is garanteed to be larger than the final resolution

@@ -21,14 +21,10 @@ class Parameters:
         cls._instance.SHM_STRUCTURE_DIRECTORY = os.path.join(*p)
         p = cls._instance.PROJECT_DIRECTORY, "data"
         cls._instance.DATA_DIRECTORY = os.path.join(*p)
-        if os.name == 'nt':
-            # Windows
-            cls._instance.TRASH_DIRECTORY = os.path.join(os.path.expanduser("~"), 
-                                                         "$Recycle.Bin")
-        else:
-            # Linux and MacOS
-            cls._instance.TRASH_DIRECTORY = os.path.join(os.path.expanduser("~"), 
-                                                         ".local/share/Trash/files")
+        
+        cls._instance.NAS_DATA_DIRECTORY = "/Volumes/large/Simon/nas_vrdata"
+        cls._instance.DB_LOCATION = "/Volumes/large/Simon/nas_vrdata"
+        cls._instance.DB_NAME = "vrdata.db"
 
         # data saving / logging parameters
         cls._instance.SESSION_NAME_TEMPLATE = "%Y-%m-%d_%H-%M-%S_active"
@@ -40,6 +36,7 @@ class Parameters:
         cls._instance.LOG_TO_DATA_DIR = True
         cls._instance.CONSOLE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
         cls._instance.FILE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
+        cls._instance.CREATE_NAS_SESSION_DIR = True
 
 
         # Portenta SHM parameters
@@ -168,11 +165,12 @@ class Parameters:
         return {
             "Directories": (
                 "PROJECT_DIRECTORY", "SHM_STRUCTURE_DIRECTORY", "DATA_DIRECTORY", 
-                "LOGGING_DIRECTORY", "UNITY_BUILD_NAME"),
+                "NAS_DATA_DIRECTORY", "LOGGING_DIRECTORY", "UNITY_BUILD_NAME",
+                "DB_LOCATION", "DB_NAME"),
             "Data/Log Saving": (
                 "SESSION_NAME_TEMPLATE", "SESSION_DATA_DIRECTORY", 
                 "LOGGING_LEVEL", "LOG_TO_DATA_DIR", "CONSOLE_LOGGING_FMT", 
-                "FILE_LOGGING_FMT"),
+                "FILE_LOGGING_FMT", "CREATE_NAS_SESSION_DIR"),
             "Portenta shared memory": (
                 "SHM_NAME_TERM_FLAG", "SHM_NAME_BALLVELOCITY", "SHM_NPACKAGES_BALLVELOCITY", 
                 "SHM_PACKAGE_NBYTES_BALLVELOCITY", "SHM_NAME_PORTENTA_OUTPUT", 
@@ -228,3 +226,7 @@ class Parameters:
         params = self.get_attributes()
         params_json = json.dumps(params, indent=2)
         return params_json
+
+
+#TODO
+# more parameters should be os depdendent, linked to devicer checker, eg /Volumes/large/Simon/nas_vrdata

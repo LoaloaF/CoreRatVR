@@ -5,6 +5,7 @@ sys.path.insert(1, os.path.join(sys.path[0], 'backend'))
 
 import asyncio
 import shutil
+import send2trash
 from time import sleep
 import json
 from fastapi import HTTPException, Request
@@ -172,13 +173,12 @@ def attach_general_endpoints(app):
         request.app.state.state["initiated"] = False
 
         if msg == "delete":
-            if not os.path.exists(P.TRASH_DIRECTORY):
-                err_msg = f"Trash directory `{P.TRASH_DIRECTORY}` does not exist"
-                raise HTTPException(status_code=400, detail=err_msg)
-            
-            Logger().logger.info(f"Deleting session {P.SESSION_DATA_DIRECTORY}")
-            shutil.move(P.SESSION_DATA_DIRECTORY, P.TRASH_DIRECTORY)
+            send2trash(P.SESSION_DATA_DIRECTORY)
+            if P.CREATE_NAS_SESSION_DIR:
+                os.rmdir(P.NAS_DATA_DIRECTORY)
+            send2trash(P.SESSION_DATA_DIRECTORY)
 
+        #TODO proper endpoint with multiple arguments for different session processing
         elif msg == "post-process":
             Logger().logger.info(f"Processing session {P.SESSION_DATA_DIRECTORY}")
             proc = process_launcher.open_process_session_proc(P.SESSION_DATA_DIRECTORY)

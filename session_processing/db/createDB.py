@@ -1,3 +1,4 @@
+import argparse
 import sqlite3
 import os
 
@@ -92,6 +93,8 @@ def create_ratvr_db(db_name):
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
+    #TODO
+    # double session_id?
     cursor.execute("CREATE INDEX ball_velocity_session_id_index ON ball_velocity(session_id);")
     cursor.execute("CREATE INDEX ball_velocity_trial_id_index ON ball_velocity(trial_id);")
     cursor.execute("CREATE INDEX ball_velocity_ball_velocity_ttl_index ON ball_velocity(ball_velocity_ttl);")
@@ -231,31 +234,44 @@ def create_ratvr_db(db_name):
     # Commit changes and close the connection
     # conn.commit()
     conn.close()
+    
+#TODO
+def insert_new_paradim_table():
+    pass
+    # take in metadata arguments about paradigm variables
+    # cursor.execute("""
+    #     CREATE TABLE paradigm_P0200 (
+    #         paradigm_P0200_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    #         session_id INT NOT NULL,
+    #         trial_id BIGINT NOT NULL,
+    #         pd DOUBLE NOT NULL,
+    #         pa DOUBLE NOT NULL,
+    #         FOREIGN KEY (session_id) REFERENCES session(session_id)
+    #     );
 
 
 if __name__ == "__main__":
+    argParser = argparse.ArgumentParser("Create rat VR behavior database.")
+    argParser.add_argument("--path_to_db", type=str, default=".", help="Path to the database.")
 
-    # if os.path.exists('smb://yaniklab-data.ee.ethz.ch/large/Simon/nas_vrdata/rat_vr.db'):
-    #     raise ValueError("rat_vr.db already exists.")
-    # else:
-    #     create_ratvr_db('smb://yaniklab-data.ee.ethz.ch/large/Simon/nas_vrdata/rat_vr.db')
-    #     print("rat_vr database created successfully.")
+    path = argParser.parse_args().path_to_db
+    db_fname = "rat_vr.db"
+    test_db_fname = "rat_vr_test.db"
     
-    # if os.path.exists('smb://yaniklab-data.ee.ethz.ch/large/Simon/nas_vrdata/rat_vr_test.db'):
-    #     raise ValueError("rat_vr_test.db already exists.")
-    # else:
-    #     create_ratvr_db('smb://yaniklab-data.ee.ethz.ch/large/Simon/nas_vrdata/rat_vr_test.db')
-    #     print("rat_vr_test database created successfully.")
-
-    if os.path.exists('rat_vr.db'):
-        raise ValueError("rat_vr.db already exists.")
+    db_fullfname = os.path.join(path, db_fname)
+    test_db_fullfname = os.path.join(path, test_db_fname)
+    
+    # Create the real database
+    if os.path.exists(db_fullfname):
+        raise ValueError(f"{db_fullfname} already exists. Cannot create a new database.")
     else:
-        create_ratvr_db('rat_vr.db')
-        print("rat_vr database created successfully.")
+        create_ratvr_db(db_fullfname)
+        print(f"{db_fname} created successfully in {path}.")
 
-    if os.path.exists('rat_vr_test.db'):
-        raise ValueError("rat_vr_test.db already exists.")
+    # Create the test database for test-writing
+    if os.path.exists(test_db_fname):
+        raise ValueError(f"{test_db_fullfname} already exists. Cannot create a new database.")
     else:
-        create_ratvr_db('rat_vr_test.db')
-        print("rat_vr_test database created successfully.")
+        create_ratvr_db(test_db_fullfname)
+        print(f"{test_db_fname} created successfully in {path}.")
    

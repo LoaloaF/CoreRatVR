@@ -20,6 +20,20 @@ def camel_to_snake(camel_case_string):
 
    return snake_case_string
 
+def generate_trialID_start_timestamps(which_time):
+   pass
+   # which_time can be PCT or ET
+   # function below has the issue that the timestamp is unreliable (PCT) - 
+   # it should use ET (ephys timestamp) instead if available 
+   # return trial_start_tstamps
+   
+def get_trialID_from_timestamp(trial_start_tstamps, timestamps):
+   pass
+   # trial_start_tstamps is an array like [[trial_id, start_timestamp], ...] with n = number of trials
+   # timestamps are the timestamp of the events
+   # function should be vectorized to handle timestamps arr
+   # return trial_ids
+   
 def add_trial_into_df(df_trialPackage, df):
    # based on the timestamp of each trial, add the trial_id into the dataframe
 

@@ -180,12 +180,19 @@ def open_unity_proc():
 def open_process_session_proc(session_dir):
     P = Parameters()
     script = 'process_session.py'
-    script_fullfname = os.path.join(P.PROJECT_DIRECTORY, "CoreRatVR", script)
+    script_fullfname = os.path.join(P.PROJECT_DIRECTORY, "CoreRatVR", 
+                                    "session_processing", script)
     
     args = _make_proc_args(shm_args=())
     args.extend([
         "--logging_name", script.replace(".py", ""),
         "--session_dir", session_dir,
+        "--move_to_nas",
+        "--nas_dir", P.NAS_DATA_DIRECTORY,
+        # "--integrate_ephys",
+        "--write_to_db",
+        "--database_location", P.DB_LOCATION,
+        "--database_name", P.DB_NAME,
     ])
     return _launch(P.WHICH_PYTHON, script_fullfname, *args)
 

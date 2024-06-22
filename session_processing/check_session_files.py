@@ -1,4 +1,5 @@
 import os
+import h5py
 from CustomLogger import CustomLogger as Logger
 
 def get_fsize(full_fnamepath):
@@ -17,7 +18,7 @@ def color_str(string, color):
 
 def format_data(data):
     # Find the longest key length for alignment
-    max_subkey_len = max(len(subkey) for key in data for subkey in data[key]) +2
+    max_subkey_len = 31
 
     # Create a formatted string
     result = ""
@@ -89,6 +90,18 @@ def check_log_files(session_dir, fnames):
                 result.extend(warnings)
     return result        
 
+def get_data_file_info(session_dir, fname):
+    info = ''
+    with h5py.File(os.path.join(session_dir, fname), 'r') as f:
+        for key in list(f.keys()):
+            key_str =  f"\n\t\'{key}\':"
+
+            if 'table' in f[key]:
+                info += f"{key_str:<29} {f[key]['table'].shape[0]:<5,} rows"
+            else:
+                info += f"{key_str:<29}"
+    return info + '\n'
+
 def check_file_existence(session_dir, fnames):
     expected_log_fnames = ( '__main__.log', 'portenta2shm2portenta.log', 'bodycam2shm.log', 'facecam2shm.log', 'log_bodycam.log', 'log_facecam.log', 'log_portenta.log', 'log_unity.log', 'log_unitycam.log')
     expected_data_fnames = ('portenta_output.hdf5', 'unitycam.hdf5', 'bodycam.hdf5', 'facecam.hdf5', 'unity_output.hdf5')
@@ -102,11 +115,14 @@ def check_file_existence(session_dir, fnames):
 
             # check if file exists
             if expec_fname in fnames:
-                result[key][expec_fname] = get_fsize(os.path.join(session_dir, expec_fname))
+                info = get_fsize(os.path.join(session_dir, expec_fname))
+                if key == "Data-Files":
+                    info += get_data_file_info(session_dir, expec_fname)
+                result[key][expec_fname] = info
                 fnames.pop(fnames.index(expec_fname))
             else:
                 result[key][expec_fname] = color_str("Missing!", "yellow")
-        
+              
     fsizes = [get_fsize(os.path.join(session_dir,fn)) for fn in fnames]
     result['Surplus-Files'] = dict(zip(fnames, fsizes))
     return result, format_data(result)

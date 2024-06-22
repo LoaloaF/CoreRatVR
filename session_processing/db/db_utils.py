@@ -1,26 +1,12 @@
 import os
 import pandas as pd
 
-
-def dict_to_db(cursor, dict, table):
-   # put a dictionary into a database
-   columns = ', '.join(dict.keys())
-   placeholders = ', '.join('?' * len(dict))
-   sql = 'INSERT INTO {} ({}) VALUES ({})'.format(table, columns, placeholders)
-   cursor.execute(sql, tuple(dict.values()))
-
-def camel_to_snake(camel_case_string):
-   # transform camel case to snake case
-   snake_case_string = ""
-   for i, c in enumerate(camel_case_string):
-      if i == 0:
-         snake_case_string += c.lower()
-      elif c.isupper():
-         snake_case_string += "_" + c.lower()
-      else:
-         snake_case_string += c
-
-   return snake_case_string
+# def dict_to_db(cursor, dict, table):
+#    # put a dictionary into a database
+#    columns = ', '.join(dict.keys())
+#    placeholders = ', '.join('?' * len(dict))
+#    sql = 'INSERT INTO {} ({}) VALUES ({})'.format(table, columns, placeholders)
+#    cursor.execute(sql, tuple(dict.values()))
 
 def add_session_into_df(cursor, df):
    # based on the last entry of the session table, add the session_id into the dataframe

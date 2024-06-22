@@ -136,8 +136,8 @@ class SessionParamters:
             "animal": self.animal.replace("_", ""),
             "animal_weight": self.animal_weight,
             
-            "start_time": self.start_time.strftime("%Y-%m-%d_%H-%M-%S"),
-            "stop_time": self.stop_time.strftime("%Y-%m-%d_%H-%M-%S"),
+            "start_time": self.start_time.strftime("%Y-%m-%d_%H-%M"),
+            "stop_time": self.stop_time.strftime("%Y-%m-%d_%H-%M"),
             "duration": f"{int(self.duration.total_seconds()/60)}min",
             "notes": self.notes,
         }
@@ -150,3 +150,8 @@ class SessionParamters:
         fullffname = os.path.join(P.SESSION_DATA_DIRECTORY, "session_parameters.json")
         with open(fullffname, 'w') as f:
             json.dump(params, f)
+            
+            
+            
+#TODO
+# rename file , has type, and convert string arugments with , to JSON array
