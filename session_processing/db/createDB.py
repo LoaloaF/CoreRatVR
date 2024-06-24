@@ -19,10 +19,13 @@ def create_ratvr_db(db_name):
         );
     """)
 
+    #TODO think about states addtions / new table
+
     # paradigm table
     cursor.execute("""
         CREATE TABLE paradigm (
             paradigm_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            
             paradigm_name TEXT NOT NULL,
             paradigm_description TEXT
         );
@@ -72,7 +75,7 @@ def create_ratvr_db(db_name):
             base_length INT,
             wallzone_size INT,
             wallzone_collider_size INT,
-            FOREIGN KEY (session_id) REFERENCES session(session_id)
+            # FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
 

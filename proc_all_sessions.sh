@@ -7,11 +7,12 @@ logging_level=$1
 prompt_user_decision=${2:-false}
 
 # Get the source path from the second command-line argument, or use the default if not provided
-source_path=${3:-/Volumes/large/simon/nas_vrdata}
+# source_path=${3:-/Volumes/large/simon/nas_vrdata}
+source_path=${3:/mnt/NTnas/nas_vrdata}
 
 directories=$(ls -ld $source_path/*/)
 
-
+echo $directories
 for dir in $(ls -dr $source_path/*/); do
   if [ -d "$dir" ]; then
     if [ "$prompt_user_decision" = "true" ]; then

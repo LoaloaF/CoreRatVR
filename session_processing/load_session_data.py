@@ -141,3 +141,5 @@ def _handle_paradigm_specific_variables(unity_trials_data, frames_toDBnames_mapp
         L.logger.warning("Failed to find the paradigm-specific variables in "
                          "metadata/excel. Using hardcoded mapping instead.")
     return patch_paradigmVariable_data(paradigmVariable_trials_data)
+
+#TODO: add trialPackageVariablesFulllNames to excel sheet schema

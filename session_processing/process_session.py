@@ -46,6 +46,7 @@ def _handle_data(session_dir):
                          "EPCT": "trial_end_pc_timestamp",
                          "TD": "trial_pc_duration", 
                          "O": "trial_outcome"}
+    # TODO: maybe unclear how paradigmVariable_data is shaped
     unity_trials_data, paradigmVariable_data = load_unity_trials_data(session_dir, 
                                                                       metadata, 
                                                                       toDBnames_mapping)
@@ -55,6 +56,7 @@ def _handle_data(session_dir):
                          "INSERT1": "frame_ephys_timestamp",
                          "INSERT2": "frame_session_id",
                          "INSERT3": "frame_trial_id",
+                         #TODO: add frame_
                          "X": "x_position", 
                          "Z": "z_position", 
                          "A": "angle", 
@@ -213,6 +215,10 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
                 shutil.rmtree(session_dir)
                 L.logger.info(f"Session {session_dir} deleted")
         return
+    
+    # subset requred data
+    if any(d == None for d in data):
+        pass
     
     (metadata, unity_trials_data, paradigmVariable_data, unity_frames_data,
     ballvel_data, event_data, facecam_packages, bodycam_packages,  
