@@ -20,10 +20,11 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data, event_da
     if use_ephys_timestamps:
         trials_tstamp_col = trials_tstamp_col.replace('_pc_', '_ephys_')
         frame_tstamp_col = frame_tstamp_col.replace('_pc_', '_ephys_')
-        facecam_tstamp_col = facecam_tstamp_col.replace('_pc_', '_ephys_')
-        unitycam_tstamp_col = unitycam_tstamp_col.replace('_pc_', '_ephys_')
+        #TODO check if data is None, could be None
         ballvel_tstamp_col = ballvel_tstamp_col.replace('_pc_', '_ephys_')
         event_tstamp_col = event_tstamp_col.replace('_pc_', '_ephys_')
+        facecam_tstamp_col = facecam_tstamp_col.replace('_pc_', '_ephys_')
+        unitycam_tstamp_col = unitycam_tstamp_col.replace('_pc_', '_ephys_')
         
     # get the trial time boundaries and constuct an interval index from it
     trial_starts = unity_trials_data[trials_tstamp_col]
@@ -43,6 +44,7 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data, event_da
         return np.where(idx == -1, np.nan, trial_ids[idx].values)
 
     unity_frames_data['trial_id'] = assign_trial_id(unity_frames_data[frame_tstamp_col])
+    #TODO same check
     ballvel_data['trial_id'] = assign_trial_id(ballvel_data[ballvel_tstamp_col])
     event_data['trial_id'] = assign_trial_id(event_data[event_tstamp_col])
     facecam_packages['trial_id'] = assign_trial_id(facecam_packages[facecam_tstamp_col])

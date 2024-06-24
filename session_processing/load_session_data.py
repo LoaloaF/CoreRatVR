@@ -8,6 +8,7 @@ import json
 from CustomLogger import CustomLogger as Logger
 from patch_session_data import patch_paradigmVariable_data
 from patch_session_data import patch_metadata
+from patch_session_data import patch_trial_packages
 
 def load_session_metadata(session_dir):
     L = Logger()
@@ -53,31 +54,39 @@ def load_session_metadata(session_dir):
 
 def load_unity_frames_data(session_dir, toDBnames_mapping):
     unity_frame_data = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'unityframes')
-    unity_frame_data = _rename_columns(unity_frame_data, toDBnames_mapping)
+    unity_frame_data = _rename_columns('unity_frames', unity_frame_data, toDBnames_mapping)
     return unity_frame_data
 
 def load_unity_trials_data(session_dir, metadata, toDBnames_mapping):
-    unity_trials_data = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'trialPackages')
+    # TODO deal with data without trialpackages or with corrupted trialpackages
+    unity_trials_data_package = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'trialPackages')
+    unity_frame_data = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'unityframes')
+
+    if unity_frame_data is None:
+        raise Exception("Failed to read unityframes data.")
+
+    unity_trials_data = patch_trial_packages(unity_trials_data_package, unity_frame_data, metadata)
+
     paradigmVariable_data = _handle_paradigm_specific_variables(unity_trials_data, 
                                                                 toDBnames_mapping, 
                                                                 metadata)
-    unity_trials_data = _rename_columns(unity_trials_data, toDBnames_mapping)
+    unity_trials_data = _rename_columns('unity_trial', unity_trials_data, toDBnames_mapping)
     return unity_trials_data, paradigmVariable_data
 
 def load_camera_data(session_dir, camera_fname, toDBnames_mapping):
     frame_packages = _read_hdf5_data(session_dir, camera_fname, 'frame_packages')
-    frame_packages = _rename_columns(frame_packages, toDBnames_mapping)
+    frame_packages = _rename_columns(camera_fname, frame_packages, toDBnames_mapping)
     return frame_packages
 
 def load_ballvelocity_data(session_dir, toDBnames_mapping):
     bv_data = _read_hdf5_data(session_dir, 'portenta_output.hdf5', 'ballvelocity')
-    bv_data = _rename_columns(bv_data, toDBnames_mapping)
+    bv_data = _rename_columns('ball_velocity', bv_data, toDBnames_mapping)
     return bv_data
 
 def load_portenta_event_data(session_dir, toDBnames_mapping):
     portenta_event_data = _read_hdf5_data(session_dir, 'portenta_output.hdf5', 
                                           'portentaoutput', drop_N_column=False)
-    portenta_event_data = _rename_columns(portenta_event_data, toDBnames_mapping)
+    portenta_event_data = _rename_columns('portenta_event', portenta_event_data, toDBnames_mapping)
     return portenta_event_data
 
 def _read_hdf5_data(session_dir, fname, key, drop_N_column=True):
@@ -94,8 +103,12 @@ def _read_hdf5_data(session_dir, fname, key, drop_N_column=True):
             if (key := 'packages') not in f.keys():
                 L.logger.error(f"Failed to find {key} key in {fname}.")
             return
-    
-    data = pd.read_hdf(fullfname, key=key)
+    try:
+        data = pd.read_hdf(fullfname, key=key)
+    except:
+        L.logger.error(f"Find the key {key}. But failed to read the key {key} from {fullfname}.")
+        return
+        
     data.reset_index(drop=True, inplace=True)
     if drop_N_column:
         data.drop(columns=['N'], inplace=True, errors='ignore')
@@ -106,9 +119,13 @@ def _insert_columns(data, new_columns):
         data[col] = np.nan
     return data
 
-def _rename_columns(data, toDBnames_mapping):
+def _rename_columns(data_type, data, toDBnames_mapping):
     L = Logger()
     
+    if data is None:
+        L.logger.error(f"{data_type} is None. Cannot rename columns.")
+        return
+
     new_columns = [toDBnames_mapping.pop(k) for k in list(toDBnames_mapping) if k.startswith("INSERT")]
     data = _insert_columns(data, new_columns)
 
@@ -143,4 +160,6 @@ def _handle_paradigm_specific_variables(unity_trials_data, frames_toDBnames_mapp
     except:
         L.logger.warning("Failed to find the paradigm-specific variables in "
                          "metadata/excel. Using hardcoded mapping instead.")
-    return patch_paradigmVariable_data(paradigmVariable_trials_data)
+        return patch_paradigmVariable_data(paradigmVariable_trials_data)
+
+#add trialPackageVariablesFulllNames to excel sheet schema

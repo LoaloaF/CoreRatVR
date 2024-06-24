@@ -39,13 +39,14 @@ def _handle_data(session_dir):
     toDBnames_mapping = {"ID": "trial_id", 
                          "INSERT1": "trial_start_ephys_timestamp",
                          "INSERT2": "trial_end_ephys_timestamp",
-                         "INSERT3": "trial_start_session_id",
+                        #  "INSERT3": "trial_start_session_id",
                          "SFID": "trial_start_frame", 
                          "SPCT": "trial_start_pc_timestamp", 
                          "EFID": "trial_end_frame", 
                          "EPCT": "trial_end_pc_timestamp",
                          "TD": "trial_pc_duration", 
                          "O": "trial_outcome"}
+    # TODO: maybe unclear how paradigmVariable_data is shaped
     unity_trials_data, paradigmVariable_data = load_unity_trials_data(session_dir, 
                                                                       metadata, 
                                                                       toDBnames_mapping)
@@ -53,13 +54,13 @@ def _handle_data(session_dir):
     toDBnames_mapping = {"ID": "frame_id", 
                          "PCT": "frame_pc_timestamp", 
                          "INSERT1": "frame_ephys_timestamp",
-                         "INSERT2": "frame_session_id",
-                         "INSERT3": "frame_trial_id",
-                         "X": "x_position", 
-                         "Z": "z_position", 
-                         "A": "angle", 
-                         "S": 'state',
-                         "FB": "frameblinker", 
+                        #  "INSERT2": "frame_session_id",
+                         "INSERT2": "frame_trial_id",
+                         "X": "frame_x_position", 
+                         "Z": "frame_z_position", 
+                         "A": "frame_angle", 
+                         "S": 'frame_state',
+                         "FB": "frame_blinker", 
                          "BFP": "ballveloctiy_first_package", 
                          "BLP": 'ballveloctiy_last_package'}
     unity_frames_data = load_unity_frames_data(session_dir, toDBnames_mapping)
@@ -71,8 +72,8 @@ def _handle_data(session_dir):
                          "T": "ballvelocity_portenta_timestamp", 
                          "PCT": "ballvelocity_pc_timestamp", 
                          "INSERT1": "ballvelocity_ephys_timestamp",
-                         "INSERT2": "ballvelocity_session_id",
-                         "INSERT3": "ballvelocity_trial_id",
+                        #  "INSERT2": "ballvelocity_session_id",
+                         "INSERT2": "ballvelocity_trial_id",
                          "Vr": "ballvelocity_raw", 
                          "Vy": "ballvelocity_yaw", 
                          "Vp":"ballvelocity_pitch"}
@@ -82,8 +83,8 @@ def _handle_data(session_dir):
                          "T": "event_portenta_timestamp", 
                          "PCT": "event_pc_timestamp", 
                          "INSERT1": "event_ephys_timestamp",
-                         "INSERT2": "event_session_id",
-                         "INSERT3": "event_trial_id",
+                        #  "INSERT2": "event_session_id",
+                         "INSERT2": "event_trial_id",
                          "V": "event_value", 
                          "N": "event_name"}
     event_data = load_portenta_event_data(session_dir, toDBnames_mapping)
@@ -94,21 +95,21 @@ def _handle_data(session_dir):
     toDBnames_mapping = {"ID": f"facecam_image_id", 
                          "PCT": f"facecam_image_pc_timestamp",
                          "INSERT1": "facecam_image_ephys_timestamp",
-                         "INSERT2": "facecam_image_session_id",
-                         "INSERT3": "facecam_image_trial_id",}
+                        #  "INSERT2": "facecam_image_session_id",
+                         "INSERT2": "facecam_image_trial_id",}
     facecam_packages = load_camera_data(session_dir, 'facecam.hdf5', 
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"bodycam_image_id", 
                          "PCT": f"bodycam_image_pc_timestamp",
-                         "INSERT1": "bodycam_image_session_id",
-                         "INSERT2": "bodycam_image_trial_id",}
+                        #  "INSERT1": "bodycam_image_session_id",
+                         "INSERT1": "bodycam_image_trial_id",}
     bodycam_packages = load_camera_data(session_dir, 'bodycam.hdf5', 
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"unitycam_image_id", 
                          "PCT": f"unitycam_image_pc_timestamp",
                          "INSERT1": "unitycam_image_ephys_timestamp",
-                         "INSERT2": "unitycam_image_session_id",
-                         "INSERT3": "unitycam_image_trial_id",}
+                        #  "INSERT2": "unitycam_image_session_id",
+                         "INSERT2": "unitycam_image_trial_id",}
     unitycam_packages = load_camera_data(session_dir, 'unitycam.hdf5', 
                                          toDBnames_mapping)
     
@@ -214,6 +215,10 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
                 L.logger.info(f"Session {session_dir} deleted")
         return
     
+    # subset requred data
+    # if any(d == None for d in data):
+    #     pass
+    
     (metadata, unity_trials_data, paradigmVariable_data, unity_frames_data,
     ballvel_data, event_data, facecam_packages, bodycam_packages,  
     unitycam_packages) = data
@@ -268,7 +273,9 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/nas_vrdata/2024-06-13_11-37-32_jumper_Thursday_1')
+    # argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/nas_vrdata/2024-06-13_11-37-32_jumper_Thursday_1')
+    argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/nas_vrdata/2024-05-23_10-11-35_jumper_Thursday_1')
+    
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--integrate_ephys", action="store_true")

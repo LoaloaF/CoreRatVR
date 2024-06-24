@@ -45,8 +45,8 @@ def init_save_dir():
     dirname = dt.now().strftime(P.SESSION_NAME_TEMPLATE)
     full_path = os.path.join(P.DATA_DIRECTORY, dirname)
     os.mkdir(full_path)
-    if P.CREATE_NAS_SESSION_DIR:
-        os.mkdir(os.path.join(P.NAS_DATA_DIRECTORY, dirname))
+    # if P.CREATE_NAS_SESSION_DIR:
+    #     os.mkdir(os.path.join(P.NAS_DATA_DIRECTORY, dirname))
     return full_path
 
 def check_base_dirs():

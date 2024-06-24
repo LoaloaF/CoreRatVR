@@ -19,10 +19,13 @@ def create_ratvr_db(db_name):
         );
     """)
 
+    #TODO think about states addtions / new table
+
     # paradigm table
     cursor.execute("""
         CREATE TABLE paradigm (
             paradigm_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            
             paradigm_name TEXT NOT NULL,
             paradigm_description TEXT
         );
@@ -63,6 +66,7 @@ def create_ratvr_db(db_name):
             maxium_trial_length SMALLINT,
             trial_package_variables TEXT,
             trial_package_variables_default TEXT,
+            trial_package_variables_fulll_names TEXT,
             session_description TEXT,
             session_parameter TEXT,
             pillars TEXT,
@@ -72,7 +76,7 @@ def create_ratvr_db(db_name):
             base_length INT,
             wallzone_size INT,
             wallzone_collider_size INT,
-            FOREIGN KEY (session_id) REFERENCES session(session_id)
+            # FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
 
@@ -219,8 +223,8 @@ def create_ratvr_db(db_name):
             paradigm_P0200_id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id INT NOT NULL,
             trial_id BIGINT NOT NULL,
-            pd DOUBLE NOT NULL,
-            pa DOUBLE NOT NULL,
+            pillar_distance DOUBLE NOT NULL,
+            pillar_angle DOUBLE NOT NULL,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)

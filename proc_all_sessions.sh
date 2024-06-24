@@ -11,7 +11,7 @@ source_path=${3:-/mnt/smbshare/vrdata/nas_vrdata}
 
 directories=$(ls -ld $source_path/*/)
 
-
+echo $directories
 for dir in $(ls -dr $source_path/*/); do
   if [ -d "$dir" ]; then
     if [ "$prompt_user_decision" = "true" ]; then
