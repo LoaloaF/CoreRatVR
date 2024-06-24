@@ -24,8 +24,8 @@ from polish_session_data import add_ephys_timestamps
 
 def _handle_logs(session_dir):
     fnames = os.listdir(session_dir)
-    filelist_str = check_file_existence(session_dir, fnames.copy())
-    L.logger.info(L.fmtmsg(filelist_str))
+    _, format_filelist_str = check_file_existence(session_dir, fnames.copy())
+    L.logger.info(L.fmtmsg(format_filelist_str))
     logs_result = check_log_files(session_dir, [fn for fn in fnames if fn.endswith(".log")])
     L.logger.info(L.fmtmsg(logs_result))
 
@@ -257,7 +257,7 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
                          paradigmVariable_data, facecam_packages, bodycam_packages, 
                          unitycam_packages, ballvel_data, event_data)
         
-    #TODO accdiednally delete session: 2024-06-13_12-59-52_goodone_Thursday_1 - avaialble local??
+    #TODO accdiednally delete session: 2024-06-13_12-59-52_goodone_Thursday_1 - avaialble local?? - done
     #TODO run on all the available data with fast network connection to NAS, 
     #TODO go deeper and deeper into older sessions, see what kind of patching is requried/ feasable/ worth it
     #TODO try with a proper session, see if it works
@@ -267,8 +267,8 @@ if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level")
-    argParser.add_argument("--session_dir")
+    argParser.add_argument("--logging_level", default="INFO")
+    argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/nas_vrdata/2024-06-13_11-37-32_jumper_Thursday_1')
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--integrate_ephys", action="store_true")

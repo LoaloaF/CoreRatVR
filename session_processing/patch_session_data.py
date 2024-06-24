@@ -6,7 +6,8 @@ from CustomLogger import CustomLogger as Logger
 
 def patch_metadata(session_metadata, session_dir):
     try:
-        print(session_metadata)
+        # should we print the metadata here? - now no, we print it in load_session_metadata
+        # print(session_metadata)
         if 'animal' in session_metadata:
             session_metadata['animal_name'] = session_metadata.pop('animal')
         # if no animal information is found
@@ -40,6 +41,7 @@ def _infer_session_time(session_dir):
         from_fullfname = os.path.join(session_dir, 'portenta_output.hdf5')
         if os.path.exists(from_fullfname):
             key = 'ballvelocity'
+        #TODO what if there is no ballvelocity
 
     Logger().logger.debug(f"Reading {from_fullfname} with key: {key}")
     

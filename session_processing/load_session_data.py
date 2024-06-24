@@ -45,7 +45,10 @@ def load_session_metadata(session_dir):
             f'{session_metadata["paradigm_name"]:04}_{session_metadata["duration"]}')
     session_metadata['session_name'] = name
     
-    L.logger.info(L.fmtmsg(["Metadata: ", session_metadata]))
+    # TODO: discuss wether we should print configuration here - now the solution is not printing it
+    metadata_to_print = session_metadata.copy()
+    metadata_to_print.pop('configuration', None)
+    L.logger.info(L.fmtmsg(["Metadata: ", metadata_to_print]))
     return session_metadata
 
 def load_unity_frames_data(session_dir, toDBnames_mapping):
