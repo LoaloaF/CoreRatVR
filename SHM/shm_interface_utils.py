@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import json
 
@@ -5,6 +6,8 @@ from multiprocessing import shared_memory
 from multiprocessing import resource_tracker
 
 from CustomLogger import CustomLogger as Logger
+
+from OSXFileBasedSHM import OSXFileBasedSHM
 
 def remove_shm_from_resource_tracker():
     """Monkey-patch multiprocessing.resource_tracker so SharedMemory won't be tracked
@@ -39,7 +42,11 @@ def access_shm(shm_name):
         # disable automatic unlinking (deletion) of shm when an access proc dies
         remove_shm_from_resource_tracker()
 
-        shm = shared_memory.SharedMemory(name=shm_name, create=False)
+        if os.uname().sysname != "Darwin":
+            shm = shared_memory.SharedMemory(name="tmp/"+shm_name, create=False)
+        else:
+            shm = OSXFileBasedSHM(shm_name, create=False)
+                    
         L.logger.debug(f"SHM interface (R/W) successfully linked `{shm_name}`")
 
     except FileNotFoundError:

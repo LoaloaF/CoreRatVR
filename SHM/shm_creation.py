@@ -1,6 +1,5 @@
 import atexit
 import json
-import time
 import os
 from math import log
 
@@ -14,6 +13,8 @@ from Parameters import Parameters
 
 from shm_interface_utils import remove_shm_from_resource_tracker
 from shm_interface_utils import remove_shm_from_resource_tracker
+
+from OSXFileBasedSHM import OSXFileBasedSHM
 
 # framecount isn't used right now, structure in general needs to be reconsiderd
 
@@ -94,11 +95,16 @@ def _create_shm(shm_name, total_nbytes):
     try:
         # disable automatic unlinking (deletion) of shm when an access proc dies
         remove_shm_from_resource_tracker()
-        shm = shared_memory.SharedMemory(name=shm_name, create=True, 
-                                         size=total_nbytes)
-
-        shm.buf[:total_nbytes] = bytearray(total_nbytes)
+        
+        # check if the system is mac os
+        if os.uname().sysname != "Darwin":
+            shm = shared_memory.SharedMemory(name=shm_name, create=True, 
+                                            size=total_nbytes)
+        else:
+            shm = OSXFileBasedSHM(shm_name, create=True, size=total_nbytes)
+        
         atexit.register(_cleanup, shm, shm_name)
+        shm.buf[:total_nbytes] = bytearray(total_nbytes)
     
     except FileExistsError:
         L.logger.error(f"SHM named `{shm_name}` already exists.")
@@ -135,5 +141,8 @@ def _write_json(shm_structure, shm_name):
 
 def delete_shm(shm_name):
     # logging
-    shm = shared_memory.SharedMemory(name=shm_name, create=False)
-    _cleanup(shm, shm_name)
+    if os.uname().sysname != "Darwin":
+        shm = shared_memory.SharedMemory(name=shm_name, create=False)
+    else:
+        shm = OSXFileBasedSHM(shm_name, create=False)
+        _cleanup(shm, shm_name)

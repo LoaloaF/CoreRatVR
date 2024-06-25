@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharpSHM/csharp_shm_test.csproj": {}
+    "/Users/loaloa/homedataAir/phd/ratvr/VirtualReality/CoreRatVR/SHM/csTestInterface/csharp_shm_test.csproj": {}
   },
   "projects": {
-    "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharpSHM/csharp_shm_test.csproj": {
+    "/Users/loaloa/homedataAir/phd/ratvr/VirtualReality/CoreRatVR/SHM/csTestInterface/csharp_shm_test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharpSHM/csharp_shm_test.csproj",
+        "projectUniqueName": "/Users/loaloa/homedataAir/phd/ratvr/VirtualReality/CoreRatVR/SHM/csTestInterface/csharp_shm_test.csproj",
         "projectName": "csharp_shm_test",
-        "projectPath": "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharpSHM/csharp_shm_test.csproj",
-        "packagesPath": "/home/loaloa/.nuget/packages/",
-        "outputPath": "/home/loaloa/homedataXPS/projects/marmosetgaze/marmosetSetup/csharpSHM/obj/",
+        "projectPath": "/Users/loaloa/homedataAir/phd/ratvr/VirtualReality/CoreRatVR/SHM/csTestInterface/csharp_shm_test.csproj",
+        "packagesPath": "/Users/loaloa/.nuget/packages/",
+        "outputPath": "/Users/loaloa/homedataAir/phd/ratvr/VirtualReality/CoreRatVR/SHM/csTestInterface/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/loaloa/.nuget/NuGet/NuGet.Config"
+          "/Users/loaloa/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
@@ -49,16 +49,31 @@
             "net47",
             "net471",
             "net472",
-            "net48"
+            "net48",
+            "net481"
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[6.0.29, 6.0.29]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.osx-arm64",
+              "version": "[6.0.29, 6.0.29]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[6.0.29, 6.0.29]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/lib64/dotnet/sdk/6.0.126/RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/8.0.4/libexec/sdk/8.0.104/RuntimeIdentifierGraph.json"
         }
       }
     }

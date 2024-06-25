@@ -29,26 +29,66 @@ public class CyclicPackagesSHMInterface
         _nPackages = (int)shmStructure["metadata"]["npackages"];
         _packageNBytes = (int)shmStructure["metadata"]["package_nbytes"];
 
-        try
-        {
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+
+        // Linux
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
             {
                 _memory = MemoryMappedFile.CreateFromFile($"/dev/shm/{_shmName}", System.IO.FileMode.Open);
             }
-            else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+        // Windows
+        else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
             {
                 _memory = MemoryMappedFile.OpenExisting(_shmName);
             }
-        }
-        catch (FileNotFoundException ex)
+        // OSX
+        else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
         {
-            Log($"Error: Shared memory `{_shmName}` has not been created: {ex.Message}");
-            // Handle the case where the shared memory file is not found
-            // You can choose to throw an exception, log an error, or take any other appropriate action
-            System.Environment.Exit(1);
+            string filePath = Path.Combine(Path.GetTempPath(), _shmName);
+            Console.WriteLine($"Creating MemoryMappedFile from filePath: {filePath}\n\n");
+            // Ensure the file is always recreated
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+            // Create a new file and set its length to the maximum of _totalNBytes and 1024
+            using (var fs = File.Create(filePath))
+            {
+                // macos requires at least 1024 bytes
+                fs.SetLength(Math.Max(_totalNBytes, 1024));
+            }
+            _memory = MemoryMappedFile.CreateFromFile(filePath, System.IO.FileMode.OpenOrCreate, null, Math.Max(_totalNBytes, 1024));
         }
+        
+        if (_memory == null)
+        {
+            Console.WriteLine($"Failed to create MemoryMappedFile from shmName: {_shmName}\n\n");
+            Environment.Exit(1);
+        }
+        
         _accessor = _memory.CreateViewAccessor();
         Log($"SHM interface created with JSON {shmStructureJsonFilename}");
+
+
+        // try
+        // {
+        //     if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+        //     {
+        //         _memory = MemoryMappedFile.CreateFromFile($"/dev/shm/{_shmName}", System.IO.FileMode.Open);
+        //     }
+        //     else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+        //     {
+        //         _memory = MemoryMappedFile.OpenExisting(_shmName);
+        //     }
+        // }
+        // catch (FileNotFoundException ex)
+        // {
+        //     Log($"Error: Shared memory `{_shmName}` has not been created: {ex.Message}");
+        //     // Handle the case where the shared memory file is not found
+        //     // You can choose to throw an exception, log an error, or take any other appropriate action
+        //     System.Environment.Exit(1);
+        // }
+        // _accessor = _memory.CreateViewAccessor();
+        // Log($"SHM interface created with JSON {shmStructureJsonFilename}");
 
     }
     public static void Log(string message)
