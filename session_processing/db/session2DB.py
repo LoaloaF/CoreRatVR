@@ -49,13 +49,13 @@ def add_data(L, session_dir, fname, database_location, database_name):
     # get session meatada back, or write to final hdf5 file
     db_session(L, conn, cursor, df_session)
     db_session_parameters(L, conn, cursor, df_session)
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'unity_frames')
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'unity_trials')
+    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'unity_frame')
+    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'unity_trial')
     db_camera(L, conn, cursor, session_dir, fname, 'face')
     db_camera(L, conn, cursor, session_dir, fname, 'body')
     db_camera(L, conn, cursor, session_dir, fname, 'unity')
     add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'ballvelocity')
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'events')
+    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'event')
     db_variable(L, conn, cursor, session_dir, fname, df_session)
 
     L.logger.info(f"Data added successfully for path: {session_dir} into database {db_fpath}")
@@ -111,6 +111,6 @@ def session2DB(session_dir, fname, database_location, database_name):
 
 if __name__ == "__main__":
 
-    session2DB("/mnt/smbshare/vrdata/2024-06-13_11-37-32_jumper_Thursday_1",
-               'behavior_2024-06-13_09-43_rYL002_P0200_GoalDirectedMovement_28min.hdf5',
+    session2DB("/mnt/smbshare/vrdata/2024-06-13_12-59-52_goodone_Thursday_1/",
+               'behavior_2024-06-13_11-04_rYL001_P0200_GoalDirectedMovement_11min.hdf5',
                '.', 'rat_vr')

@@ -43,7 +43,7 @@ def access_shm(shm_name):
         remove_shm_from_resource_tracker()
 
         if os.uname().sysname != "Darwin":
-            shm = shared_memory.SharedMemory(name="tmp/"+shm_name, create=False)
+            shm = shared_memory.SharedMemory(name=shm_name, create=False)
         else:
             shm = OSXFileBasedSHM(shm_name, create=False)
                     
