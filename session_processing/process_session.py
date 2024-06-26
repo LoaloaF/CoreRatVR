@@ -179,6 +179,7 @@ def _handle_move2nas(session_dir, nas_dir, metadata, move_to_nas):
     L.logger.info(f"Moving session ({src_size:.1}GB) to NAS...")
     shutil.move(session_dir, os.path.join(nas_dir, session_dir))
     
+    # TODO make this its onw handle_*function 
     L.logger.info(f"Renaming session directory (local and NAS)")
     # change the session dir name to the session name
     new_session_dir = os.path.join(os.path.split(session_dir)[0], 
@@ -189,6 +190,8 @@ def _handle_move2nas(session_dir, nas_dir, metadata, move_to_nas):
     new_nas_dir = os.path.join(os.path.split(nas_dir)[0], 
                                 metadata["session_name"])
     os.rename(nas_dir, new_nas_dir)
+    
+    # TODO rename ephys file, use session_name
         
 def _handle_write2db(session_dir, fname, metadata, unity_trials_data, 
                      unity_frames_data, paradigmVariable_data,  facecam_packages, 
@@ -216,6 +219,7 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
                 L.logger.info(f"Session {session_dir} deleted")
         return
     
+    # TODO
     # subset requred data
     if any(d == None for d in data):
         pass

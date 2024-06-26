@@ -92,6 +92,7 @@ def _read_hdf5_data(session_dir, fname, key, drop_N_column=True):
                 L.logger.error(f"Failed to find {key} key in {fname}.")
             return
     
+
     data = pd.read_hdf(fullfname, key=key)
     data.reset_index(drop=True, inplace=True)
     if drop_N_column:
