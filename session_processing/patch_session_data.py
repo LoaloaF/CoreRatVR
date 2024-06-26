@@ -1,6 +1,6 @@
 from datetime import datetime
 import os
-
+import json
 import pandas as pd
 from CustomLogger import CustomLogger as Logger
 
@@ -25,11 +25,30 @@ def patch_metadata(session_metadata, session_dir):
             session_metadata['start_time'] = start_time
             session_metadata['stop_time'] = stop_time
             session_metadata['duration'] = duration
+
         return session_metadata
+    
     except Exception as e:
         L = Logger()
         L.logger.error(L.fmtmsg(["Failed to patch incomplete metadata: ", str(e)]))
     return
+
+def reorganize_metadata(session_metadata):
+    session_metadata['metadata'] = {}
+
+    separate_keys = ['session_name', 'paradigm_name', 'animal_name', 'start_time', 'stop_time', 
+                     'duration', 'notes', 'rewardPostSoundDelay', 'rewardAmount', 'punishmentLength', 
+                     'punishInactivationLength', 'interTrialIntervalLength', 'abortInterTrialIntervalLength',
+                     'successSequenceLength', 'maxiumTrialLength', 'sessionDescription', 'configuration', 'metadata']
+
+    for k in list(session_metadata.keys()):
+        if k not in separate_keys:
+            session_metadata['metadata'][k] = session_metadata.pop(k)
+
+    session_metadata['metadata'] = json.dumps(session_metadata['metadata'])
+
+
+    return pd.DataFrame(session_metadata, index=[0])
 
 def _infer_session_time(session_dir):
     Logger().logger.debug(f"Inferring session time for {session_dir}")

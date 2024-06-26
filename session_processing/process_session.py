@@ -20,7 +20,7 @@ from load_session_data import load_ballvelocity_data
 from load_session_data import load_portenta_event_data
 from polish_session_data import insert_trial_id
 from polish_session_data import add_ephys_timestamps
-
+from patch_session_data import reorganize_metadata
 
 def _handle_logs(session_dir):
     fnames = os.listdir(session_dir)
@@ -128,21 +128,32 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         return
     
     with pd.HDFStore(full_fname, 'w') as store:
-        metadata_df = pd.DataFrame(metadata)
-        store.put('metadata', metadata_df.iloc[0:1])
+        metadata_df = reorganize_metadata(metadata)
+        store.put('metadata', metadata_df)
     
         L.logger.info(f"Merging unity data...")
         store.put('unity_trial', unity_trials_data)
         store.put('unity_frame', unity_frames_data)
-        store.put('paradigm_variable', paradigmVariable_data)
-    
-        store.put('facecam_packages', facecam_packages)
-        store.put('bodycam_packages', bodycam_packages)
-        store.put('unitycam_packages', unitycam_packages)
+
+        if paradigmVariable_data is not None:
+            store.put('paradigm_variable', paradigmVariable_data)
+
+        if facecam_packages is not None:
+            store.put('facecam_packages', facecam_packages)    
+        
+        if bodycam_packages is not None:
+            store.put('bodycam_packages', bodycam_packages)
+        
+        if unitycam_packages is not None:
+            store.put('unitycam_packages', unitycam_packages)
         
         L.logger.info(f"Merging portenta data...")
-        store.put('ballvelocity', ballvel_data)
-        store.put('event', event_data)
+        
+        if ballvel_data is not None:
+            store.put('ballvelocity', ballvel_data)
+        
+        if event_data is not None:
+            store.put('event', event_data)
 
     # copy the camera data into the behavior file
     with h5py.File(full_fname, 'a') as output_file:
@@ -155,6 +166,8 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         L.logger.info(f"Merging unitycam data...")
         with h5py.File(os.path.join(session_dir, 'unitycam.hdf5'), 'r') as source_file:
             source_file.copy(source_file["frames"], output_file, name="unitycam_frames")
+    
+    Logger().logger.info(f"Sucessfully merged and saved data to {full_fname}")
 
 def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                               unity_frames_data, ballvel_data, event_data,
@@ -275,7 +288,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_level", default="INFO")
     argParser.add_argument("--session_dir", default='/mnt/NTnas/nas_vrdata/2024-06-12_12-57-47_goodone_Wednesday_2')
     # argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/nas_vrdata/2024-05-23_10-11-35_jumper_Thursday_1')
-    
+    argParser.add_argument("--session_dir", default='/home/ntgroup/Project/data/2024-06-26_18-48-05_active')
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--integrate_ephys", action="store_true")
