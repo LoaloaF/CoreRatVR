@@ -25,7 +25,6 @@ def create_ratvr_db(db_name):
     cursor.execute("""
         CREATE TABLE paradigm (
             paradigm_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            
             paradigm_name TEXT NOT NULL,
             paradigm_description TEXT
         );
@@ -36,17 +35,14 @@ def create_ratvr_db(db_name):
         CREATE TABLE session (
             session_id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_name TEXT NOT NULL,
-            session_time DATE NOT NULL,
             session_path TEXT NOT NULL,
-            paradigm_id INT NOT NULL,
-            animal_id INT NOT NULL,
-            animal_weight DOUBLE NOT NULL,
+            paradigm_name TEXT NOT NULL,
+            animal_name TEXT NOT NULL,
+            animal_weight DOUBLE,
             start_time DATE,
-            end_time DATE,
+            stop_time DATE,
             duration DOUBLE,
-            notes TEXT,
-            FOREIGN KEY (animal_id) REFERENCES animal(animal_id)
-            FOREIGN KEY (paradigm_id) REFERENCES paradigm(paradigm_id)
+            notes TEXT
         );
     """)
 
@@ -69,6 +65,7 @@ def create_ratvr_db(db_name):
             trial_package_variables_fulll_names TEXT,
             session_description TEXT,
             session_parameter TEXT,
+            configuration TEXT,
             pillars TEXT,
             pillar_details TEXT,
             env_x_size INT,
@@ -76,32 +73,30 @@ def create_ratvr_db(db_name):
             base_length INT,
             wallzone_size INT,
             wallzone_collider_size INT,
-            # FOREIGN KEY (session_id) REFERENCES session(session_id)
+            FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
 
     # ball_velocity table
     cursor.execute("""
-        CREATE TABLE ball_velocity (
-            ball_velocity_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE ballvelocity (
+            ballvelocity_id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id INT NOT NULL,
             trial_id INT NOT NULL,
-            ball_velocity_package_id BIGINT NOT NULL,
-            ball_velocity_t BIGINT NOT NULL,
-            ball_velocity_timestamp BIGINT NOT NULL,
-            ball_velocity_f INT NOT NULL,
-            vr DOUBLE NOT NULL,
-            vy DOUBLE NOT NULL,
-            vp DOUBLE NOT NULL,
-            ball_velocity_ttl BIGINT,
+            ballvelocity_package_id BIGINT NOT NULL,
+            ballvelocity_portenta_timestamp BIGINT NOT NULL,
+            ballvelocity_pc_timestamp BIGINT NOT NULL,
+            ballvelocity_raw DOUBLE NOT NULL,
+            ballvelocity_yaw DOUBLE NOT NULL,
+            ballvelocity_pitch DOUBLE NOT NULL,
+            ballvelocity_ephys_timestamp BIGINT,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
-    #TODO
     # double session_id?
-    cursor.execute("CREATE INDEX ball_velocity_session_id_index ON ball_velocity(session_id);")
-    cursor.execute("CREATE INDEX ball_velocity_trial_id_index ON ball_velocity(trial_id);")
-    cursor.execute("CREATE INDEX ball_velocity_ball_velocity_ttl_index ON ball_velocity(ball_velocity_ttl);")
+    cursor.execute("CREATE INDEX ballvelocity_session_id_index ON ballvelocity(session_id);")
+    cursor.execute("CREATE INDEX ballvelocity_trial_id_index ON ballvelocity(trial_id);")
+    cursor.execute("CREATE INDEX ballvelocity_ballvelocity_ephys_timestamp_index ON ballvelocity(ballvelocity_ephys_timestamp);")
 
     # event table
     cursor.execute("""
@@ -109,19 +104,18 @@ def create_ratvr_db(db_name):
             event_id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id INT NOT NULL,
             trial_id BIGINT NOT NULL,
-            event_type TEXT NOT NULL,
+            event_name TEXT NOT NULL,
             event_package_id INT NOT NULL,
-            event_t BIGINT NOT NULL,
-            event_timeStamp BIGINT NOT NULL,
-            event_v int NOT NULL,
-            event_f SMALLINT NOT NULL,
-            event_ttl BIGINT,
+            event_portenta_timestamp BIGINT NOT NULL,
+            event_pc_timeStamp BIGINT NOT NULL,
+            event_value int NOT NULL,
+            event_ephys_timestamp BIGINT,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
     cursor.execute("CREATE INDEX event_session_id_index ON event(session_id);")
     cursor.execute("CREATE INDEX event_trial_id_index ON event(trial_id);")
-    cursor.execute("CREATE INDEX event_event_ttl_index ON event(event_ttl);")
+    cursor.execute("CREATE INDEX event_event_ephys_timestamp_index ON event(event_ephys_timestamp);")
 
     # unity_frame table
     cursor.execute("""
@@ -130,14 +124,15 @@ def create_ratvr_db(db_name):
             session_id INT NOT NULL,
             trial_id INT NOT NULL,
             frame_id BIGINT NOT NULL,
-            frame_timestamp BIGINT NOT NULL,
-            x DOUBLE NOT NULL,
-            z DOUBLE NOT NULL,
-            a DOUBLE NOT NULL,
-            s INT NOT NULL,
-            fb INT NOT NULL,
-            bfp DOUBLE NOT NULL,
-            blp DOUBLE NOT NULL,
+            frame_pc_timestamp BIGINT NOT NULL,
+            frame_x_position DOUBLE NOT NULL,
+            frame_z_position DOUBLE NOT NULL,
+            frame_angle DOUBLE NOT NULL,
+            frame_state INT NOT NULL,
+            frame_blinker INT NOT NULL,
+            ballvelocity_first_package DOUBLE NOT NULL,
+            ballvelocity_last_package DOUBLE NOT NULL,
+            frame_ephys_timestamp BIGINT NOT NULL,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
@@ -151,12 +146,14 @@ def create_ratvr_db(db_name):
             unity_trial_id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id INT NOT NULL,
             trial_id INT NOT NULL,
-            trial_start_timestamp BIGINT NOT NULL,
+            trial_start_pc_timestamp BIGINT NOT NULL,
             trial_start_frame BIGINT NOT NULL,
-            trial_end_timestamp BIGINT NOT NULL,
+            trial_end_pc_timestamp BIGINT NOT NULL,
             trial_end_frame BIGINT NOT NULL,
-            trial_duration BIGINT NOT NULL,
+            trial_pc_duration BIGINT NOT NULL,
             trial_outcome INT NOT NULL,
+            trial_start_ephys_timestamp BIGINT NOT NULL,
+            trial_end_ephys_timestamp BIGINT NOT NULL,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
@@ -168,54 +165,52 @@ def create_ratvr_db(db_name):
 
     # face_cam table
     cursor.execute("""
-        CREATE TABLE face_cam (
-            face_cam_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE facecam (
+            facecam_id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id INT NOT NULL,
             trial_id INT NOT NULL,
-            face_cam_package_id BIGINT NOT NULL,
-            face_cam_timestamp BIGINT NOT NULL,
-            face_cam_ttl BIGINT,
-            face_cam_data BLOB NOT NULL,
+            facecam_image_id BIGINT NOT NULL,
+            facecam_image_pc_timestamp BIGINT NOT NULL,
+            facecam_image_ephys_timestamp BIGINT,
+            facecam_data BLOB NOT NULL,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
-    cursor.execute("CREATE INDEX face_cam_session_id_index ON face_cam(session_id);")
-    cursor.execute("CREATE INDEX face_cam_trial_id_index ON face_cam(trial_id);")
-    cursor.execute("CREATE INDEX face_cam_face_cam_ttl_index ON face_cam(face_cam_ttl);")
+    cursor.execute("CREATE INDEX facecam_session_id_index ON facecam(session_id);")
+    cursor.execute("CREATE INDEX facecam_trial_id_index ON facecam(trial_id);")
+    cursor.execute("CREATE INDEX facecam_facecam_image_ephys_timestamp_index ON facecam(facecam_image_ephys_timestamp);")
 
     # body_cam table
     cursor.execute("""
-        CREATE TABLE body_cam (
-            body_cam_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE bodycam (
+            bodycam_id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id INT NOT NULL,
             trial_id BIGINT NOT NULL,
-            body_cam_package_id BIGINT NOT NULL,
-            body_cam_timestamp BIGINT NOT NULL,
-            body_cam_ttl BIGINT,
-            body_cam_data BLOB NOT NULL,
+            bodycam_image_id BIGINT NOT NULL,
+            bodycam_image_pc_timestamp BIGINT NOT NULL,
+            bodycam_data BLOB NOT NULL,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
-    cursor.execute("CREATE INDEX body_cam_session_id_index ON body_cam(session_id);")
-    cursor.execute("CREATE INDEX body_cam_trial_id_index ON body_cam(trial_id);")
-    cursor.execute("CREATE INDEX body_cam_body_cam_ttl_index ON body_cam(body_cam_ttl);")
+    cursor.execute("CREATE INDEX bodycam_session_id_index ON bodycam(session_id);")
+    cursor.execute("CREATE INDEX bodycam_trial_id_index ON bodycam(trial_id);")
 
     # unity_cam table
     cursor.execute("""
-        CREATE TABLE unity_cam (
-            unity_cam_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE unitycam (
+            unitycam_id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id INT NOT NULL,
             trial_id INT NOT NULL,
-            unity_cam_package_id BIGINT NOT NULL,
-            unity_cam_timestamp BIGINT NOT NULL,
-            unity_cam_ttl BIGINT,
-            unity_cam_data BLOB NOT NULL,
+            unitycam_image_id BIGINT NOT NULL,
+            unitycam_image_pc_timestamp BIGINT NOT NULL,
+            unitycam_image_ephys_timestamp BIGINT,
+            unitycam_data BLOB NOT NULL,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
-    cursor.execute("CREATE INDEX unity_cam_session_id_index ON unity_cam(session_id);")
-    cursor.execute("CREATE INDEX unity_cam_trial_id_index ON unity_cam(trial_id);")
-    cursor.execute("CREATE INDEX unity_cam_unity_cam_ttl_index ON unity_cam(unity_cam_ttl);")
+    cursor.execute("CREATE INDEX unitycam_session_id_index ON unitycam(session_id);")
+    cursor.execute("CREATE INDEX unitycam_trial_id_index ON unitycam(trial_id);")
+    cursor.execute("CREATE INDEX unitycam_unitycam_image_ephys_timestamp_index ON unitycam(unitycam_image_ephys_timestamp);")
 
     # paradigm_P0200 table
     cursor.execute("""

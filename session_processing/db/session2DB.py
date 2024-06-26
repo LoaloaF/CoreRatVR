@@ -14,7 +14,7 @@ from CustomLogger import CustomLogger as Logger
 
 
 
-def clear_tables(L, conn):
+def _clear_tables(L, conn):
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = cursor.fetchall()
@@ -29,37 +29,41 @@ def clear_tables(L, conn):
     L.logger.info("Test table cleared.")
 
 
-def add_data(L, session_dir, db_name):
-    conn = sqlite3.connect(db_name)
+def add_data(L, session_dir, fname, database_location, database_name):
+    db_fpath = os.path.join(database_location, database_name)
+    conn = sqlite3.connect(db_fpath)
     cursor = conn.cursor()
     
-    
-    # all of this should be indepdant of the DB/ cursor  - unless there is a big mismatch 
-
     # read the session json file and convert it into a dataframe
-    df_session = read_file_from_hdf5(L, session_dir, "session")
-    
+    df_session = read_file_from_hdf5(L, session_dir, fname, "metadata")
+    df_session = df_session.iloc[0:1]
+    df_session['session_path'] = session_dir
+
+    for column_name in df_session.columns:
+        df_session = df_session.rename(columns={column_name: camel_to_snake(column_name)})
+
+
     if df_session is None:
         raise FileNotFoundError(f"Failed to find session file in {session_dir}")
     
     # get session meatada back, or write to final hdf5 file
     db_session(L, conn, cursor, df_session)
     db_session_parameters(L, conn, cursor, df_session)
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, 'unity_frame')
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, 'unity_trial')
-    db_camera(L, conn, cursor, session_dir, 'face')
-    db_camera(L, conn, cursor, session_dir, 'body')
-    db_camera(L, conn, cursor, session_dir, 'unity')
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, 'ball_velocity')
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, 'event')
-    db_variable(L, conn, cursor, session_dir, df_session)
+    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'unity_frames')
+    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'unity_trials')
+    db_camera(L, conn, cursor, session_dir, fname, 'face')
+    db_camera(L, conn, cursor, session_dir, fname, 'body')
+    db_camera(L, conn, cursor, session_dir, fname, 'unity')
+    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'ballvelocity')
+    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'events')
+    db_variable(L, conn, cursor, session_dir, fname, df_session)
 
-    L.logger.info(f"Data added successfully for path: {session_dir} into database {db_name}")
+    L.logger.info(f"Data added successfully for path: {session_dir} into database {db_fpath}")
 
     conn.commit()
     conn.close()
 
-def session2DB(session_dir):
+def session2DB(session_dir, fname, database_location, database_name):
 
     L = Logger()
     conn = None
@@ -67,16 +71,16 @@ def session2DB(session_dir):
     # if any error occurs when writing to rat_vr_test.db, the data will not be added to rat_vr.db
     # and the rat_vr_test.db will be cleared anyway
     try:
-        add_data(L, session_dir, 'rat_vr_test.db')
+        add_data(L, session_dir, fname, database_location, database_name + '.db')
         L.logger.info("------------------------------------------")
-        add_data(L, session_dir, 'rat_vr.db')
+        add_data(L, session_dir, fname, database_location, database_name + '_test.db')
     except Exception as e:
         L.logger.error(f"Failed to add data from: {session_dir} with error {e}")
     finally:
         if conn is not None:
             conn.close()
         conn = sqlite3.connect('rat_vr_test.db')
-        clear_tables(L, conn)
+        _clear_tables(L, conn)
         conn.close()
 
 
@@ -107,4 +111,6 @@ def session2DB(session_dir):
 
 if __name__ == "__main__":
 
-    session2DB("/home/ntgroup/Project/data/2024-06-13_12-59-52_goodone_Thursday_1")
+    session2DB("/mnt/smbshare/vrdata/2024-06-13_11-37-32_jumper_Thursday_1",
+               'behavior_2024-06-13_09-43_rYL002_P0200_GoalDirectedMovement_28min.hdf5',
+               '.', 'rat_vr')

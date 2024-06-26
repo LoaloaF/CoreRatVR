@@ -145,8 +145,12 @@ def _handle_paradigm_specific_variables(unity_trials_data, frames_toDBnames_mapp
                                         metadata):
     L = Logger()
     # only keep the columns we need in the trialPackage
-    drop_cols = [k for k in frames_toDBnames_mapping.keys() 
-                 if not k.startswith("INSERT") or k == "trial_id"]
+    drop_cols = []
+    for k in frames_toDBnames_mapping.keys():
+        if k.startswith("INSERT") or k == "ID":
+            pass
+        else:
+            drop_cols.append(k)
     paradigmVariable_trials_data = unity_trials_data.drop(columns=drop_cols)
     paradigmVariable_trials_data.rename(columns={'ID': 'trial_id'}, inplace=True)
     

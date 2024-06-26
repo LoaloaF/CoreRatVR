@@ -3,7 +3,7 @@ from db_utils import *
 import os
 
 
-def db_variable(L, conn, cursor, session_dir, df_session):
+def db_variable(L, conn, cursor, session_dir, fname, df_session):
 
     paradigm_name = df_session["paradigm_name"][0] 
 
@@ -17,7 +17,7 @@ def db_variable(L, conn, cursor, session_dir, df_session):
     # TODO check integrity of the following code
     try:
         unity_output_path = os.path.join(session_dir, 'unity_output.hdf5')
-        df_variable = read_file_from_hdf5(L, session_dir, 'trial_variable')
+        df_variable = read_file_from_hdf5(L, session_dir, fname, 'paradigm_variable')
 
         if df_variable is None:
             return

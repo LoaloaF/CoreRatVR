@@ -135,10 +135,10 @@ def patch_trial_packages(unity_trials_data_package, df_unity_frame, metadata):
     df_trialPackage["TD"] = df_trialPackage["EPCT"] - df_trialPackage["SPCT"]
 
     # if the session parameters do not have the maximum trial length, set it to 30s
-    if 'maxium_trial_length' not in metadata.keys():
+    if 'maxiumTrialLength' not in metadata.keys():
         maximum_trial_duration = 30
     else:
-        maximum_trial_duration = metadata['maxium_trial_length']
+        maximum_trial_duration = metadata['maxiumTrialLength']
     
     # set the trial outcome based on the trial duration
     df_trialPackage.loc[df_trialPackage["TD"] <  maximum_trial_duration * 10**6, "O"] = 1
@@ -154,5 +154,7 @@ def patch_trial_packages(unity_trials_data_package, df_unity_frame, metadata):
             unity_trials_data = unity_trials_data_package
         else:
             unity_trials_data = df_trialPackage
+    else:
+        unity_trials_data = unity_trials_data_package
 
     return unity_trials_data

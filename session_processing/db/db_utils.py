@@ -17,9 +17,9 @@ def add_session_into_df(cursor, df):
    return df
 
 
-def read_file_from_hdf5(L, session_dir, file_name):
+def read_file_from_hdf5(L, session_dir, fname, file_name):
    try:
-      behavior_fpath = os.path.join(session_dir, 'behavior.hdf5')
+      behavior_fpath = os.path.join(session_dir, fname)
    except:
       raise FileNotFoundError(f"Failed to find behavior file in {session_dir}")
    
@@ -32,9 +32,9 @@ def read_file_from_hdf5(L, session_dir, file_name):
    return df
 
 
-def add_file_from_hdf5_to_db(L, conn, cursor, session_dir, file_name):
+def add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, file_name):
    # read the file from hdf5
-   df = read_file_from_hdf5(L, session_dir, file_name)
+   df = read_file_from_hdf5(L, session_dir, fname, file_name)
 
    if df is None:
       return
@@ -46,3 +46,15 @@ def add_file_from_hdf5_to_db(L, conn, cursor, session_dir, file_name):
 
    L.logger.info(f"{file_name} added to db successfully.")
    
+def camel_to_snake(camel_case_string):
+   # transform camel case to snake case
+   snake_case_string = ""
+   for i, c in enumerate(camel_case_string):
+      if i == 0:
+         snake_case_string += c.lower()
+      elif c.isupper():
+         snake_case_string += "_" + c.lower()
+      else:
+         snake_case_string += c
+
+   return snake_case_string
