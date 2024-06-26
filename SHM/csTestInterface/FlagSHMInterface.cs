@@ -14,8 +14,33 @@ public class FlagSHMInterface
         dynamic shmStructure = LoadShmStructureJson(shmStructureJsonFilename);
 
         _shmName = shmStructure.shm_name;
-        _memory = MemoryMappedFile.CreateFromFile("/dev/shm/termflag", System.IO.FileMode.Open);
+        // _memory = MemoryMappedFile.CreateFromFile("/dev/shm/termflag", System.IO.FileMode.Open);
         // _memory = MemoryMappedFile.OpenExisting(_shmName);
+        Console.WriteLine($"Creating FlagSHMInterface with shmName: {_shmName}\n\n"); 
+
+        int _totalNBytes = 1;  
+
+        // Linux
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+            {
+                _memory = MemoryMappedFile.CreateFromFile($"/dev/shm/{_shmName}", System.IO.FileMode.Open);
+            }
+        // Windows
+        else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            {
+                _memory = MemoryMappedFile.OpenExisting(_shmName);
+            }
+        // OSX
+        else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+        {
+            _memory = MemoryMappedFile.CreateFromFile($"/tmp/{_shmName}", System.IO.FileMode.Open);
+        }
+        
+        if (_memory == null)
+        {
+            Console.WriteLine($"Failed to create MemoryMappedFile from shmName: {_shmName}\n\n");
+            Environment.Exit(1);
+        }
         
         _accessor = _memory.CreateViewAccessor();
     }
@@ -66,26 +91,36 @@ public class FlagSHMInterface
 }
 
 
-class Program2
+class Program
     {
-        static void Main2()
+        static void Main()
         {
             string byteShmStrucFname = "./termflag_shmstruct.json";
             FlagSHMInterface flag_shm = new FlagSHMInterface(byteShmStrucFname);
             
-            // Use the interfaceObj here
-            Console.WriteLine("Checking flag state from SHM:");
+            // // Use the interfaceObj here
+            // Console.WriteLine("Checking flag state from SHM:");
             bool state = flag_shm.IsSet();
-            Console.WriteLine(state);
-            Console.WriteLine();
-            //
-            Console.WriteLine("flipping flag state, writing to SHM:");
-            if (state) {
-                flag_shm.Reset();
-            } else {
-                flag_shm.Set();
+            // Console.WriteLine(state);
+            // Console.WriteLine();
+            // //
+            // Console.WriteLine("flipping flag state, writing to SHM:");
+            // if (state) {
+            //     flag_shm.Reset();
+            // } else {
+            //     flag_shm.Set();
 
+            // }
+            // Console.WriteLine("Checking flag state from SHM:");
+            // state = flag_shm.IsSet();
+
+            while (true) {
+                if (flag_shm.IsSet()) {
+                    Console.WriteLine("Flag is set");
+                    break;
+                }
             }
+
 
             // interfaceObj.Push("msg 2 Cshit:)");
             // interfaceObj.Push("msg 3 Cshit:)");

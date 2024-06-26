@@ -9,7 +9,7 @@ from send2trash import send2trash
 import pandas as pd
 import h5py
 from CustomLogger import CustomLogger as Logger
-
+# import db.session2DB as session2DB
 from check_session_files import check_file_existence
 from check_session_files import check_log_files
 from load_session_data import load_session_metadata
@@ -24,8 +24,9 @@ from polish_session_data import add_ephys_timestamps
 
 def _handle_logs(session_dir):
     fnames = os.listdir(session_dir)
-    filelist_str = check_file_existence(session_dir, fnames.copy())
-    L.logger.info(L.fmtmsg(filelist_str))
+
+    _, format_filelist_str = check_file_existence(session_dir, fnames.copy())
+    L.logger.info(L.fmtmsg(format_filelist_str))
     logs_result = check_log_files(session_dir, [fn for fn in fnames if fn.endswith(".log")])
     L.logger.info(L.fmtmsg(logs_result))
 
@@ -39,7 +40,7 @@ def _handle_data(session_dir):
     toDBnames_mapping = {"ID": "trial_id", 
                          "INSERT1": "trial_start_ephys_timestamp",
                          "INSERT2": "trial_end_ephys_timestamp",
-                         "INSERT3": "trial_start_session_id",
+                        #  "INSERT3": "trial_start_session_id",
                          "SFID": "trial_start_frame", 
                          "SPCT": "trial_start_pc_timestamp", 
                          "EFID": "trial_end_frame", 
@@ -54,14 +55,13 @@ def _handle_data(session_dir):
     toDBnames_mapping = {"ID": "frame_id", 
                          "PCT": "frame_pc_timestamp", 
                          "INSERT1": "frame_ephys_timestamp",
-                         "INSERT2": "frame_session_id",
-                         "INSERT3": "frame_trial_id",
-                         #TODO: add frame_
-                         "X": "x_position", 
-                         "Z": "z_position", 
-                         "A": "angle", 
-                         "S": 'state',
-                         "FB": "frameblinker", 
+                        #  "INSERT2": "frame_session_id",
+                         "INSERT2": "trial_id",
+                         "X": "frame_x_position", 
+                         "Z": "frame_z_position", 
+                         "A": "frame_angle", 
+                         "S": 'frame_state',
+                         "FB": "frame_blinker", 
                          "BFP": "ballveloctiy_first_package", 
                          "BLP": 'ballveloctiy_last_package'}
     unity_frames_data = load_unity_frames_data(session_dir, toDBnames_mapping)
@@ -73,8 +73,8 @@ def _handle_data(session_dir):
                          "T": "ballvelocity_portenta_timestamp", 
                          "PCT": "ballvelocity_pc_timestamp", 
                          "INSERT1": "ballvelocity_ephys_timestamp",
-                         "INSERT2": "ballvelocity_session_id",
-                         "INSERT3": "ballvelocity_trial_id",
+                        #  "INSERT2": "ballvelocity_session_id",
+                         "INSERT2": "trial_id",
                          "Vr": "ballvelocity_raw", 
                          "Vy": "ballvelocity_yaw", 
                          "Vp":"ballvelocity_pitch"}
@@ -84,8 +84,8 @@ def _handle_data(session_dir):
                          "T": "event_portenta_timestamp", 
                          "PCT": "event_pc_timestamp", 
                          "INSERT1": "event_ephys_timestamp",
-                         "INSERT2": "event_session_id",
-                         "INSERT3": "event_trial_id",
+                        #  "INSERT2": "event_session_id",
+                         "INSERT2": "trial_id",
                          "V": "event_value", 
                          "N": "event_name"}
     event_data = load_portenta_event_data(session_dir, toDBnames_mapping)
@@ -96,21 +96,21 @@ def _handle_data(session_dir):
     toDBnames_mapping = {"ID": f"facecam_image_id", 
                          "PCT": f"facecam_image_pc_timestamp",
                          "INSERT1": "facecam_image_ephys_timestamp",
-                         "INSERT2": "facecam_image_session_id",
-                         "INSERT3": "facecam_image_trial_id",}
+                        #  "INSERT2": "facecam_image_session_id",
+                         "INSERT2": "trial_id",}
     facecam_packages = load_camera_data(session_dir, 'facecam.hdf5', 
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"bodycam_image_id", 
                          "PCT": f"bodycam_image_pc_timestamp",
-                         "INSERT1": "bodycam_image_session_id",
-                         "INSERT2": "bodycam_image_trial_id",}
+                        #  "INSERT1": "bodycam_image_session_id",
+                         "INSERT1": "trial_id",}
     bodycam_packages = load_camera_data(session_dir, 'bodycam.hdf5', 
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"unitycam_image_id", 
                          "PCT": f"unitycam_image_pc_timestamp",
                          "INSERT1": "unitycam_image_ephys_timestamp",
-                         "INSERT2": "unitycam_image_session_id",
-                         "INSERT3": "unitycam_image_trial_id",}
+                        #  "INSERT2": "unitycam_image_session_id",
+                         "INSERT2": "trial_id",}
     unitycam_packages = load_camera_data(session_dir, 'unitycam.hdf5', 
                                          toDBnames_mapping)
     
@@ -128,12 +128,13 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         return
     
     with pd.HDFStore(full_fname, 'w') as store:
-        store.put('metadata', pd.DataFrame(metadata))
+        metadata_df = pd.DataFrame(metadata)
+        store.put('metadata', metadata_df.iloc[0:1])
     
         L.logger.info(f"Merging unity data...")
-        store.put('unity_trials', unity_trials_data)
-        store.put('unity_frames', unity_frames_data)
-        store.put('paradigmVariables', paradigmVariable_data)
+        store.put('unity_trial', unity_trials_data)
+        store.put('unity_frame', unity_frames_data)
+        store.put('paradigm_variable', paradigmVariable_data)
     
         store.put('facecam_packages', facecam_packages)
         store.put('bodycam_packages', bodycam_packages)
@@ -141,7 +142,7 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         
         L.logger.info(f"Merging portenta data...")
         store.put('ballvelocity', ballvel_data)
-        store.put('events', event_data)
+        store.put('event', event_data)
 
     # copy the camera data into the behavior file
     with h5py.File(full_fname, 'a') as output_file:
@@ -155,7 +156,7 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         with h5py.File(os.path.join(session_dir, 'unitycam.hdf5'), 'r') as source_file:
             source_file.copy(source_file["frames"], output_file, name="unitycam_frames")
 
-def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data, 
+def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                               unity_frames_data, ballvel_data, event_data,
                               facecam_packages, unitycam_packages):
     # TODO
@@ -169,9 +170,9 @@ def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
     ephys_fname = ephys_fname[0]
     ephys_fullfname = os.path.join(nas_dir, session_dir, ephys_fname)
     # inplace insertation of ephys timestamps into all dataframes
+
     add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
-                         ballvel_data, event_data, facecam_packages, 
-                         unitycam_packages)
+                         ballvel_data, event_data, facecam_packages, unitycam_packages)
     
 def _handle_move2nas(session_dir, nas_dir, metadata, move_to_nas):
     src_size = sum([os.path.getsize(os.path.join(session_dir, f)) 
@@ -193,10 +194,6 @@ def _handle_move2nas(session_dir, nas_dir, metadata, move_to_nas):
     
     # TODO rename ephys file, use session_name
         
-def _handle_write2db(session_dir, fname, metadata, unity_trials_data, 
-                     unity_frames_data, paradigmVariable_data,  facecam_packages, 
-                     bodycam_packages, unitycam_packages, ballvel_data, event_data):
-    pass
 
 def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys, 
                     move_to_nas, write_to_db, database_location, database_name):
@@ -221,8 +218,8 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     
     # TODO
     # subset requred data
-    if any(d == None for d in data):
-        pass
+    # if any(d == None for d in data):
+    #     pass
     
     (metadata, unity_trials_data, paradigmVariable_data, unity_frames_data,
     ballvel_data, event_data, facecam_packages, bodycam_packages,  
@@ -232,13 +229,13 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     L.spacer()
     
     if integrate_ephys:
-        _handle_ephys_integration(nas_dir, session_dir, unity_trials_data, 
+        _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                                   unity_frames_data, ballvel_data, event_data,
                                   facecam_packages, unitycam_packages)
         
     # inplace insert trial id into every dataframe with a timestamp
     insert_trial_id(unity_trials_data, unity_frames_data,
-                    ballvel_data, event_data, facecam_packages, 
+                    ballvel_data, event_data, facecam_packages, bodycam_packages,
                     unitycam_packages, use_ephys_timestamps=integrate_ephys)
     
     if prompt_user_decision:
@@ -262,12 +259,10 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
         # all dataframes should be ready add, if not change code here
         # only thing that needs to happen is unpacking metadata into animal, 
         # session, etc. tabels
-        _handle_write2db(session_dir, fname, database_location, database_name,
-                         metadata, unity_trials_data, unity_frames_data, 
-                         paradigmVariable_data, facecam_packages, bodycam_packages, 
-                         unitycam_packages, ballvel_data, event_data)
+        # session2DB(session_dir, fname, '.', 'rat_vr')
+        pass
         
-    #TODO accdiednally delete session: 2024-06-13_12-59-52_goodone_Thursday_1 - avaialble local??
+    #TODO accdiednally delete session: 2024-06-13_12-59-52_goodone_Thursday_1 - avaialble local?? - done
     #TODO run on all the available data with fast network connection to NAS, 
     #TODO go deeper and deeper into older sessions, see what kind of patching is requried/ feasable/ worth it
     #TODO try with a proper session, see if it works
@@ -277,8 +272,10 @@ if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level")
-    argParser.add_argument("--session_dir")
+    argParser.add_argument("--logging_level", default="INFO")
+    argParser.add_argument("--session_dir", default='/mnt/NTnas/nas_vrdata/2024-06-12_12-57-47_goodone_Wednesday_2')
+    # argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/nas_vrdata/2024-05-23_10-11-35_jumper_Thursday_1')
+    
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--integrate_ephys", action="store_true")
