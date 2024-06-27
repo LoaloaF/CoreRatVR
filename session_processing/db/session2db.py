@@ -2,16 +2,15 @@ import pandas as pd
 import json
 import sqlite3
 import os
-from db_session import db_session, db_session_parameters
-from db_camera import db_camera
-from db_variable import db_variable
-from db_utils import *
+from session_processing.db.db_session import db_session, db_session_parameters
+from session_processing.db.db_camera import db_camera
+from session_processing.db.db_variable import db_variable
+from session_processing.db.db_utils import *
 from datetime import datetime
 import sys
 sys.path.insert(1, os.path.join(sys.path[0], '..', '..')) # project dir
 
 from CustomLogger import CustomLogger as Logger
-
 
 
 def _clear_tables(L, conn):
@@ -36,34 +35,57 @@ def add_data(L, session_dir, fname, database_location, database_name):
     
     # read the session json file and convert it into a dataframe
     df_session = read_file_from_hdf5(L, session_dir, fname, "metadata")
-    df_session = df_session.iloc[0:1]
     df_session['session_path'] = session_dir
 
     for column_name in df_session.columns:
         df_session = df_session.rename(columns={column_name: camel_to_snake(column_name)})
 
-
-    if df_session is None:
-        raise FileNotFoundError(f"Failed to find session file in {session_dir}")
     
     # get session meatada back, or write to final hdf5 file
-    db_session(L, conn, cursor, df_session)
-    db_session_parameters(L, conn, cursor, df_session)
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'unity_frame')
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'unity_trial')
-    db_camera(L, conn, cursor, session_dir, fname, 'face')
-    db_camera(L, conn, cursor, session_dir, fname, 'body')
-    db_camera(L, conn, cursor, session_dir, fname, 'unity')
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'ballvelocity')
-    add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'event')
-    db_variable(L, conn, cursor, session_dir, fname, df_session)
+    try:
+        db_session(L, conn, cursor, df_session)
+        db_session_parameters(L, conn, cursor, df_session)
+        add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'unity_frame')
+        add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'unity_trial')
+    except Exception as e:
+        raise ValueError(f"Failed to add session data with error {e}")
+
+    try:
+        db_camera(L, conn, cursor, session_dir, fname, 'face')
+    except Exception as e:
+        L.logger.error(f"Failed to add face camera data with error {e}")
+
+    try:
+        db_camera(L, conn, cursor, session_dir, fname, 'body')
+    except Exception as e:
+        L.logger.error(f"Failed to add body camera data with error {e}")
+    
+    try:
+        db_camera(L, conn, cursor, session_dir, fname, 'unity')
+    except Exception as e:
+        L.logger.error(f"Failed to add unity camera data with error {e}")
+    
+    try:
+        add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'ballvelocity')
+    except Exception as e:
+        L.logger.error(f"Failed to add ballvelocity data with error {e}")
+    
+    try:
+        add_file_from_hdf5_to_db(L, conn, cursor, session_dir, fname, 'event')
+    except Exception as e:
+        L.logger.error(f"Failed to add event data with error {e}")
+    
+    try:
+        db_variable(L, conn, cursor, session_dir, fname, df_session)
+    except Exception as e:
+        L.logger.error(f"Failed to add variable data with error {e}")
 
     L.logger.info(f"Data added successfully for path: {session_dir} into database {db_fpath}")
 
     conn.commit()
     conn.close()
 
-def session2DB(session_dir, fname, database_location, database_name):
+def session2db(session_dir, fname, database_location, database_name):
 
     L = Logger()
     conn = None
@@ -71,9 +93,9 @@ def session2DB(session_dir, fname, database_location, database_name):
     # if any error occurs when writing to rat_vr_test.db, the data will not be added to rat_vr.db
     # and the rat_vr_test.db will be cleared anyway
     try:
-        add_data(L, session_dir, fname, database_location, database_name + '.db')
-        L.logger.info("------------------------------------------")
         add_data(L, session_dir, fname, database_location, database_name + '_test.db')
+        L.logger.info("------------------------------------------")
+        add_data(L, session_dir, fname, database_location, database_name + '.db')
     except Exception as e:
         L.logger.error(f"Failed to add data from: {session_dir} with error {e}")
     finally:
@@ -111,6 +133,6 @@ def session2DB(session_dir, fname, database_location, database_name):
 
 if __name__ == "__main__":
 
-    session2DB("/mnt/smbshare/vrdata/2024-06-13_12-59-52_goodone_Thursday_1/",
+    session2db("/mnt/smbshare/vrdata/2024-06-13_12-59-52_goodone_Thursday_1/",
                'behavior_2024-06-13_11-04_rYL001_P0200_GoalDirectedMovement_11min.hdf5',
-               '.', 'rat_vr')
+               '../', 'rat_vr')

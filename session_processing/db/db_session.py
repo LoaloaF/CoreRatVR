@@ -57,10 +57,6 @@ def db_session_parameters(L, conn, cursor, df_session):
         if each_column not in parameters_full_column:
             df_session = df_session.drop(columns=each_column)
     
-    # reformat the dictionary entries to string
-    df_session['configuration'] = df_session['configuration'].astype(str)
-    df_session['pillars'] = df_session['pillars'].astype(str)
-    df_session['pillar_details'] = df_session['pillar_details'].astype(str)
     df_session.to_sql('session_parameter', conn, if_exists='append', index=False)
     L.logger.info(f"Session parameters added successfully.")
 

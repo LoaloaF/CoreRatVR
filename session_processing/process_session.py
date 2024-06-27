@@ -9,7 +9,8 @@ from send2trash import send2trash
 import pandas as pd
 import h5py
 from CustomLogger import CustomLogger as Logger
-# import db.session2DB as session2DB
+
+from session_processing.db.session2db import *
 from check_session_files import check_file_existence
 from check_session_files import check_log_files
 from load_session_data import load_session_metadata
@@ -62,8 +63,8 @@ def _handle_data(session_dir):
                          "A": "frame_angle", 
                          "S": 'frame_state',
                          "FB": "frame_blinker", 
-                         "BFP": "ballveloctiy_first_package", 
-                         "BLP": 'ballveloctiy_last_package'}
+                         "BFP": "ballvelocity_first_package", 
+                         "BLP": 'ballvelocity_last_package'}
     unity_frames_data = load_unity_frames_data(session_dir, toDBnames_mapping)
     
     
@@ -158,15 +159,27 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
     # copy the camera data into the behavior file
     with h5py.File(full_fname, 'a') as output_file:
         L.logger.info(f"Merging facecam data...")
-        with h5py.File(os.path.join(session_dir, 'facecam.hdf5'), 'r') as source_file:
-            source_file.copy(source_file["frames"], output_file, name="facecam_frames")
+        if os.path.exists(os.path.join(session_dir, 'facecam.hdf5')):
+            with h5py.File(os.path.join(session_dir, 'facecam.hdf5'), 'r') as source_file:
+                source_file.copy(source_file["frames"], output_file, name="facecam_frames")
+        else:
+            L.logger.warning(f"Failed to find facecam data in {session_dir}")
+        
         L.logger.info(f"Merging bodycam data...")
-        with h5py.File(os.path.join(session_dir, 'bodycam.hdf5'), 'r') as source_file:
-            source_file.copy(source_file["frames"], output_file, name="bodycam_frames")
+        if os.path.exists(os.path.join(session_dir, 'bodycam.hdf5')):
+            with h5py.File(os.path.join(session_dir, 'bodycam.hdf5'), 'r') as source_file:
+                source_file.copy(source_file["frames"], output_file, name="bodycam_frames")
+        else:
+            L.logger.warning(f"Failed to find bodycam data in {session_dir}")
+
         L.logger.info(f"Merging unitycam data...")
-        with h5py.File(os.path.join(session_dir, 'unitycam.hdf5'), 'r') as source_file:
-            source_file.copy(source_file["frames"], output_file, name="unitycam_frames")
-    
+
+        if os.path.exists(os.path.join(session_dir, 'unitycam.hdf5')):
+            with h5py.File(os.path.join(session_dir, 'unitycam.hdf5'), 'r') as source_file:
+                source_file.copy(source_file["frames"], output_file, name="unitycam_frames")
+        else:
+            L.logger.warning(f"Failed to find unitycam data in {session_dir}")
+        
     Logger().logger.info(f"Sucessfully merged and saved data to {full_fname}")
 
 def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
@@ -187,11 +200,12 @@ def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
     add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
                          ballvel_data, event_data, facecam_packages, unitycam_packages)
     
-def _handle_move2nas(session_dir, nas_dir, metadata, move_to_nas):
+def _handle_move2nas(session_dir, nas_dir, metadata):
     src_size = sum([os.path.getsize(os.path.join(session_dir, f)) 
                     for f in os.listdir(session_dir)]) / 1e9
     L.logger.info(f"Moving session ({src_size:.1}GB) to NAS...")
-    shutil.move(session_dir, os.path.join(nas_dir, session_dir))
+    L.logger.info(f"session_dir: {session_dir}, nas_dir: {nas_dir}")
+    shutil.copy2(session_dir, os.path.join(nas_dir, os.path.split(session_dir)[1]))
     
     # TODO make this its onw handle_*function 
     L.logger.info(f"Renaming session directory (local and NAS)")
@@ -201,9 +215,8 @@ def _handle_move2nas(session_dir, nas_dir, metadata, move_to_nas):
     os.rename(session_dir, new_session_dir)
     
     # same for the NAS dir
-    new_nas_dir = os.path.join(os.path.split(nas_dir)[0], 
-                                metadata["session_name"])
-    os.rename(nas_dir, new_nas_dir)
+    new_nas_dir = os.path.join(nas_dir, metadata["session_name"])
+    os.rename(os.path.join(nas_dir, os.path.split(session_dir)[1]), new_nas_dir)
     
     # TODO rename ephys file, use session_name
         
@@ -224,15 +237,12 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
         if prompt_user_decision:
             answer = input("\nPermanently delete session? [y/n]: ")
             if answer.lower() == 'y':
+                # TODO send to trash operation
                 # send2trash(session_dir) # broken, maybe bc of nas?
                 shutil.rmtree(session_dir)
                 L.logger.info(f"Session {session_dir} deleted")
         return
     
-    # TODO
-    # subset requred data
-    # if any(d == None for d in data):
-    #     pass
     
     (metadata, unity_trials_data, paradigmVariable_data, unity_frames_data,
     ballvel_data, event_data, facecam_packages, bodycam_packages,  
@@ -264,16 +274,20 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
                            unitycam_packages, ballvel_data, event_data)
     
     if move_to_nas:
-        _handle_move2nas(session_dir, nas_dir, metadata, move_to_nas)
+        _handle_move2nas(session_dir, nas_dir, metadata)
         
-    # write the data to the DB
+
+        # write the data to the DB
     if write_to_db:
         #TODO write to DB using cleaned, valided data - no more checks needed
         # all dataframes should be ready add, if not change code here
         # only thing that needs to happen is unpacking metadata into animal, 
         # session, etc. tabels
-        # session2DB(session_dir, fname, '.', 'rat_vr')
-        pass
+        session2db(session_dir, fname, '/home/ntgroup/Project/', 'rat_vr')
+        # pass
+
+
+
         
     #TODO accdiednally delete session: 2024-06-13_12-59-52_goodone_Thursday_1 - avaialble local?? - done
     #TODO run on all the available data with fast network connection to NAS, 
@@ -286,9 +300,8 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default='/mnt/NTnas/nas_vrdata/2024-06-12_12-57-47_goodone_Wednesday_2')
+    argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/2024-06-13_12-59-52_goodone_Thursday_1')
     # argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/nas_vrdata/2024-05-23_10-11-35_jumper_Thursday_1')
-    argParser.add_argument("--session_dir", default='/home/ntgroup/Project/data/2024-06-26_18-48-05_active')
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--integrate_ephys", action="store_true")

@@ -1,5 +1,5 @@
 import pandas as pd
-from db_utils import *
+from session_processing.db.db_utils import *
 import os
 import h5py
 
@@ -19,12 +19,12 @@ def db_camera(L, conn, cursor, session_dir, fname, camera_type):
     df_cam[cam_name_prefix + 'data'] = df_cam[cam_name_prefix + 'data'].astype(object)
 
     # read the blob data from hdf5 file
-    cam_path = os.path.join(session_dir, 'behavior.hdf5')
+    cam_path = os.path.join(session_dir, fname)
     hdf_cam = h5py.File(cam_path, 'r')[cam_name_prefix + 'frames']
 
     for each_hdf in hdf_cam:
         package_id = int(each_hdf.split('_')[1])
-        df_cam.loc[df_cam[cam_name_prefix + 'package_id'] == package_id, cam_name_prefix + 'data'] = hdf_cam[each_hdf][()]
+        df_cam.loc[df_cam[cam_name_prefix + 'image_id'] == package_id, cam_name_prefix + 'data'] = hdf_cam[each_hdf][()]
     
     # rename the columns
 

@@ -43,7 +43,7 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data,
         idx = trial_intervals.get_indexer(timestamps)
         idx = idx.astype(int)
         # Handle cases where timestamp is not within any interval (ITI)
-        return np.where(idx == -1, np.nan, trial_ids[idx].values)
+        return np.where(idx == -1, -1, trial_ids[idx].values)
 
     unity_frames_data['trial_id'] = assign_trial_id(unity_frames_data[frame_tstamp_col])
     #TODO same check

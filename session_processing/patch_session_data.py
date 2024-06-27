@@ -6,8 +6,6 @@ from CustomLogger import CustomLogger as Logger
 
 def patch_metadata(session_metadata, session_dir):
     try:
-        # should we print the metadata here? - now no, we print it in load_session_metadata
-        # print(session_metadata)
         if 'animal' in session_metadata:
             session_metadata['animal_name'] = session_metadata.pop('animal')
         # if no animal information is found
@@ -82,6 +80,8 @@ def patch_paradigmVariable_data(paradigmVariable_trials_data):
         paradigmVariable_toDBnames_mapping_patch = {
             "PD": "pillar_distance",
             "PA": "pillar_angle",
+            "MRN":"maximum_reward_number",
+            'RN': "reward_number"
             # add more here
         }
         paradigmVariable_trials_data = paradigmVariable_trials_data.rename(columns=paradigmVariable_toDBnames_mapping_patch)
@@ -94,8 +94,6 @@ def patch_paradigmVariable_data(paradigmVariable_trials_data):
         paradigmVariable_trials_data = None  
     
     return paradigmVariable_trials_data
-
-
 
 
 def patch_trial_packages(unity_trials_data_package, df_unity_frame, metadata):
@@ -116,7 +114,10 @@ def patch_trial_packages(unity_trials_data_package, df_unity_frame, metadata):
         start_state_id = 201
         inter_trial_state_id = 208
     else:
-        Logger().logger.error(f"Paradigm {paradigm_name} is not supported.")
+        if unity_trials_data_package is None:
+            Logger().logger.error(f"Paradigm {paradigm_name} is not supported for trial package generation. And no trial package found.")
+        else:
+            return unity_trials_data_package
     
     # drop the inter trial state from the dataframe
     df_unity_frame.drop(df_unity_frame[df_unity_frame['S'] == inter_trial_state_id].index, 

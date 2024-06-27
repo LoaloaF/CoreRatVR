@@ -120,7 +120,7 @@ def create_ratvr_db(db_name):
             frame_blinker INT NOT NULL,
             ballvelocity_first_package DOUBLE NOT NULL,
             ballvelocity_last_package DOUBLE NOT NULL,
-            frame_ephys_timestamp BIGINT NOT NULL,
+            frame_ephys_timestamp BIGINT,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
@@ -140,8 +140,8 @@ def create_ratvr_db(db_name):
             trial_end_frame BIGINT NOT NULL,
             trial_pc_duration BIGINT NOT NULL,
             trial_outcome INT NOT NULL,
-            trial_start_ephys_timestamp BIGINT NOT NULL,
-            trial_end_ephys_timestamp BIGINT NOT NULL,
+            trial_start_ephys_timestamp BIGINT,
+            trial_end_ephys_timestamp BIGINT,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)
@@ -214,6 +214,33 @@ def create_ratvr_db(db_name):
     cursor.execute("CREATE INDEX paradigm_p0200_session_id_index ON paradigm_P0200(session_id);")
     cursor.execute("CREATE INDEX paradigm_p0200_trial_id_index ON paradigm_P0200(trial_id);")
 
+    # paradigm_P0300 table
+    cursor.execute("""
+        CREATE TABLE paradigm_P0300 (
+            paradigm_P0300_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INT NOT NULL,
+            trial_id BIGINT NOT NULL,
+            maximum_reward_number INT NOT NULL,
+            reward_number DOUBLE INT NULL,
+            FOREIGN KEY (session_id) REFERENCES session(session_id)
+        );
+    """)
+    cursor.execute("CREATE INDEX paradigm_p0300_session_id_index ON paradigm_P0300(session_id);")
+    cursor.execute("CREATE INDEX paradigm_p0300_trial_id_index ON paradigm_P0300(trial_id);")
+
+        # paradigm_P0400 table
+    cursor.execute("""
+        CREATE TABLE paradigm_P0400 (
+            paradigm_P0400_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INT NOT NULL,
+            trial_id BIGINT NOT NULL,
+            maximum_reward_number INT NOT NULL,
+            reward_number DOUBLE INT NULL,
+            FOREIGN KEY (session_id) REFERENCES session(session_id)
+        );
+    """)
+    cursor.execute("CREATE INDEX paradigm_p0400_session_id_index ON paradigm_P0400(session_id);")
+    cursor.execute("CREATE INDEX paradigm_p0400_trial_id_index ON paradigm_P0400(trial_id);")
     # -S-
     # Put picture or svg of database schema in  directory 
     # -S-
@@ -239,7 +266,7 @@ def insert_new_paradim_table():
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Create rat VR behavior database.")
-    argParser.add_argument("--path_to_db", type=str, default=".", help="Path to the database.")
+    argParser.add_argument("--path_to_db", type=str, default="../", help="Path to the database.")
 
     path = argParser.parse_args().path_to_db
     db_fname = "rat_vr.db"
