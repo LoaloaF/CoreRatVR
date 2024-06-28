@@ -33,9 +33,9 @@ def _handle_logs(session_dir):
 def _handle_data(session_dir):
     L = Logger()
     L.logger.info(f"Loading metadata...")
-    # first three keys are required
-    dbNames = ['session_name', 'paradigm_name', 'animal_name', 'start_time', 
-               'stop_time', 'duration', 'notes', 'rewardPostSoundDelay', 
+    # first 4 keys are required
+    dbNames = ['session_name', 'paradigm_name', 'animal_name', 'paradigm_id',
+               'start_time', 'stop_time', 'duration', 'notes', 'rewardPostSoundDelay', 
                'rewardAmount', 'punishmentLength', 'punishInactivationLength', 
                'interTrialIntervalLength', 'abortInterTrialIntervalLength',
                'successSequenceLength', 'maxiumTrialLength', 'sessionDescription',
@@ -207,7 +207,7 @@ def _handle_rename_nas_session_dirs(session_dir, nas_dir, new_dir_name):
     old_dir_name = os.path.basename(session_dir)
     
     nas_session_dir = os.path.join(nas_dir, new_dir_name)
-    # DONETODO: change to shutil.move, otherwise wont rename the unempty folder
+    # TODO os.rename doesn't work for non-empty folders?
     shutil.move(os.path.join(nas_dir, old_dir_name), nas_session_dir)
     return nas_session_dir
 
@@ -270,8 +270,9 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
         nas_session_dir = _handle_rename_nas_session_dirs(session_dir, nas_dir, 
                                                           metadata["session_name"])
 
-    if write_to_db:
-        session2db(session_dir, fname, '..', 'rat_vr.db')
+        # read the moved data on the NAS, not local (faster in the future)
+        if write_to_db:
+            session2db(nas_session_dir, fname, database_location, database_name)
 
     L.logger.info(f"Session processing finished")
     #TODO run on all the available data with fast network connection to NAS, 

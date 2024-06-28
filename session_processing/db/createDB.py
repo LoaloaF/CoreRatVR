@@ -251,22 +251,6 @@ def create_ratvr_db(db_name):
     # conn.commit()
     conn.close()
     
-# DONETODO - maybe no need for this function, since we wont run this entire file once the database is
-# there. Whenever we want a new paradigm table, we can just execuate the corresponding sql.
-def insert_new_paradim_table():
-    pass
-    # take in metadata arguments about paradigm variables
-    # cursor.execute("""
-    #     CREATE TABLE paradigm_P0200 (
-    #         paradigm_P0200_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    #         session_id INT NOT NULL,
-    #         trial_id BIGINT NOT NULL,
-    #         pd DOUBLE NOT NULL,
-    #         pa DOUBLE NOT NULL,
-    #         FOREIGN KEY (session_id) REFERENCES session(session_id)
-    #     );
-
-
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Create rat VR behavior database.")
     argParser.add_argument("--path_to_db", type=str, default="../", help="Path to the database.")

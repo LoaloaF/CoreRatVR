@@ -10,7 +10,9 @@ def write_session2db(conn, cursor, df_session):
     L = Logger()
     # extract the session info stored in the main session table
     paradigm_name = df_session["paradigm_name"][0]
-    paradigm_id = int(paradigm_name[1:5])
+    # paradigm_id = int(paradigm_name[1:5])
+    # TODO paradigm_id not always there by default, code below still needed?
+    paradigm_id = df_session['paradigm_id']
     cursor.execute(f"SELECT paradigm_id FROM paradigm_meta WHERE paradigm_name=?", (paradigm_name,))
     fetch_result = cursor.fetchall()
     if len(fetch_result) == 0:
