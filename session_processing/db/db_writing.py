@@ -3,17 +3,18 @@ import h5py
 
 from CustomLogger import CustomLogger as Logger
 
-from db_utils import read_file_from_hdf5
-from db_utils import add_session_into_df
+from session_processing.db.db_utils import read_file_from_hdf5
+from session_processing.db.db_utils import add_session_into_df
 
 def write_session2db(conn, cursor, df_session):
     L = Logger()
     # extract the session info stored in the main session table
     paradigm_name = df_session["paradigm_name"][0]
-    cursor.execute("SELECT paradigm_id FROM paradigm WHERE paradigm_name=?", (paradigm_name,))
+    paradigm_id = int(paradigm_name[1:5])
+    cursor.execute(f"SELECT paradigm_id FROM paradigm_meta WHERE paradigm_name=?", (paradigm_name,))
     fetch_result = cursor.fetchall()
     if len(fetch_result) == 0:
-        cursor.execute("INSERT INTO paradigm (paradigm_name) VALUES (?)", (paradigm_name,))
+        cursor.execute("INSERT INTO paradigm_meta (paradigm_id, paradigm_name) VALUES (?,?)", (paradigm_id,paradigm_name,))
 
     animal_name = df_session["animal_name"][0]
     cursor.execute("SELECT animal_id FROM animal WHERE animal_name=?", (animal_name,))

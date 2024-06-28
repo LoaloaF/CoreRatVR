@@ -17,10 +17,27 @@ def patch_metadata(session_metadata, session_dir):
         L.logger.error("Required metadata key paradigm_name missing.")
         raise ValueError("Required metadata key missing.")
     
-    start_time_patch = session_dir.split(os.path.sep)[-2][:19]
+    # TODO - haotian: here there is a precision mismatch between the start time in the folder name
+    # (including seconds) and the start time in the metadata file (excluding seconds).
+    # Now the solution is to use the start time excluding seconds.
+    start_time_patch = os.path.split(session_dir)[1][:16]
     session_metadata['animal_name'] = session_metadata['animal_name'].replace("_", "")
-    session_metadata['start_time'] = session_metadata.get('duration', start_time_patch)
+    session_metadata['start_time'] = session_metadata.get('start_time', start_time_patch)
     session_metadata['duration'] = session_metadata.get('duration', "min")
+
+    # TODO - haotian: I think we also should include stop_time before? 
+    # Maybe need to change the default value if there is no stop_time in the metadata file, 
+    # now I just calculate the stop_time based on the start_time and duration.
+    # We can also ignore this part if we don't need to use stop_time in the future
+    if session_metadata['duration'] != 'min':
+        start_timestamp = datetime.strptime(session_metadata['start_time'], "%Y-%m-%d_%H-%M")
+        session_duration = int(session_metadata['duration'][:-3])
+        stop_timestamp = start_timestamp + pd.Timedelta(minutes=session_duration)
+        stop_timestamp = stop_timestamp.strftime("%Y-%m-%d_%H-%M")
+    else:
+        stop_timestamp = "min"
+
+    session_metadata['stop_time'] = session_metadata.get('stop_time', stop_timestamp)
     
     # convert JSON array list-like arguments to lists or floats or str
     for key, value in session_metadata.items():
@@ -34,7 +51,7 @@ def patch_metadata(session_metadata, session_dir):
     
     return session_metadata
 
-def patch_paradigmVariable_data(paradigmVariable_trials_data):
+def patch_paradigmVariable_data(paradigmVariable_trials_data):#
     L = Logger()
     try:
         paradigmVariable_toDBnames_mapping_patch = {

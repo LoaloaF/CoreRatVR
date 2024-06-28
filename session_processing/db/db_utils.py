@@ -11,11 +11,9 @@ def add_session_into_df(cursor, df):
    return df
 
 def read_file_from_hdf5(session_dir, fname, file_name):
-   try:
-      behavior_fpath = os.path.join(session_dir, fname)
-   except:
-      raise FileNotFoundError(f"Failed to find behavior file in {session_dir}")
-   
+
+   behavior_fpath = os.path.join(session_dir, fname)
+
    try:
       df = pd.read_hdf(behavior_fpath, key=file_name)
    except:

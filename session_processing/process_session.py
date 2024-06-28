@@ -206,15 +206,16 @@ def _handle_rename_nas_session_dirs(session_dir, nas_dir, new_dir_name):
     L.logger.info(f"Renaming session directory on NAS")
     old_dir_name = os.path.basename(session_dir)
     
-    nas_session_dir = os.join(nas_dir, new_dir_name)
-    os.rename(os.join(nas_dir, old_dir_name), nas_session_dir)
+    nas_session_dir = os.path.join(nas_dir, new_dir_name)
+    # DONETODO: change to shutil.move, otherwise wont rename the unempty folder
+    shutil.move(os.path.join(nas_dir, old_dir_name), nas_session_dir)
     return nas_session_dir
 
 def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys, 
                     copy_to_nas, write_to_db, database_location, database_name):
     L = Logger()
     L.logger.info(f"Processing session {session_dir}")
-    
+
     # check if files exsist and if .log files have warnings or erros
     _handle_logs(session_dir)
 
@@ -269,8 +270,8 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
         nas_session_dir = _handle_rename_nas_session_dirs(session_dir, nas_dir, 
                                                           metadata["session_name"])
 
-        if write_to_db:
-            session2db(session_dir, fname, '/home/ntgroup/Project/', 'rat_vr')
+    if write_to_db:
+        session2db(session_dir, fname, '..', 'rat_vr.db')
 
     L.logger.info(f"Session processing finished")
     #TODO run on all the available data with fast network connection to NAS, 
@@ -281,7 +282,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/2024-06-13_12-59-52_goodone_Thursday_1')
+    argParser.add_argument("--session_dir", default='/home/ntgroup/Project/data/2024-06-28_17-39-50_active')
     # argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/nas_vrdata/2024-05-23_10-11-35_jumper_Thursday_1')
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")

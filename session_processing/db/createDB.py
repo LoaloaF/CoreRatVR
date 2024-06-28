@@ -19,13 +19,14 @@ def create_ratvr_db(db_name):
     """)
 
     # TODO add paradigm state table, transisions etc, by adding to metatdata in SessionParameters
-    # TODO additional field for OUR paradigm_id
-    # TODO remove session_pathf
+    # DONETODO additional field for OUR paradigm_id
+    # DONETODO remove session_pathf
 
     # paradigm table
     cursor.execute("""
-        CREATE TABLE paradigm (
-            paradigm_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE paradigm_meta (
+            paradigm_meta_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            paradigm_id INT NOT NULL,
             paradigm_name TEXT NOT NULL,
             paradigm_description TEXT
         );
@@ -36,7 +37,6 @@ def create_ratvr_db(db_name):
         CREATE TABLE session (
             session_id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_name TEXT NOT NULL,
-            session_path TEXT NOT NULL,
             paradigm_name TEXT NOT NULL,
             animal_name TEXT NOT NULL,
             start_time DATE,
@@ -242,7 +242,7 @@ def create_ratvr_db(db_name):
     cursor.execute("CREATE INDEX paradigm_p0400_session_id_index ON paradigm_P0400(session_id);")
     cursor.execute("CREATE INDEX paradigm_p0400_trial_id_index ON paradigm_P0400(trial_id);")
     
-    #TODO
+    #TODO 
     # -S-
     # Put picture or svg of database schema in  directory 
     # -S-
@@ -251,7 +251,8 @@ def create_ratvr_db(db_name):
     # conn.commit()
     conn.close()
     
-#TODO
+# DONETODO - maybe no need for this function, since we wont run this entire file once the database is
+# there. Whenever we want a new paradigm table, we can just execuate the corresponding sql.
 def insert_new_paradim_table():
     pass
     # take in metadata arguments about paradigm variables
