@@ -22,7 +22,6 @@ class Parameters:
         p = cls._instance.PROJECT_DIRECTORY, "data"
         cls._instance.DATA_DIRECTORY = os.path.join(*p)
         
-        cls._instance.NAS_DATA_DIRECTORY = "/Volumes/large/Simon/nas_vrdata"
         cls._instance.DB_LOCATION = "/Volumes/large/Simon/nas_vrdata"
         cls._instance.DB_NAME = "vrdata.db"
 
@@ -37,7 +36,6 @@ class Parameters:
         cls._instance.CONSOLE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
         cls._instance.FILE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
         cls._instance.CREATE_NAS_SESSION_DIR = True
-
 
         # Portenta SHM parameters
         cls._instance.SHM_NAME_TERM_FLAG = 'termflag'
@@ -123,6 +121,9 @@ class Parameters:
         # cls._instance.BUILTIN_WEBCAM_FPS = 30
 
         info = get_all_system_info()
+        
+        cls._instance.NAS_DATA_DIRECTORY = info["NAS_DATA_DIRECTORY"]
+        
         # system parameters
         cls._instance.SYSTEM = info["SYSTEM"]
         cls._instance.NAME = info["NAME"]
@@ -131,11 +132,7 @@ class Parameters:
         cls._instance.MACHINE = info["MACHINE"]
         cls._instance.PYTHON_VERSION = info["PYTHON_VERSION"]
         cls._instance.WHICH_PYTHON = info["WHICH_PYTHON"]
-        if cls._instance.SYSTEM == "Windows":
-            p = "C:Program Files", ".platformio", "bin", "platformio.exe"
-        else:
-            p = "~", ".platformio", "penv", "bin", "platformio"
-        cls._instance.PLATFORMIO_BIN = os.path.join(*p)
+        cls._instance.PLATFORMIO_BIN = info["PLATFORMIO_BIN"]
         
         # hardware parameters
         cls._instance.PROCESSOR = info["PROCESSOR"]
@@ -150,15 +147,8 @@ class Parameters:
         cls._instance.GPU_MEM_AVAIL = info["GPU_MEM_AVAIL"]
         # cls._instance.GPU_MEM_TOTAL = info["GPU_MEM_TOTAL"]
         # cls._instance.CAMERAS_BY_IDX = info["CAMERAS_BY_IDX"]
-        # cls._instance.ARDUINO_BY_PORT = info["ARDUINO_BY_PORT"]
-        if cls._instance.SYSTEM == "Windows":
-            cls._instance.ARDUINO_PORT = "COM3"
-        else:
-            cls._instance.ARDUINO_PORT = "/dev/ttyACM0"
+        cls._instance.ARDUINO_PORT = info["ARDUINO_PORT"]
         cls._instance.ARDUINO_BAUD_RATE = 2000000
-        
-        
-
         return cls._instance
         
     def get_parameter_groups(self):
