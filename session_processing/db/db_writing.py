@@ -1,5 +1,13 @@
-def db_session(L, conn, cursor, df_session):
+import os
+import h5py
 
+from CustomLogger import CustomLogger as Logger
+
+from db_utils import read_file_from_hdf5
+from db_utils import add_session_into_df
+
+def write_session2db(conn, cursor, df_session):
+    L = Logger()
     # extract the session info stored in the main session table
     paradigm_name = df_session["paradigm_name"][0]
     cursor.execute("SELECT paradigm_id FROM paradigm WHERE paradigm_name=?", (paradigm_name,))
@@ -39,8 +47,9 @@ def db_session(L, conn, cursor, df_session):
         L.logger.info(f"Session {session_name} added successfully.")
 
 
-def db_session_parameters(L, conn, cursor, df_session):
-
+def write_session_params2db(conn, cursor, df_session):
+    L = Logger()
+    
     # extract the column names in the session_parameter table
     cursor.execute(f"PRAGMA table_info(session_parameter)")
     columns_info = cursor.fetchall()
@@ -60,3 +69,59 @@ def db_session_parameters(L, conn, cursor, df_session):
     df_session.to_sql('session_parameter', conn, if_exists='append', index=False)
     L.logger.info(f"Session parameters added successfully.")
 
+
+def write_camera2db(conn, cursor, session_dir, fname, camera_type):
+    L = Logger()
+    
+    df_cam = read_file_from_hdf5(session_dir, fname, camera_type + 'cam_packages')
+
+    if df_cam is None:
+        return
+
+    # add session info into df
+    df_cam = add_session_into_df(cursor, df_cam)
+
+    cam_name_prefix = camera_type + 'cam_'
+    # prepare the space in df for the blob data
+    df_cam[cam_name_prefix + 'data'] = None
+    df_cam[cam_name_prefix + 'data'] = df_cam[cam_name_prefix + 'data'].astype(object)
+
+    # read the blob data from hdf5 file
+    cam_path = os.path.join(session_dir, fname)
+    hdf_cam = h5py.File(cam_path, 'r')[cam_name_prefix + 'frames']
+
+    for each_hdf in hdf_cam:
+        package_id = int(each_hdf.split('_')[1])
+        df_cam.loc[df_cam[cam_name_prefix + 'image_id'] == package_id, cam_name_prefix + 'data'] = hdf_cam[each_hdf][()]
+    
+    df_cam.to_sql(camera_type + 'cam', conn, if_exists='append', index=False)
+    L.logger.info(f"{camera_type} camera added successfully.")
+    
+
+def write_paradigmVariable2db(conn, cursor, session_dir, fname, df_session):
+    L = Logger()
+    paradigm_name = df_session["paradigm_name"][0] 
+
+    # check if the variable table already exists
+    variable_table_name = "paradigm_" + paradigm_name.split('_')[0]
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (variable_table_name,))
+
+    if (len(cursor.fetchall()) == 0):
+        raise Exception(f"Variable table {variable_table_name} does not exist. "
+                        f"Please add the paradigm first.")
+    
+    try:
+        unity_output_path = os.path.join(session_dir, 'unity_output.hdf5')
+        df_variable = read_file_from_hdf5(session_dir, fname, 'paradigm_variable')
+
+        if df_variable is None:
+            return
+
+        df_variable = add_session_into_df(cursor, df_variable)
+
+        df_variable.to_sql(variable_table_name, conn, if_exists='append', index=False)
+        L.logger.info(f"Variable table {variable_table_name} added successfully.")
+
+    except:
+        L.logger.info(f"No trialPackages found in {unity_output_path}. "
+                      f"Variable table {variable_table_name} not added.")

@@ -26,7 +26,8 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data,
         facecam_tstamp_col = facecam_tstamp_col.replace('_pc_', '_ephys_')
         bodycam_tstamp_col = bodycam_tstamp_col.replace('_pc_', '_ephys_')
         unitycam_tstamp_col = unitycam_tstamp_col.replace('_pc_', '_ephys_')
-        
+    
+    # if unity_trials_data is None, this will enter the catch block in main function
     # get the trial time boundaries and constuct an interval index from it
     trial_starts = unity_trials_data[trials_tstamp_col]
     
@@ -46,7 +47,6 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data,
         return np.where(idx == -1, -1, trial_ids[idx].values)
 
     unity_frames_data['trial_id'] = assign_trial_id(unity_frames_data[frame_tstamp_col])
-    #TODO same check
 
     if ballvel_data is not None:
         ballvel_data['trial_id'] = assign_trial_id(ballvel_data[ballvel_tstamp_col])

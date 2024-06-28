@@ -10,7 +10,7 @@ from patch_session_data import patch_paradigmVariable_data
 from patch_session_data import patch_metadata
 from patch_session_data import patch_trial_packages
 
-def load_session_metadata(session_dir):
+def load_session_metadata(session_dir, dbNames):
     L = Logger()
     
     # read the session json file (excel metadata)
@@ -29,24 +29,24 @@ def load_session_metadata(session_dir):
         with open(parameters_fullfname, 'r') as file:
             session_metadata['configuration'] = file.read()
 
+
     # patch the metadata with missing keys if possible/needed
     session_metadata = patch_metadata(session_metadata, session_dir)
+    if session_metadata is None:
+        return
     
-    # convert JSON array list-like arguments to lists or floats or str
-    for key, value in session_metadata.items():
-        if (isinstance(value, str) and key != 'configuration'
-            and len(list_like := value.split(",")) > 1):
-            # floats or integers
-            try:
-                session_metadata[key] = list(map(float, list_like))
-            except:
-                session_metadata[key] = list_like # leave as str
-    
+    # this key is supposed to be constructed only in postprocessing
     name = (f'{session_metadata["start_time"]}_{session_metadata["animal_name"]}_'
             f'{session_metadata["paradigm_name"]:04}_{session_metadata["duration"]}')
     session_metadata['session_name'] = name
     
-    # TODO: discuss wether we should print configuration here - now the solution is not printing it
+    # remove explicit keys from metadata and add them to metadata field
+    session_metadata['metadata'] = {}
+    [session_metadata['metadata'].update({k:session_metadata.pop(k)}) 
+                                  for k in list(session_metadata.keys()) if k not in dbNames]
+    # convert to json 
+    session_metadata['metadata'] = json.dumps(session_metadata['metadata'])
+    
     metadata_to_print = session_metadata.copy()
     metadata_to_print.pop('configuration', None)
     L.logger.info(L.fmtmsg(["Metadata: ", metadata_to_print]))
@@ -58,14 +58,14 @@ def load_unity_frames_data(session_dir, toDBnames_mapping):
     return unity_frame_data
 
 def load_unity_trials_data(session_dir, metadata, toDBnames_mapping):
-    # TODO deal with data without trialpackages or with corrupted trialpackages
     unity_trials_data_package = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'trialPackages')
+    
+    # TODO depr/ delte this once not needed anymore
     unity_frame_data = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'unityframes')
-
     if unity_frame_data is None:
         raise Exception("Failed to read unityframes data.")
-
     unity_trials_data = patch_trial_packages(unity_trials_data_package, unity_frame_data, metadata)
+
 
     paradigmVariable_data = _handle_paradigm_specific_variables(unity_trials_data, 
                                                                 toDBnames_mapping, 
@@ -105,8 +105,9 @@ def _read_hdf5_data(session_dir, fname, key, drop_N_column=True):
             return
     try:
         data = pd.read_hdf(fullfname, key=key)
-    except:
-        L.logger.error(f"Find the key {key}. But failed to read the key {key} from {fullfname}.")
+    except Exception as e:
+        L.logger.error(f"Found the key {key} but failed to read the key {key} "
+                       f"from {fullfname}.\n{e}")
         return
         
     data.reset_index(drop=True, inplace=True)
@@ -126,7 +127,8 @@ def _rename_columns(data_type, data, toDBnames_mapping):
         L.logger.error(f"{data_type} is None. Cannot rename columns.")
         return
 
-    new_columns = [toDBnames_mapping.pop(k) for k in list(toDBnames_mapping) if k.startswith("INSERT")]
+    new_columns = [toDBnames_mapping.pop(k) for k in list(toDBnames_mapping) 
+                   if k.startswith("INSERT")]
     data = _insert_columns(data, new_columns)
 
     if any([k not in data.columns for k in toDBnames_mapping.keys()]):
@@ -144,13 +146,8 @@ def _rename_columns(data_type, data, toDBnames_mapping):
 def _handle_paradigm_specific_variables(unity_trials_data, frames_toDBnames_mapping, 
                                         metadata):
     L = Logger()
-    # only keep the columns we need in the trialPackage
-    drop_cols = []
-    for k in frames_toDBnames_mapping.keys():
-        if k.startswith("INSERT") or k == "ID":
-            pass
-        else:
-            drop_cols.append(k)
+    drop_cols = [k for k in unity_trials_data.columns 
+                 if not (k.startswith("INSERT") or k == "ID")]
     paradigmVariable_trials_data = unity_trials_data.drop(columns=drop_cols)
     paradigmVariable_trials_data.rename(columns={'ID': 'trial_id'}, inplace=True)
     
@@ -162,8 +159,8 @@ def _handle_paradigm_specific_variables(unity_trials_data, frames_toDBnames_mapp
                                             inplace=True)
         return paradigmVariable_trials_data
     except:
-        L.logger.warning("Failed to find the paradigm-specific variables in "
-                         "metadata/excel. Using hardcoded mapping instead.")
+        L.logger.warning(L.fmtmsg(("Failed to find the paradigm-specific variables in metadata/excel. ",
+                                   "Using hardcoded mapping instead.")))
         return patch_paradigmVariable_data(paradigmVariable_trials_data)
 
 #add trialPackageVariablesFulllNames to excel sheet schema

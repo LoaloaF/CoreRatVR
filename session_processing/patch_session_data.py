@@ -5,99 +5,59 @@ import pandas as pd
 from CustomLogger import CustomLogger as Logger
 
 def patch_metadata(session_metadata, session_dir):
-    try:
-        if 'animal' in session_metadata:
-            session_metadata['animal_name'] = session_metadata.pop('animal')
-        # if no animal information is found
-        elif 'animal_name' not in session_metadata:
-            session_metadata['animal_name'] = "rNA-NaN"
-        session_metadata['animal_name'] = session_metadata['animal_name'].replace("_", "")
-        
-        if 'paradigm_name' not in session_metadata:
-            session_metadata['paradigm_name'] = "PNaN-NaN"
-            session_metadata['paradigm_id'] = -1
-        
-        if any([session_metadata.get(time_key) == None 
-                for time_key in ('start_time', 'stop_time', 'duration')]):
-            start_time, stop_time, duration = _infer_session_time(session_dir)   
-            session_metadata['start_time'] = start_time
-            session_metadata['stop_time'] = stop_time
-            session_metadata['duration'] = duration
-
-        return session_metadata
+    L = Logger()
     
-    except Exception as e:
-        L = Logger()
-        L.logger.error(L.fmtmsg(["Failed to patch incomplete metadata: ", str(e)]))
-    return
-
-def reorganize_metadata(session_metadata):
-    session_metadata['metadata'] = {}
-
-    separate_keys = ['session_name', 'paradigm_name', 'animal_name', 'start_time', 'stop_time', 
-                     'duration', 'notes', 'rewardPostSoundDelay', 'rewardAmount', 'punishmentLength', 
-                     'punishInactivationLength', 'interTrialIntervalLength', 'abortInterTrialIntervalLength',
-                     'successSequenceLength', 'maxiumTrialLength', 'sessionDescription', 'configuration', 'metadata']
-
-    for k in list(session_metadata.keys()):
-        if k not in separate_keys:
-            session_metadata['metadata'][k] = session_metadata.pop(k)
-
-    session_metadata['metadata'] = json.dumps(session_metadata['metadata'])
-
-
-    return pd.DataFrame(session_metadata, index=[0])
-
-def _infer_session_time(session_dir):
-    Logger().logger.debug(f"Inferring session time for {session_dir}")
-    # infer session start and stop times from data files, try two
-    from_fullfname = os.path.join(session_dir, 'unity_output.hdf5')
-    if os.path.exists(from_fullfname) and os.path.getsize(from_fullfname) > 1e4:
-        key = 'unityframes'
-    else:
-        from_fullfname = os.path.join(session_dir, 'portenta_output.hdf5')
-        if os.path.exists(from_fullfname):
-            key = 'ballvelocity'
-        #TODO what if there is no ballvelocity
-
-    Logger().logger.debug(f"Reading {from_fullfname} with key: {key}")
+    if "animal_name" not in session_metadata and 'animal' in session_metadata:
+        session_metadata['animal_name'] = session_metadata.pop('animal')
     
-    # extract start and stop by readinf first and last rows
-    first_row = pd.read_hdf(from_fullfname, key=key, start=0, stop=1)
-    start_tstamps = first_row.iloc[0].loc["PCT"] / 10**6
-    last_row = pd.read_hdf(from_fullfname, key=key, start=-1)
-    stop_tstamps = last_row.iloc[0].loc["PCT"] / 10**6
-    duration = stop_tstamps - start_tstamps
+    if 'animal_name' not in session_metadata:
+        L.logger.error("Required metadata key animal_name missing.")
+        raise ValueError("Required metadata key missing.")
+    if 'paradigm_name' not in session_metadata:
+        L.logger.error("Required metadata key paradigm_name missing.")
+        raise ValueError("Required metadata key missing.")
     
-    # finally convert to str 
-    start_tstamps = datetime.utcfromtimestamp(start_tstamps).strftime('%Y-%m-%d_%H-%M')
-    stop_tstamps = datetime.utcfromtimestamp(stop_tstamps).strftime('%Y-%m-%d_%H-%M')
-    duration = f"{int(duration / 60)}min"
-    return start_tstamps, stop_tstamps, duration
+    start_time_patch = session_dir.split(os.path.sep)[-2][:19]
+    session_metadata['animal_name'] = session_metadata['animal_name'].replace("_", "")
+    session_metadata['start_time'] = session_metadata.get('duration', start_time_patch)
+    session_metadata['duration'] = session_metadata.get('duration', "min")
+    
+    # convert JSON array list-like arguments to lists or floats or str
+    for key, value in session_metadata.items():
+        if (isinstance(value, str) and key != 'configuration'
+            and len(list_like := value.split(",")) > 1):
+            # floats or integers
+            try:
+                session_metadata[key] = list(map(float, list_like))
+            except:
+                session_metadata[key] = list_like # leave as str
+    
+    return session_metadata
 
 def patch_paradigmVariable_data(paradigmVariable_trials_data):
+    L = Logger()
     try:
         paradigmVariable_toDBnames_mapping_patch = {
             "PD": "pillar_distance",
             "PA": "pillar_angle",
-            "MRN":"maximum_reward_number",
-            'RN': "reward_number"
+            "MRN":"maximum_reward_number", # set at trial start
+            'RN': "reward_number" # like an outcome
             # add more here
         }
         paradigmVariable_trials_data = paradigmVariable_trials_data.rename(columns=paradigmVariable_toDBnames_mapping_patch)
     except:
-        Logger().logger.error("Failed to patch the paradigm-specific variables with "
+        L.logger.error("Failed to patch the paradigm-specific variables with "
                               "hardcoded mapping")
 
     if len(paradigmVariable_trials_data.columns) == 0:
-        Logger().logger.error("No paradigm-specific variables found in the unity output file. Set it to None")
+        L.logger.error("No paradigm-specific variables found in the unity output file. Set it to None")
         paradigmVariable_trials_data = None  
     
     return paradigmVariable_trials_data
 
 
 def patch_trial_packages(unity_trials_data_package, df_unity_frame, metadata):
-
+    Logger().logger.info("Attempting to patch trial packages...")
     paradigm_name = metadata["paradigm_name"]
 
     start_state_id = -1
@@ -115,8 +75,11 @@ def patch_trial_packages(unity_trials_data_package, df_unity_frame, metadata):
         inter_trial_state_id = 208
     else:
         if unity_trials_data_package is None:
-            Logger().logger.error(f"Paradigm {paradigm_name} is not supported for trial package generation. And no trial package found.")
+            Logger().logger.error(f"Paradigm {paradigm_name} is not supported "
+                                  "for trial package generation. And no trial "
+                                  "package found.")
         else:
+            Logger().logger.info("Data is ok, didn't even need patching.")
             return unity_trials_data_package
     
     # drop the inter trial state from the dataframe

@@ -21,7 +21,6 @@ from load_session_data import load_ballvelocity_data
 from load_session_data import load_portenta_event_data
 from polish_session_data import insert_trial_id
 from polish_session_data import add_ephys_timestamps
-from patch_session_data import reorganize_metadata
 
 def _handle_logs(session_dir):
     fnames = os.listdir(session_dir)
@@ -34,21 +33,27 @@ def _handle_logs(session_dir):
 def _handle_data(session_dir):
     L = Logger()
     L.logger.info(f"Loading metadata...")
-    metadata = load_session_metadata(session_dir)
+    # first three keys are required
+    dbNames = ['session_name', 'paradigm_name', 'animal_name', 'start_time', 
+               'stop_time', 'duration', 'notes', 'rewardPostSoundDelay', 
+               'rewardAmount', 'punishmentLength', 'punishInactivationLength', 
+               'interTrialIntervalLength', 'abortInterTrialIntervalLength',
+               'successSequenceLength', 'maxiumTrialLength', 'sessionDescription',
+               'configuration', 'metadata']
+    metadata = load_session_metadata(session_dir, dbNames)
     
     
     L.logger.info(f"Loading unity data...")
     toDBnames_mapping = {"ID": "trial_id", 
                          "INSERT1": "trial_start_ephys_timestamp",
                          "INSERT2": "trial_end_ephys_timestamp",
-                        #  "INSERT3": "trial_start_session_id",
                          "SFID": "trial_start_frame", 
                          "SPCT": "trial_start_pc_timestamp", 
                          "EFID": "trial_end_frame", 
                          "EPCT": "trial_end_pc_timestamp",
                          "TD": "trial_pc_duration", 
                          "O": "trial_outcome"}
-    # TODO: maybe unclear how paradigmVariable_data is shaped
+    # paradigmVariable_data has keys [ID, *metadata.fullParadgmVariableNames]
     unity_trials_data, paradigmVariable_data = load_unity_trials_data(session_dir, 
                                                                       metadata, 
                                                                       toDBnames_mapping)
@@ -56,7 +61,6 @@ def _handle_data(session_dir):
     toDBnames_mapping = {"ID": "frame_id", 
                          "PCT": "frame_pc_timestamp", 
                          "INSERT1": "frame_ephys_timestamp",
-                        #  "INSERT2": "frame_session_id",
                          "INSERT2": "trial_id",
                          "X": "frame_x_position", 
                          "Z": "frame_z_position", 
@@ -74,7 +78,6 @@ def _handle_data(session_dir):
                          "T": "ballvelocity_portenta_timestamp", 
                          "PCT": "ballvelocity_pc_timestamp", 
                          "INSERT1": "ballvelocity_ephys_timestamp",
-                        #  "INSERT2": "ballvelocity_session_id",
                          "INSERT2": "trial_id",
                          "Vr": "ballvelocity_raw", 
                          "Vy": "ballvelocity_yaw", 
@@ -85,7 +88,6 @@ def _handle_data(session_dir):
                          "T": "event_portenta_timestamp", 
                          "PCT": "event_pc_timestamp", 
                          "INSERT1": "event_ephys_timestamp",
-                        #  "INSERT2": "event_session_id",
                          "INSERT2": "trial_id",
                          "V": "event_value", 
                          "N": "event_name"}
@@ -97,20 +99,17 @@ def _handle_data(session_dir):
     toDBnames_mapping = {"ID": f"facecam_image_id", 
                          "PCT": f"facecam_image_pc_timestamp",
                          "INSERT1": "facecam_image_ephys_timestamp",
-                        #  "INSERT2": "facecam_image_session_id",
                          "INSERT2": "trial_id",}
     facecam_packages = load_camera_data(session_dir, 'facecam.hdf5', 
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"bodycam_image_id", 
                          "PCT": f"bodycam_image_pc_timestamp",
-                        #  "INSERT1": "bodycam_image_session_id",
                          "INSERT1": "trial_id",}
     bodycam_packages = load_camera_data(session_dir, 'bodycam.hdf5', 
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"unitycam_image_id", 
                          "PCT": f"unitycam_image_pc_timestamp",
                          "INSERT1": "unitycam_image_ephys_timestamp",
-                        #  "INSERT2": "unitycam_image_session_id",
                          "INSERT2": "trial_id",}
     unitycam_packages = load_camera_data(session_dir, 'unitycam.hdf5', 
                                          toDBnames_mapping)
@@ -129,32 +128,26 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         return
     
     with pd.HDFStore(full_fname, 'w') as store:
-        metadata_df = reorganize_metadata(metadata)
-        store.put('metadata', metadata_df)
+        store.put('metadata', pd.DataFrame(metadata, index=[0]))
     
         L.logger.info(f"Merging unity data...")
         store.put('unity_trial', unity_trials_data)
         store.put('unity_frame', unity_frames_data)
-
         if paradigmVariable_data is not None:
             store.put('paradigm_variable', paradigmVariable_data)
 
-        if facecam_packages is not None:
-            store.put('facecam_packages', facecam_packages)    
-        
-        if bodycam_packages is not None:
-            store.put('bodycam_packages', bodycam_packages)
-        
-        if unitycam_packages is not None:
-            store.put('unitycam_packages', unitycam_packages)
-        
         L.logger.info(f"Merging portenta data...")
-        
         if ballvel_data is not None:
             store.put('ballvelocity', ballvel_data)
-        
         if event_data is not None:
             store.put('event', event_data)
+        
+        if facecam_packages is not None:
+            store.put('facecam_packages', facecam_packages)    
+        if bodycam_packages is not None:
+            store.put('bodycam_packages', bodycam_packages)
+        if unitycam_packages is not None:
+            store.put('unitycam_packages', unitycam_packages)
 
     # copy the camera data into the behavior file
     with h5py.File(full_fname, 'a') as output_file:
@@ -179,8 +172,7 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
                 source_file.copy(source_file["frames"], output_file, name="unitycam_frames")
         else:
             L.logger.warning(f"Failed to find unitycam data in {session_dir}")
-        
-    Logger().logger.info(f"Sucessfully merged and saved data to {full_fname}")
+    L.logger.info(f"Sucessfully merged and saved data to {full_fname}")
 
 def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                               unity_frames_data, ballvel_data, event_data,
@@ -200,29 +192,26 @@ def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
     add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
                          ballvel_data, event_data, facecam_packages, unitycam_packages)
     
-def _handle_move2nas(session_dir, nas_dir, metadata):
+def _handle_move2nas(session_dir, nas_dir, fname):
     src_size = sum([os.path.getsize(os.path.join(session_dir, f)) 
                     for f in os.listdir(session_dir)]) / 1e9
     L.logger.info(f"Moving session ({src_size:.1}GB) to NAS...")
-    L.logger.info(f"session_dir: {session_dir}, nas_dir: {nas_dir}")
-    shutil.copy2(session_dir, os.path.join(nas_dir, os.path.split(session_dir)[1]))
     
-    # TODO make this its onw handle_*function 
-    L.logger.info(f"Renaming session directory (local and NAS)")
-    # change the session dir name to the session name
-    new_session_dir = os.path.join(os.path.split(session_dir)[0], 
-                                    metadata["session_name"])
-    os.rename(session_dir, new_session_dir)
+    # copy only the merged, final file to the NAS
+    src = os.path.join(session_dir, fname)
+    dst = os.path.join(nas_dir, os.path.basename(session_dir), fname)
+    shutil.copy(src, dst)
+
+def _handle_rename_nas_session_dirs(session_dir, nas_dir, new_dir_name):
+    L.logger.info(f"Renaming session directory on NAS")
+    old_dir_name = os.path.basename(session_dir)
     
-    # same for the NAS dir
-    new_nas_dir = os.path.join(nas_dir, metadata["session_name"])
-    os.rename(os.path.join(nas_dir, os.path.split(session_dir)[1]), new_nas_dir)
-    
-    # TODO rename ephys file, use session_name
-        
+    nas_session_dir = os.join(nas_dir, new_dir_name)
+    os.rename(os.join(nas_dir, old_dir_name), nas_session_dir)
+    return nas_session_dir
 
 def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys, 
-                    move_to_nas, write_to_db, database_location, database_name):
+                    copy_to_nas, write_to_db, database_location, database_name):
     L = Logger()
     L.logger.info(f"Processing session {session_dir}")
     
@@ -232,13 +221,11 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     # load the metadata, unity, camera, ballvelocity and event data
     try:
         data = _handle_data(session_dir)
-    except:
-        L.logger.error("Failed to load data, check logs for details")
+    except Exception as e:
+        L.logger.error(f"Failed to load data, check logs for details.\n{e}")
         if prompt_user_decision:
             answer = input("\nPermanently delete session? [y/n]: ")
             if answer.lower() == 'y':
-                # TODO send to trash operation
-                # send2trash(session_dir) # broken, maybe bc of nas?
                 shutil.rmtree(session_dir)
                 L.logger.info(f"Session {session_dir} deleted")
         return
@@ -248,7 +235,7 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     ballvel_data, event_data, facecam_packages, bodycam_packages,  
     unitycam_packages) = data
     L.spacer()
-    L.logger.info(f"{metadata['session_name']}\nAll data loaded successfully! ")
+    L.logger.info(f"{metadata['session_name']}\nData loaded without Exceptions! ")
     L.spacer()
     
     if integrate_ephys:
@@ -273,26 +260,20 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
                            facecam_packages, bodycam_packages, 
                            unitycam_packages, ballvel_data, event_data)
     
-    if move_to_nas:
-        _handle_move2nas(session_dir, nas_dir, metadata)
-        
+    if copy_to_nas:
+        L.logger.info(f"Copying session to NAS...")
+        _handle_move2nas(session_dir, nas_dir, fname)
+    
+    # change the session dir name to the session_name
+    if copy_to_nas:
+        nas_session_dir = _handle_rename_nas_session_dirs(session_dir, nas_dir, 
+                                                          metadata["session_name"])
 
-        # write the data to the DB
-    if write_to_db:
-        #TODO write to DB using cleaned, valided data - no more checks needed
-        # all dataframes should be ready add, if not change code here
-        # only thing that needs to happen is unpacking metadata into animal, 
-        # session, etc. tabels
-        session2db(session_dir, fname, '/home/ntgroup/Project/', 'rat_vr')
-        # pass
+        if write_to_db:
+            session2db(session_dir, fname, '/home/ntgroup/Project/', 'rat_vr')
 
-
-
-        
-    #TODO accdiednally delete session: 2024-06-13_12-59-52_goodone_Thursday_1 - avaialble local?? - done
+    L.logger.info(f"Session processing finished")
     #TODO run on all the available data with fast network connection to NAS, 
-    #TODO go deeper and deeper into older sessions, see what kind of patching is requried/ feasable/ worth it
-    #TODO try with a proper session, see if it works
     #TODO test with a session that has ephys data
 
 if __name__ == "__main__":
@@ -305,7 +286,7 @@ if __name__ == "__main__":
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--integrate_ephys", action="store_true")
-    argParser.add_argument("--move_to_nas", action="store_true")
+    argParser.add_argument("--copy_to_nas", action="store_true")
     argParser.add_argument("--nas_dir", default=None)
     argParser.add_argument("--write_to_db", action="store_true")
     argParser.add_argument("--database_location", default=None)

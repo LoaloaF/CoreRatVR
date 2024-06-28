@@ -2,7 +2,6 @@ import argparse
 import sqlite3
 import os
 
-
 def create_ratvr_db(db_name):
     # Connect to SQLite database (or create it if it doesn't exist)
     conn = sqlite3.connect(db_name)
@@ -19,8 +18,9 @@ def create_ratvr_db(db_name):
         );
     """)
 
-    #TODO think about states addtions / new table,
-    #TODO add also in sessionParameters 
+    # TODO add paradigm state table, transisions etc, by adding to metatdata in SessionParameters
+    # TODO additional field for OUR paradigm_id
+    # TODO remove session_pathf
 
     # paradigm table
     cursor.execute("""
@@ -241,6 +241,8 @@ def create_ratvr_db(db_name):
     """)
     cursor.execute("CREATE INDEX paradigm_p0400_session_id_index ON paradigm_P0400(session_id);")
     cursor.execute("CREATE INDEX paradigm_p0400_trial_id_index ON paradigm_P0400(trial_id);")
+    
+    #TODO
     # -S-
     # Put picture or svg of database schema in  directory 
     # -S-

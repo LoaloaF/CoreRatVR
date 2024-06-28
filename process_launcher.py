@@ -187,7 +187,7 @@ def open_process_session_proc(session_dir):
     args.extend([
         "--logging_name", script.replace(".py", ""),
         "--session_dir", session_dir,
-        "--move_to_nas",
+        "--copy_to_nas",
         "--nas_dir", P.NAS_DATA_DIRECTORY,
         # "--integrate_ephys",
         "--write_to_db",
