@@ -38,6 +38,8 @@ def check_log_files(session_dir, fnames):
         L.logger.debug(f"Checking log file {fn}")    
         result.append("-----------")
         result.append(fn)
+        if fn == 'unity.log':
+            continue
         with open(os.path.join(session_dir, fn), 'r') as f:
             # check the size before reading
             if os.path.getsize(f.name) > 1e8: # 100 MB
@@ -85,7 +87,7 @@ def check_log_files(session_dir, fnames):
             if len(warnings) >20:
                 warnings = warnings[:10] + [f"\t.. ({n_warnings-20:,}) ..\n"] + warnings[-10:]
             
-            if L.logger.level <= 10:
+            if L.logger.level <= 20:
                 result.extend(errors)
                 result.extend(warnings)
     return result        

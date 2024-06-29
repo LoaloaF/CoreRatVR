@@ -28,7 +28,7 @@ def _save_frame_packages(package_buf, full_fname):
     except ValueError as e:
         L.logger.error(f"Error saving to hdf5:\n{e}\n\n{df.to_string()}")
 
-def _log(frame_shm, termflag_shm, full_fname, videowriter):
+def _log(frame_shm, termflag_shm, full_fname, videowriter=None):
     L = Logger()
     L.logger.info("Reading video frames from SHM and saving them...")
 
@@ -61,8 +61,8 @@ def _log(frame_shm, termflag_shm, full_fname, videowriter):
             frame = np.flip(frame, 0)
             frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
         
-        # video frame saving
-        videowriter.write(frame)
+        # videowriter.write(frame)
+        
         # single frame saving
         with h5py.File(full_fname, "a") as hdf:
             jpeg_data = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
@@ -90,18 +90,19 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
     # video saving
     fourcc = cv.VideoWriter_fourcc(*'mp4v')
 
-    if cam_name == "bodycam":
-        videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
-                                    fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
-    elif cam_name == "facecam":
-        videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
-                            fps, (frame_shm.x_res, frame_shm.y_res), isColor=False)
-    elif cam_name == "unitycam":
-        videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
-                            fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
+    # for speed, don't render videos yet, do it in post
+    # if cam_name == "bodycam":
+    #     videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
+    #                                 fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
+    # elif cam_name == "facecam":
+    #     videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
+    #                         fps, (frame_shm.x_res, frame_shm.y_res), isColor=False)
+    # elif cam_name == "unitycam":
+    #     videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
+    #                         fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
     
     Logger().logger.debug(full_fname)
-    _log(frame_shm, termflag_shm, full_fname, videowriter)
+    _log(frame_shm, termflag_shm, full_fname)
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Log camera from SHM to save directory")

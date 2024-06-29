@@ -231,7 +231,7 @@ def attach_stream_endpoints(app):
                     continue
                 prv_frame_package = frame_package
 
-                frame = frame_shm.get_frame()
+                frame = cv2.flip(frame_shm.get_frame(), -1)
                 L.logger.debug(f"New frame {frame.shape} read from SHM: {frame_package}")
                 
                 frame_encoded = cv2.imencode('.jpg', frame)[1].tobytes()  # Encode the frame as JPEG

@@ -35,7 +35,7 @@ class Parameters:
         cls._instance.LOG_TO_DATA_DIR = True
         cls._instance.CONSOLE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
         cls._instance.FILE_LOGGING_FMT = f'%(asctime)s|%(levelname)s|%(process)s|%(module)s|%(funcName)s\n\t%(message)s'
-        cls._instance.CREATE_NAS_SESSION_DIR = True
+        cls._instance.CREATE_NAS_SESSION_DIR = False
 
         # Portenta SHM parameters
         cls._instance.SHM_NAME_TERM_FLAG = 'termflag'

@@ -96,11 +96,8 @@ def _create_shm(shm_name, total_nbytes):
         # disable automatic unlinking (deletion) of shm when an access proc dies
         remove_shm_from_resource_tracker()
         
-        L.logger.info(os.uname().sysname)
         # check if the system is mac os
         if os.uname().sysname != "Darwin":
-            L.logger.info("IN")
-            
             shm = shared_memory.SharedMemory(name=shm_name, create=True, 
                                             size=total_nbytes)
         else:

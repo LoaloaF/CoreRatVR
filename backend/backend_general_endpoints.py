@@ -194,7 +194,7 @@ def attach_general_endpoints(app):
 
     @app.get("/animals")
     def animals():
-        static_animals = ["rYL_001","rYL_002","rYL_003","rYL_004","rYL_005"]
+        static_animals = ["rYL_001","rYL_003","rYL_004","AI_001","dummyAnimal"]
         return static_animals
 
     @app.get("/paradigm_fsm")
