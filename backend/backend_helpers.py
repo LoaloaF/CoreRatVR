@@ -105,7 +105,8 @@ def check_processes(app):
         if pid != 0 and psutil.Process(pid).status() == psutil.STATUS_ZOMBIE:
             # PID doesn't exist
             app.state.state["procs"][proc_name] = 0
-            Logger().logger.warning(f"{proc_name} process terminated unexpectedly")
+            if proc_name != "process_session":
+                Logger().logger.warning(f"{proc_name} process terminated unexpectedly")
 
 def state2serializable(state):
     S = state.copy()

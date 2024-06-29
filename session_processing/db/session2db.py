@@ -86,6 +86,8 @@ def write_data2db(session_dir, fname, database_location, database_name):
 def session2db(session_dir, fname, database_location, database_name):
     L = Logger()
     conn = None
+    
+    #TODO: add metadata["metadata"]["paradigms_states"] as a new table in the database
 
     # if any error occurs when writing to rat_vr_test.db, the data will not be added to rat_vr.db
     # and the rat_vr_test.db will be cleared anyway

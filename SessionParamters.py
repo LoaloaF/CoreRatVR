@@ -35,7 +35,11 @@ class SessionParamters:
         # These 2 dictionarys stores everything from the 3 excel sheets
         cls._instance.session_parameters_dict = {}
         cls._instance.environment_parameters_dict = {}
-
+        
+        cls._instance.paradigms_states = None
+        cls._instance.paradigms_transitions = None
+        cls._instance.paradigms_decisions = None
+        cls._instance.paradigms_actions = None
 
         return cls._instance
     
@@ -59,11 +63,34 @@ class SessionParamters:
         self.paradigm_id = int(self.paradigm_name[1:5])
         paradigm_excelfullfname = self._copy_paradigm_excel_to_session_dir()
         self._extract_metadata_from_paradigm_excel(paradigm_excelfullfname)
+        self._read_paradigmFSM_json_assets()
 
     def handle_stop_session(self):
         self.stop_time = datetime.now()
         self.duration = self.stop_time - self.start_time
         self._save_session_parameters()
+    
+    def _read_paradigmFSM_json_assets(self):
+        p = Parameters().PROJECT_DIRECTORY, "UnityRatVR", "paradigmFSMs"
+        # Load fsm_states.json
+        fsm_states_path = os.path.join(*p, "fsm_states.json")
+        with open(fsm_states_path, 'r') as file:
+            self.paradigms_states = json.load(file)
+
+        # Load fsm_transitions.json
+        fsm_transitions_path = os.path.join(*p, "fsm_transitions.json")
+        with open(fsm_transitions_path, 'r') as file:
+            self.paradigms_transitions = json.load(file)
+
+        # Load fsm_decisions.json
+        fsm_decisions_path = os.path.join(*p, "fsm_decisions.json")
+        with open(fsm_decisions_path, 'r') as file:
+            self.paradigms_decisions = json.load(file)
+
+        # Load fsm_actions.json
+        fsm_actions_path = os.path.join(*p, "fsm_actions.json")
+        with open(fsm_actions_path, 'r') as file:
+            self.paradigms_actions = json.load(file)
 
     def _copy_paradigm_excel_to_session_dir(self):
         P = Parameters()
@@ -100,7 +127,8 @@ class SessionParamters:
         pillar_details.fillna(-1, inplace=True)
         pillar_details = {pillarIdent: dict(columns) for pillarIdent, columns 
                           in pillar_details.iterrows()}
-        pillar_details = {int(k): {str(kk): int(vv) if isinstance(vv, np.int64) else vv for kk, vv in v.items()} 
+        pillar_details = {int(k): {str(kk): int(vv) if isinstance(vv, np.int64) 
+                                   else vv for kk, vv in v.items()} 
                           for k, v in pillar_details.items()}
         
         envX_size, envY_size = env_params_df.iloc[0,14:16]
@@ -145,6 +173,13 @@ class SessionParamters:
         # append the meta data dictionaries from excel sheets
         params.update(self.session_parameters_dict)
         params.update(self.environment_parameters_dict)
+        # and the FSMs assets
+
+        params.update({
+            "paradigms_states": self.paradigms_states,
+            "paradigms_transitions ": self.paradigms_transitions,
+            "paradigms_decisions": self.paradigms_decisions,
+            "paradigms_actions": self.paradigms_actions})
         self.L.logger.info(self.L.fmtmsg(params))
         
         fullffname = os.path.join(P.SESSION_DATA_DIRECTORY, "session_parameters.json")
@@ -154,4 +189,4 @@ class SessionParamters:
             
             
 #TODO
-# rename file , has type, and convert string arugments with , to JSON array
+# rename file , has type
