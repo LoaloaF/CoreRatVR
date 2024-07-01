@@ -6,6 +6,8 @@ from CustomLogger import CustomLogger as Logger
 
 def patch_metadata(session_metadata, session_dir):
     L = Logger()
+    L.logger.info("Attempting to patch metadata...")
+    L.logger.info(session_metadata)
     
     if "animal_name" not in session_metadata and 'animal' in session_metadata:
         session_metadata['animal_name'] = session_metadata.pop('animal')
@@ -23,10 +25,15 @@ def patch_metadata(session_metadata, session_dir):
     
     # newest sessions have start, stop and duretion, older ones have none of these
     # infer start time from name, and set durutation to "min" to construct session_name
+    if session_dir.endswith("/"):
+        session_dir = session_dir[:-1]
     start_time_patch = os.path.split(session_dir)[1][:16]
+    
+    L.logger.info(f"Start time patched to {start_time_patch}")
     session_metadata['animal_name'] = session_metadata['animal_name'].replace("_", "")
     session_metadata['start_time'] = session_metadata.get('start_time', start_time_patch)
     session_metadata['duration'] = session_metadata.get('duration', "min")
+
 
     # convert JSON array list-like arguments to lists or floats or str
     for key, value in session_metadata.items():

@@ -222,6 +222,11 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
                     render_videos):
     L = Logger()
     L.logger.info(f"Processing session {session_dir}")
+    
+    if prompt_user_decision:
+        answer = input("\nSkip this session? [y/n]: ")
+        if answer.lower() == 'y':
+            return
 
     # check if files exsist and if .log files have warnings or erros
     _handle_logs(session_dir)
@@ -277,16 +282,16 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
         L.logger.info(f"Copying session to NAS...")
         _handle_move2nas(session_dir, nas_dir, merged_fname)
         L.spacer()
-    
-        # change the session dir name to the session_name
-        nas_session_dir = _handle_rename_nas_session_dirs(session_dir, nas_dir, 
-                                                          metadata["session_name"])
-        L.spacer()
 
-        # read the moved data on the NAS, not local (faster in the future)
-        if write_to_db:
-            session2db(nas_session_dir, merged_fname, database_location, database_name)
-        
+    # change the session dir name to the session_name
+    nas_session_dir = _handle_rename_nas_session_dirs(session_dir, nas_dir, 
+                                                        metadata["session_name"])
+    L.spacer()
+
+    # read the moved data on the NAS, not local (faster in the future)
+    if write_to_db:
+        session2db(nas_session_dir, merged_fname, database_location, database_name)
+    
     L.logger.info(f"Session processing finished")
     #TODO run on all the available data with fast network connection to NAS, 
     #TODO test with a session that has ephys data
