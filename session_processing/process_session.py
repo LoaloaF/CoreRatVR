@@ -209,12 +209,15 @@ def _handle_move2nas(session_dir, nas_dir, merged_fname):
             shutil.copy(src, dst)
     
 def _handle_rename_nas_session_dirs(session_dir, nas_dir, new_dir_name):
+    print(nas_dir, session_dir, new_dir_name)
     L.logger.info(f"Renaming session directory on NAS")
     old_dir_name = os.path.basename(session_dir)
     
     nas_session_dir = os.path.join(nas_dir, new_dir_name)
     # TODO os.rename doesn't work for non-empty folders?
-    shutil.move(os.path.join(nas_dir, old_dir_name), nas_session_dir)
+    # os.rename(os.path.join(nas_dir, old_dir_name), nas_session_dir)
+    os.rename(session_dir, (os.path.join(os.path.split(session_dir[:-1])[0], new_dir_name)))
+
     return nas_session_dir
 
 def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys, 
@@ -300,15 +303,14 @@ if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default='/home/ntgroup/Project/data/2024-06-28_17-39-50_active')
-    # argParser.add_argument("--session_dir", default='/mnt/smbshare/vrdata/nas_vrdata/2024-05-23_10-11-35_jumper_Thursday_1')
+    argParser.add_argument("--logging_level")
+    argParser.add_argument("--session_dir")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")
     argParser.add_argument("--integrate_ephys", action="store_true")
     argParser.add_argument("--copy_to_nas", action="store_true")
-    argParser.add_argument("--nas_dir", default=None)
+    argParser.add_argument("--nas_dir", default="/mnt/NTnas/nas_vrdata")
     argParser.add_argument("--write_to_db", action="store_true")
     argParser.add_argument("--database_location", default=None)
     argParser.add_argument("--database_name", default=None)
@@ -319,7 +321,7 @@ if __name__ == "__main__":
                   kwargs.pop("logging_level"))
     L.spacer()
     L.logger.info("Subprocess started")
-    L.logger.debug(L.fmtmsg(kwargs))
+    L.logger.info(L.fmtmsg(kwargs))
             
     process_session(**kwargs)
     L.spacer()
