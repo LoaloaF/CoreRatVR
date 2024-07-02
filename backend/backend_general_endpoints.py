@@ -5,7 +5,7 @@ sys.path.insert(1, os.path.join(sys.path[0], 'backend'))
 
 import asyncio
 import shutil
-# import send2trash
+from send2trash import send2trash
 from time import sleep
 import json
 from fastapi import HTTPException, Request
@@ -139,7 +139,8 @@ def attach_general_endpoints(app):
     
     @app.post("/raise_term_flag/{msg}")
     def raise_term_flag(msg: str, request: Request):
-        Logger().logger.info(f"Handling raised term flag with msg={msg}")
+        L = Logger()
+        L.logger.info(f"Handling raised term flag with msg={msg}")
 
         validate_state(request.app.state.state, valid_initiated=True, 
                 valid_shm_created={P.SHM_NAME_TERM_FLAG: True})
@@ -173,11 +174,19 @@ def attach_general_endpoints(app):
         request.app.state.state["initiated"] = False
 
         if msg == "delete":
-            # send2trash(P.SESSION_DATA_DIRECTORY)
-            # if P.CREATE_NAS_SESSION_DIR:
-            #     os.rmdir(P.NAS_DATA_DIRECTORY)
-            # send2trash(P.SESSION_DATA_DIRECTORY)
-            pass
+            send2trash(P.SESSION_DATA_DIRECTORY)
+            if os.path.exists(P.SESSION_DATA_DIRECTORY): # sometimes empty dir left
+                os.rmdir(P.SESSION_DATA_DIRECTORY)
+            if P.CREATE_NAS_SESSION_DIR:
+                full_nas_dir = os.path.join(P.NAS_DATA_DIRECTORY, os.path.basename(P.SESSION_DATA_DIRECTORY))
+                L.logger.info(f"Deleting NAS session directory "
+                              f"{full_nas_dir} (if empty)")
+                try:
+                    os.rmdir(full_nas_dir)
+                except Exception as e:
+                    L.logger.error(f"Failed to delete NAS session directory "
+                                   f"{full_nas_dir} {e}")
+            # pass
         #TODO proper endpoint with multiple arguments for different session processing
         elif msg == "post-process":
             Logger().logger.info(f"Processing session {P.SESSION_DATA_DIRECTORY}")

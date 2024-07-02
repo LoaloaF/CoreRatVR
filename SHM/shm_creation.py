@@ -143,6 +143,8 @@ def delete_shm(shm_name):
     # logging
     if os.uname().sysname != "Darwin":
         shm = shared_memory.SharedMemory(name=shm_name, create=False)
-    else:
-        shm = OSXFileBasedSHM(shm_name, create=False)
         _cleanup(shm, shm_name)
+    else:
+        # shm = OSXFileBasedSHM(shm_name, create=False)
+        # shm.close()
+        pass
