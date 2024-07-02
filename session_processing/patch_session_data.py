@@ -78,11 +78,10 @@ def patch_trial_packages(unity_trials_data_package, df_unity_frame, metadata):
     # based on the paradigm name, set the start state id and inter trial state id
     # so we can extract the start and end frame of each trial
     if paradigm_name == 'P0000_AutoLickReward':
-        start_state_id = -1
-        inter_trial_state_id = -1
-    elif paradigm_name == 'P0100_SpoutAssoc':
-        start_state_id = 101
-        inter_trial_state_id = 108
+        return unity_trials_data_package
+    # elif paradigm_name == 'P0100_SpoutAssoc':
+    #     start_state_id = 101
+    #     inter_trial_state_id = 108
     elif paradigm_name == 'P0200_GoalDirectedMovement':
         start_state_id = 201
         inter_trial_state_id = 208

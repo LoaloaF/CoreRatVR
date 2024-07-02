@@ -33,6 +33,7 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data,
     
     # if unity_trials_data is None, this will enter the catch block in main function
     # get the trial time boundaries and constuct an interval index from it
+
     trial_starts = unity_trials_data[trials_tstamp_col]
     
     trial_ends = unity_trials_data[trials_tstamp_col.replace('start', 'end')]
