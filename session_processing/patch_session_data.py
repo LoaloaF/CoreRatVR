@@ -27,7 +27,7 @@ def patch_metadata(session_metadata, session_dir):
     # infer start time from name, and set durutation to "min" to construct session_name
     if session_dir.endswith("/"):
         session_dir = session_dir[:-1]
-    start_time_patch = os.path.spglit(session_dir)[1][:16]
+    start_time_patch = os.path.split(session_dir)[1][:16]
     
     L.logger.info(f"Start time patched to {start_time_patch}")
     session_metadata['animal_name'] = session_metadata['animal_name'].replace("_", "")
