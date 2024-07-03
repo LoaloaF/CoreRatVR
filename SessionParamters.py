@@ -75,8 +75,8 @@ class SessionParamters:
         # Load fsm_states.json
         fsm_states_path = os.path.join(*p, "fsm_states.json")
         with open(fsm_states_path, 'r') as file:
-            self.paradigms_states = json.load(file)
-
+            self.paradigms_states = {key: val for key, val in json.load(file).items() 
+                                     if val["paradigm"] == self.paradigm_id}
         # Load fsm_transitions.json
         fsm_transitions_path = os.path.join(*p, "fsm_transitions.json")
         with open(fsm_transitions_path, 'r') as file:
@@ -182,7 +182,7 @@ class SessionParamters:
             "paradigms_actions": self.paradigms_actions})
         
         # simplify the log message, don't print deeply nested values
-        long_value_keys = ("paradigms_states", "paradigms_transitions ", 
+        long_value_keys = ("paradigms_transitions ", "pillars", "paradigms_states",
                            "paradigms_decisions", "paradigms_actions", 
                            "pillar_details")
         msg = {key:val if key not in long_value_keys else "[...many details...]" 
@@ -191,7 +191,7 @@ class SessionParamters:
         
         fullffname = os.path.join(P.SESSION_DATA_DIRECTORY, "session_parameters.json")
         with open(fullffname, 'w') as f:
-            json.dump(params, f)
+            json.dump(params, f, indent=2)
             
 #TODO
 # rename file , has type
