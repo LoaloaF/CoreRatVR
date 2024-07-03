@@ -124,15 +124,21 @@ def attach_general_endpoints(app):
             session_paramters.paradigm_name = msg.split(",")[1]
         
         if msg == "Start":
-            request.app.state.state["unitySessionRunning"] = True
-            # here, the session flag is raised - portenta2shm.py will send pause
-            # command to portenta - loggers and shm writers will listen to this 
-            # flag as well
-            session_paramters.handle_start_session()
+            # TODO check this
+            # validate_state(request.app.state.state,{"unitySesssionRunning": False})
+            if not request.app.state.state["unitySessionRunning"]:
+                request.app.state.state["unitySessionRunning"] = True
+                # here, the session flag is raised - portenta2shm.py will send pause
+                # command to portenta - loggers and shm writers will listen to this 
+                # flag as well
+                session_paramters.handle_start_session()
         
         elif msg == "Stop":
-            request.app.state.state["unitySessionRunning"] = False
-            session_paramters.handle_stop_session()
+            # TODO check this
+            # validate_state(request.app.state.state,{"unitySesssionRunning": True})
+            if request.app.state.state["unitySessionRunning"]:
+                request.app.state.state["unitySessionRunning"] = False
+                session_paramters.handle_stop_session()
         
         # send message to unity through shared memory
         request.app.state.state["unityinput_shm_interface"].push(msg.encode())
@@ -208,7 +214,7 @@ def attach_general_endpoints(app):
 
     @app.get("/paradigm_fsm")
     def paradigm_fsm():
-        path = os.path.join(P.PROJECT_DIRECTORY, "UnityRatVR", "builds", "paradigmFSMs")
+        path = os.path.join(P.PROJECT_DIRECTORY, "UnityRatVR", "paradigmFSMs")
         if not os.path.exists(os.path.join(path, "fsm_states.json")):
             msg = ("FSM structure has not been extracted from Unity Assets yet."
                    " Run extractParadigmFSM.py first.")
@@ -248,7 +254,8 @@ def attach_general_endpoints(app):
     def sessionanimal(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_unitySessionRunning=False)
-        session_paramters.animal_weight = msg
+        if msg.isnumeric() and int(msg) not in (0, -1):
+            session_paramters.animal_weight = msg
     
     @app.post("/session/notes/{msg}")
     def sessionnotes(msg: str, request: Request):
