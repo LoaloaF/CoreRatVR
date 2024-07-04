@@ -6,8 +6,7 @@ from CustomLogger import CustomLogger as Logger
 
 def patch_metadata(session_metadata, session_dir):
     L = Logger()
-    L.logger.info("Attempting to patch metadata...")
-    L.logger.info(session_metadata)
+    L.logger.info("Patching to patch metadata...")
     
     if "animal_name" not in session_metadata and 'animal' in session_metadata:
         session_metadata['animal_name'] = session_metadata.pop('animal')

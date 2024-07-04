@@ -50,8 +50,8 @@ class SessionParamters:
         self.animal_weight = None
         self.start_time = None
         
-        self.session_parameters = None
-        self.environment_parameters = None
+        self.session_parameters_dict = None
+        self.environment_parameters_dict = None
         
         self.stop_time = None
         self.duration = None
@@ -118,8 +118,8 @@ class SessionParamters:
 
     def extract_env_dict(self, env_df, env_params_df):
         # print(environment_df, env_params_df)
-        x_indices_pillar, y_indices_pillar = np.where(env_df.notna())
-        pillars = {i: {"id":int(env_df.iloc[x,y]), "x":int(x), "y":int(y)}
+        y_indices_pillar, x_indices_pillar = np.where(env_df.notna())
+        pillars = {i: {"id":int(env_df.iloc[y,x]), "x":int(x), "y":int(y)}
                    for i, (x,y) in enumerate(zip(x_indices_pillar, y_indices_pillar))}
         
         pillar_details = env_params_df.iloc[:,:8].dropna(how='all').set_index("pillarIdentifier")
@@ -151,6 +151,8 @@ class SessionParamters:
     def extract_session_dict(self, session_df):
         session_params_dict = session_df.to_dict()
         session_paramsdict = session_params_dict["Values"]
+        session_paramsdict = {k: v if not (isinstance(v, str) and "," in v) else v.split(",") 
+                              for k,v in session_paramsdict.items()}
         self.session_parameters_dict = session_paramsdict
 
         self.L.logger.debug("Session metadata:")

@@ -235,6 +235,7 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     _handle_logs(session_dir)
 
     # load the metadata, unity, camera, ballvelocity and event data
+    data = _handle_data(session_dir)
     try:
         data = _handle_data(session_dir)
     except Exception as e:

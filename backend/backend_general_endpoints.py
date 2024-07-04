@@ -212,6 +212,26 @@ def attach_general_endpoints(app):
         static_animals = ["rYL_001","rYL_003","rYL_004","AI_001","dummyAnimal"]
         return static_animals
 
+    @app.get("/trial_variable_names")
+    def trial_variable_names():
+        if "trialPackageVariables" not in session_paramters.session_parameters_dict:
+            raise HTTPException(status_code=400, detail="Trial variables not in Excel sheet")
+        
+        val = session_paramters.session_parameters_dict["trialPackageVariables"]
+        if val == "none":
+            return {}
+        return val
+
+    @app.get("/trial_variable_default_values")
+    def trial_variable_default_values():
+        if "trialPackageVariablesDefault" not in session_paramters.session_parameters_dict:
+            raise HTTPException(status_code=400, detail="Trial variables default values not in Excel sheet")
+        
+        val = session_paramters.session_parameters_dict["trialPackageVariablesDefault"]
+        if val == "none":
+            return {}
+        return val
+
     @app.get("/paradigm_fsm")
     def paradigm_fsm():
         path = os.path.join(P.PROJECT_DIRECTORY, "UnityRatVR", "paradigmFSMs")
