@@ -114,6 +114,11 @@ def attach_general_endpoints(app):
         if "FAILED" in stderr.decode():
             raise HTTPException(status_code=400, detail=f"Failed to flash Portenta")
         return True
+    
+    @app.post("/startparadigm/")
+    def startparadigm(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True,
+                       valid_shm_created={P.SHM_NAME_PARADIGM_RUNNING})
 
     @app.post("/unityinput/{msg}")
     def unityinput(msg: str, request: Request):
