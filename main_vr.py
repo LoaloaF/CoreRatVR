@@ -36,6 +36,7 @@ async def lifespan(app: FastAPI):
         },
         "shm": {
             P.SHM_NAME_TERM_FLAG: False,
+            P.SHM_NAME_PARADIGM_RUNNING_FLAG: False,
             P.SHM_NAME_BALLVELOCITY: False,
             P.SHM_NAME_PORTENTA_OUTPUT: False,
             P.SHM_NAME_PORTENTA_INPUT: False,
@@ -46,9 +47,10 @@ async def lifespan(app: FastAPI):
             P.SHM_NAME_UNITY_CAM: False,
         },
         "initiated": False,
-        "unitySessionRunning": False,
+        "paradigmRunning": False,
         "termflag_shm_interface": None,
         "unityinput_shm_interface": None,
+        "paradigm_running_shm_interface": None,
     }
     yield # application runs (function pauses here)
     print("Experiment Server shutting down.")

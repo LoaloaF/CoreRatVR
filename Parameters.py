@@ -40,6 +40,8 @@ class Parameters:
         # Portenta SHM parameters
         cls._instance.SHM_NAME_TERM_FLAG = 'termflag'
         
+        cls._instance.SHM_NAME_PARADIGM_RUNNING_FLAG = 'paradigmflag'
+        
         cls._instance.SHM_NAME_BALLVELOCITY = 'ballvelocity'
         cls._instance.SHM_NPACKAGES_BALLVELOCITY = int(2**12) # 4k
         cls._instance.SHM_PACKAGE_NBYTES_BALLVELOCITY = 80
