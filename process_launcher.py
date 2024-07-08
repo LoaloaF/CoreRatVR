@@ -33,7 +33,7 @@ def open_vimbacam2shm_proc(cam_name):
     path = P.PROJECT_DIRECTORY, "CoreRatVR", "read2SHM", script
     stream_script = os.path.join(*path)
     
-    args = _make_proc_args(shm_args=("termflag", cam_name))
+    args = _make_proc_args(shm_args=("termflag", cam_name, "paradigmflag"))
     cam_idx = str(P.FACE_CAM_IDX) if cam_name == 'facecam' else str(P.BODY_CAM_IDX)
     args.extend([
         "--logging_name", cam_name+"2shm",
@@ -65,7 +65,7 @@ def open_log_camera_proc(cam_name):
     path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
     stream_script = os.path.join(*path)
     
-    args = _make_proc_args(shm_args=("termflag", cam_name))
+    args = _make_proc_args(shm_args=("termflag", cam_name, "paradigmflag"))
     
     match cam_name:
         case 'facecam':
@@ -104,7 +104,8 @@ def open_por2shm2por_proc():
     stream_script = os.path.join(*path)
     
     args = _make_proc_args(shm_args=("termflag", "ballvelocity", 
-                                     "portentaoutput", "portentainput"))
+                                     "portentaoutput", "portentainput",
+                                     "paradigmflag"))
     args.extend([
         "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.PORTENTA2SHM2PORTENTA_PROC_PRIORITY),
@@ -119,7 +120,8 @@ def open_log_portenta_proc():
     path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
     stream_script = os.path.join(*path)
     
-    args = _make_proc_args()
+    args = _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput", 
+                                     "paradigmflag"))
     args.extend([
         "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.LOG_PORTENTA_PROC_PRIORITY),
@@ -146,7 +148,7 @@ def open_log_unity_proc():
     path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
     stream_script = os.path.join(*path)
     
-    args = _make_proc_args(shm_args=("termflag", "unityoutput"))
+    args = _make_proc_args(shm_args=("termflag", "unityoutput", "paradigmflag"))
     args.extend([
         "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.LOG_UNITY_PROC_PRIORITY),
@@ -158,12 +160,7 @@ def open_log_unity_proc():
 def open_unity_proc():
     P = Parameters()
 
-    if "Apple" in P.PROCESSOR:
-        path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", "build00.app/Contents/MacOS/build00"
-    else:
-        path = P.PROJECT_DIRECTORY, "UnityRatVR", "builds", P.UNITY_BUILD_NAME
-    script = os.path.join(*path)
-    
+    script = os.path.join(P.UNITY_BUILD_DIRECTORY, P.UNITY_BUILD_NAME)
     log_fullfname = os.path.join(P.LOGGING_DIRECTORY, "unity.log")
     args = [
         "-logfile", log_fullfname,
@@ -208,6 +205,9 @@ def _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput"),
     if "termflag" in shm_args:
         args.extend(("--termflag_shm_struc_fname", 
                      shm_struct_fname(P.SHM_NAME_TERM_FLAG)))
+    if "paradigmflag" in shm_args:
+        args.extend(("--paradigmflag_shm_struc_fname", 
+                     shm_struct_fname(P.SHM_NAME_PARADIGM_RUNNING_FLAG)))
     if "ballvelocity" in shm_args:
         args.extend(("--ballvelocity_shm_struc_fname", 
                      shm_struct_fname(P.SHM_NAME_BALLVELOCITY)))

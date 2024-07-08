@@ -89,6 +89,9 @@ class CyclicPackagesSHMInterface:
         rw_diff = self._stored_write_pointer-self._read_pointer
         return rw_diff // self._package_nbytes
     
+    def reset_reader(self) -> None:
+        self._read_pointer = self._stored_write_pointer
+    
     def _next_internal_w_pointer(self) -> None:
         self._internal_w_pointer += self._package_nbytes
         self._internal_w_pointer %= self._npackages * self._package_nbytes
