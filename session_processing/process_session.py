@@ -304,8 +304,8 @@ if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level")
-    argParser.add_argument("--session_dir")
+    argParser.add_argument("--logging_level", default="INFO")
+    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/2024-07-02_18-19-52_active_goodoneTuesday2")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")
