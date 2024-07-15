@@ -179,7 +179,7 @@ def create_ratvr_db(db_name):
                     facecam_image_id BIGINT NOT NULL,
                     facecam_image_pc_timestamp BIGINT NOT NULL,
                     facecam_image_ephys_timestamp BIGINT,
-                    facecam_data LONGBLOB NOT NULL,
+                    facecam_data BLOB NOT NULL,
                     FOREIGN KEY (session_id) REFERENCES session(session_id)
                 );
             """)
@@ -195,7 +195,7 @@ def create_ratvr_db(db_name):
                     trial_id BIGINT NOT NULL,
                     bodycam_image_id BIGINT NOT NULL,
                     bodycam_image_pc_timestamp BIGINT NOT NULL,
-                    bodycam_data LONGBLOB NOT NULL,
+                    bodycam_data BLOB NOT NULL,
                     FOREIGN KEY (session_id) REFERENCES session(session_id)
                 );
             """)
@@ -211,7 +211,7 @@ def create_ratvr_db(db_name):
                     unitycam_image_id BIGINT NOT NULL,
                     unitycam_image_pc_timestamp BIGINT NOT NULL,
                     unitycam_image_ephys_timestamp BIGINT,
-                    unitycam_data LONGBLOB NOT NULL,
+                    unitycam_data BLOB NOT NULL,
                     FOREIGN KEY (session_id) REFERENCES session(session_id)
                 );
             """)
@@ -279,7 +279,7 @@ def create_ratvr_db(db_name):
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Create rat VR behavior database.")
-    argParser.add_argument("--db_name", type=str, default="ratvr", help="Name of the MySQL database to create.")
+    argParser.add_argument("--db_name", type=str, default="rat_vr", help="Name of the MySQL database to create.")
 
     db_fname = argParser.parse_args().db_name
     test_db_fname = db_fname + "_pre"

@@ -29,7 +29,7 @@ def _clear_tables(cursor, database_name):
 def write_data2db(conn, cursor, session_dir, fname, database_name):
     L = Logger()
 
-    connection_string = f'mysql+mysqlconnector://ratVR:yaniklabratVR2024@82.130.67.135/{database_name}'
+    connection_string = f'mysql+mysqlconnector://ratVR:yaniklabratVR2024@localhost/{database_name}'
     # Create SQLAlchemy engine
     engine = create_engine(connection_string)
 
@@ -104,7 +104,7 @@ def session2db(session_dir, fname, database_name):
     
 
     if fname is None:
-        fname = 'behavior_' + session_dir.split('/')[-1] + '.hdf5'
+        fname = 'behavior_' + session_dir.split('/')[-2] + '.hdf5'
     #TODO: add metadata["metadata"]["paradigms_states"] as a new table in the database
 
     # if any error occurs when writing to rat_vr_test.db, the data will not be added to rat_vr.db
@@ -128,9 +128,9 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/000_rYL001_P0200/2024-06-03_18-24_rYL001_P0200_GoalDirectedMovement_min")
+    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/2024-06-03_18-24_rYL001_P0200_GoalDirectedMovement_min")
     argParser.add_argument("--fname", default=None)
-    argParser.add_argument("--database_name", default='ratvr')
+    argParser.add_argument("--database_name", default='rat_vr')
 
     kwargs = vars(argParser.parse_args())
     

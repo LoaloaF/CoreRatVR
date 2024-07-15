@@ -1,6 +1,7 @@
 import os
 import h5py
-
+from PIL import Image
+import io
 from CustomLogger import CustomLogger as Logger
 
 from session_processing.db_mysql.db_utils import read_file_from_hdf5
@@ -94,24 +95,34 @@ def write_camera2db(conn, cursor, engine, session_dir, fname, camera_type):
     cam_path = os.path.join(session_dir, fname)
     hdf_cam = h5py.File(cam_path, 'r')[cam_name_prefix + 'frames']
 
+    image_id = 0
     for each_hdf in hdf_cam:
+        if (image_id % 10000) == 0:
+            L.logger.info(f"{camera_type}cam: Processing {image_id}th image.")
+
         package_id = int(each_hdf.split('_')[1])
-        df_cam.loc[df_cam[cam_name_prefix + 'image_id'] == package_id, cam_name_prefix + 'data'] = hdf_cam[each_hdf][()].item()
-    
-    df_cam["facecam_image_ephys_timestamp"] = None
+        image = Image.open(io.BytesIO(hdf_cam[each_hdf][()].item()))
+        output_stream = io.BytesIO()
+        image.save(output_stream, format='JPEG', quality=50)
+        compressed_image_data = output_stream.getvalue()
+        df_cam.loc[df_cam[cam_name_prefix + 'image_id'] == package_id, cam_name_prefix + 'data'] = compressed_image_data
+        image_id += 1
 
-    chunksize = 5000
-    # Iterate over chunks and write to SQL
+    df_cam[f"{camera_type}cam_image_ephys_timestamp"] = None
+
+    chunksize = 10000
     for i in range(0, len(df_cam), chunksize):
-        print(i, i+chunksize)
+        L.logger.info(f"{camera_type} inserting from {i} to {i+chunksize}.")
         df_chunk = df_cam.iloc[i:i+chunksize]
-        query = "INSERT INTO facecam (facecam_image_id, facecam_image_pc_timestamp, facecam_image_ephys_timestamp, trial_id, session_id, facecam_data) VALUES (%s, %s, %s, %s, %s, %s)"
-        data = [tuple(x) for x in df_chunk.to_numpy()]
-        cursor.executemany(query, data)
-        # df_chunk.to_sql(camera_type + 'cam', con=engine, chunksize=1000, if_exists='append', index=False)
+    # # Iterate over chunks and write to SQL
+    # for i in range(0, len(df_cam), chunksize):
+    #     print(i, i+chunksize)
+    #     df_chunk = df_cam.iloc[i:i+chunksize]
+    #     # query = "INSERT INTO facecam (facecam_image_id, facecam_image_pc_timestamp, facecam_image_ephys_timestamp, trial_id, session_id, facecam_data) VALUES (%s, %s, %s, %s, %s, %s)"
+    #     # data = [tuple(x) for x in df_chunk.to_numpy()]
+    #     # cursor.executemany(query, data)
+        df_chunk.to_sql(camera_type + 'cam', con=engine, if_exists='append', index=False)
 
-
-    # df_cam.to_sql(camera_type + 'cam', con=engine, if_exists='append', index=False)
     L.logger.info(f"{camera_type} camera added successfully.")
     
 

@@ -16,8 +16,8 @@ def read_file_from_hdf5(session_dir, fname, file_name):
 
    try:
       df = pd.read_hdf(behavior_fpath, key=file_name)
-   except:
-      Logger().logger.error(f"Failed to read {file_name} from behavior file: {behavior_fpath}")
+   except Exception as e:
+      Logger().logger.error(f"Failed to read {file_name} from behavior file: {behavior_fpath} with error {e}")
       return None
    
    return df
@@ -31,7 +31,11 @@ def add_file_from_hdf5_to_db(conn, cursor, engine, session_dir, fname, file_name
    
    # add session and trial info into df
    df = add_session_into_df(cursor, df)
-   df.to_sql(file_name, con=engine, if_exists='append', index=False)
+
+   chunksize = int(len(df) / 5)
+   for i in range(0, len(df), chunksize):
+      df.iloc[i:i+chunksize].to_sql(file_name, con=engine, if_exists='append', index=False)
+   # df.to_sql(file_name, con=engine, if_exists='append', index=False)
    Logger().logger.info(f"{file_name} added to db successfully.")
    
 def camel_to_snake(camel_case_string):
