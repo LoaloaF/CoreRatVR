@@ -1,6 +1,8 @@
 import os
 import sqlite3
-
+import argparse
+import sys
+sys.path.insert(1, os.path.join(sys.path[0], '../..'))
 from CustomLogger import CustomLogger as Logger
 
 from session_processing.db.db_writing import write_session2db
@@ -11,18 +13,13 @@ from session_processing.db.db_writing import write_camera2db
 from session_processing.db.db_utils import read_file_from_hdf5
 from session_processing.db.db_utils import camel_to_snake
 from session_processing.db.db_utils import add_file_from_hdf5_to_db
+from session_processing.db.createDB import create_ratvr_db
 
-def _clear_tables(conn):
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = cursor.fetchall()
-    
-    # clear each column of the table
-    for table in tables:
-        table_name = table[0]
-        cursor.execute(f"DELETE FROM {table_name};")
-    
-    conn.commit()
+def _clear_tables(database_location, database_name):
+
+    os.remove(os.path.join(database_location, database_name))
+    create_ratvr_db(os.path.join(database_location, database_name))
+
     Logger().spacer()
     Logger().logger.info("Test table cleared.")
 
@@ -87,6 +84,8 @@ def session2db(session_dir, fname, database_location, database_name):
     L = Logger()
     conn = None
     
+    if fname is None:
+        fname = 'behavior_' + session_dir.split('/')[-2] + '.hdf5'
     #TODO: add metadata["metadata"]["paradigms_states"] as a new table in the database
 
     # if any error occurs when writing to rat_vr_test.db, the data will not be added to rat_vr.db
@@ -101,8 +100,31 @@ def session2db(session_dir, fname, database_location, database_name):
     finally:
         if conn is not None:
             conn.close()
-            
-        conn = sqlite3.connect(os.path.join(database_location, test_database_name))
-        _clear_tables(conn)
-        conn.close()
+        _clear_tables(database_location, test_database_name)
 
+
+
+
+if __name__ == "__main__":
+    argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
+    argParser.add_argument("--logging_dir")
+    argParser.add_argument("--logging_name")
+    argParser.add_argument("--logging_level", default="INFO")
+    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/000_rYL001_P0200/2024-06-03_18-24_rYL001_P0200_GoalDirectedMovement_min")
+    argParser.add_argument("--fname", default=None)
+    # argParser.add_argument("--database_location", default='/run/media/ntgroup/2D2C888C340113CD/homedataXPS_080123/homedataXPS/projects/ratvr/database')
+    argParser.add_argument("--database_location", default='/home/ntgroup/Project')
+    argParser.add_argument("--database_name", default='rat_vr.db')
+
+    kwargs = vars(argParser.parse_args())
+    
+    L = Logger()
+    L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
+                  kwargs.pop("logging_level"))
+    L.spacer()
+    L.logger.info("Subprocess started")
+    L.logger.info(L.fmtmsg(kwargs))
+            
+    session2db(**kwargs)
+    L.spacer()
+    print("\n\n\n\n")

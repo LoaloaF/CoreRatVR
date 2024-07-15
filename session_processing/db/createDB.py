@@ -84,6 +84,7 @@ def create_ratvr_db(db_name):
     # double session_id?
     cursor.execute("CREATE INDEX ballvelocity_session_id_index ON ballvelocity(session_id);")
     cursor.execute("CREATE INDEX ballvelocity_trial_id_index ON ballvelocity(trial_id);")
+    cursor.execute("CREATE INDEX ballvelocity_ballvelocity_package_id_index ON ballvelocity(ballvelocity_package_id);")
     cursor.execute("CREATE INDEX ballvelocity_ballvelocity_ephys_timestamp_index ON ballvelocity(ballvelocity_ephys_timestamp);")
 
     # event table
@@ -127,6 +128,8 @@ def create_ratvr_db(db_name):
     cursor.execute("CREATE INDEX unity_frame_session_id_index ON unity_frame(session_id);")
     cursor.execute("CREATE INDEX unity_frame_trial_id_index ON unity_frame(trial_id);")
     cursor.execute("CREATE INDEX unity_frame_frame_id_index ON unity_frame(frame_id);")
+    cursor.execute("CREATE INDEX unity_frame_ballvelocity_first_package_index ON unity_frame(ballvelocity_first_package);")
+    cursor.execute("CREATE INDEX unity_frame_ballvelocity_last_package_index ON unity_frame(ballvelocity_last_package);")
 
     # unity_trial table
     cursor.execute("""
@@ -253,7 +256,7 @@ def create_ratvr_db(db_name):
     
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Create rat VR behavior database.")
-    argParser.add_argument("--path_to_db", type=str, default="../", help="Path to the database.")
+    argParser.add_argument("--path_to_db", type=str, default="/run/media/ntgroup/2D2C888C340S/projects/ratvr/database", help="Path to the database.")
 
     path = argParser.parse_args().path_to_db
     db_fname = "rat_vr.db"

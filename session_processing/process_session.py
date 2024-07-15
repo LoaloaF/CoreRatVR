@@ -10,7 +10,7 @@ import pandas as pd
 import h5py
 from CustomLogger import CustomLogger as Logger
 
-from session_processing.db.session2db import *
+from session_processing.db.session2db import session2db
 from check_session_files import check_file_existence
 from check_session_files import check_log_files
 from load_session_data import load_session_metadata
@@ -235,7 +235,6 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     _handle_logs(session_dir)
 
     # load the metadata, unity, camera, ballvelocity and event data
-    data = _handle_data(session_dir)
     try:
         data = _handle_data(session_dir)
     except Exception as e:
@@ -304,8 +303,8 @@ if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level")
-    argParser.add_argument("--session_dir")
+    argParser.add_argument("--logging_level", default="INFO")
+    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/2024-06-26_13-31-06_400_LastTrialTooLong")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")

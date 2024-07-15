@@ -84,6 +84,12 @@ def patch_trial_packages(unity_trials_data_package, df_unity_frame, metadata):
     elif paradigm_name == 'P0200_GoalDirectedMovement':
         start_state_id = 201
         inter_trial_state_id = 208
+    # elif paradigm_name == 'P0400_4PillarDirected':
+    #     start_state_id = 401
+    #     inter_trial_state_id = 407
+    # elif paradigm_name == 'P0500_MotorLearning':
+    #     start_state_id = 501
+    #     inter_trial_state_id = 510
     else:
         if unity_trials_data_package is None:
             Logger().logger.error(f"Paradigm {paradigm_name} is not supported "
