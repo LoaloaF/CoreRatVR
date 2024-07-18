@@ -149,8 +149,9 @@ def _rename_columns(data_type, data, toDBnames_mapping):
 def _handle_paradigm_specific_variables(unity_trials_data, frames_toDBnames_mapping, 
                                         metadata):
     L = Logger()
-    drop_cols = [k for k in unity_trials_data.columns 
-                 if not (k.startswith("INSERT") or k == "ID")]
+    # drop_cols = [k for k in unity_trials_data.columns 
+    #              if not (k.startswith("INSERT") or k == "ID")]
+    drop_cols = ['SFID', 'SPCT', 'EFID', 'EPCT', 'TD', 'O']
     paradigmVariable_trials_data = unity_trials_data.drop(columns=drop_cols)
     paradigmVariable_trials_data.rename(columns={'ID': 'trial_id'}, inplace=True)
     

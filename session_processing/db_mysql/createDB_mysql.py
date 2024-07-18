@@ -279,7 +279,7 @@ def create_ratvr_db(db_name):
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Create rat VR behavior database.")
-    argParser.add_argument("--db_name", type=str, default="rat_vr_tem", help="Name of the MySQL database to create.")
+    argParser.add_argument("--db_name", type=str, default="rat_vr", help="Name of the MySQL database to create.")
 
     db_fname = argParser.parse_args().db_name
     test_db_fname = db_fname + "_pre"

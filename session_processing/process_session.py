@@ -304,7 +304,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/2024-06-26_13-31-06_400_LastTrialTooLong")
+    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/2024-07-05_17-02_rYL001_P0400_4PillarDirected_5min")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")
