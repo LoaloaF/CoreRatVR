@@ -29,7 +29,7 @@ def _clear_tables(cursor, database_name):
 def write_data2db(conn, cursor, session_dir, fname, database_name):
     L = Logger()
 
-    connection_string = f'mysql+mysqlconnector://ratVR:yaniklabratVR2024@localhost/{database_name}'
+    connection_string = f'mysql+mysqlconnector://ratVR:yaniklabratVR2024@82.130.67.135/{database_name}'
     # Create SQLAlchemy engine
     engine = create_engine(connection_string)
 
@@ -111,13 +111,13 @@ def session2db(session_dir, fname, database_name):
     # and the rat_vr_test.db will be cleared anyway
     try:
         test_database_name = database_name + "_pre"
-        write_data2db(conn, cursor, session_dir, fname, test_database_name)
-        L.spacer()
+        # write_data2db(conn, cursor, session_dir, fname, test_database_name)
+        # L.spacer()
         write_data2db(conn, cursor, session_dir, fname, database_name)
     except Exception as e:
         L.logger.error(f"Failed to add data from: {session_dir} with error {e}")
     finally:
-        _clear_tables(cursor, test_database_name)
+        # _clear_tables(cursor, test_database_name)
         cursor.close()
         conn.close()
         L.logger.info(f"Disconnected to MySQL server")
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/2024-06-03_18-24_rYL001_P0200_GoalDirectedMovement_min")
+    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/2024-05-22_15-33_rYL001_P0200_GoalDirectedMovement_min")
     argParser.add_argument("--fname", default=None)
     argParser.add_argument("--database_name", default='rat_vr')
 

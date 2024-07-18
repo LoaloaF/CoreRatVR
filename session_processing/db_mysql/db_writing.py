@@ -108,7 +108,8 @@ def write_camera2db(conn, cursor, engine, session_dir, fname, camera_type):
         df_cam.loc[df_cam[cam_name_prefix + 'image_id'] == package_id, cam_name_prefix + 'data'] = compressed_image_data
         image_id += 1
 
-    df_cam[f"{camera_type}cam_image_ephys_timestamp"] = None
+    if camera_type != 'body':
+        df_cam[f"{camera_type}cam_image_ephys_timestamp"] = None
 
     chunksize = 10000
     for i in range(0, len(df_cam), chunksize):

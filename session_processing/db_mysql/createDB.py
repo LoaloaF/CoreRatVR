@@ -114,7 +114,7 @@ def create_ratvr_db(db_name):
                     event_package_id INT NOT NULL,
                     event_portenta_timestamp BIGINT NOT NULL,
                     event_pc_timeStamp BIGINT NOT NULL,
-                    event_value INT NOT NULL,
+                    event_value BIGINT NOT NULL,
                     event_ephys_timestamp BIGINT,
                     FOREIGN KEY (session_id) REFERENCES session(session_id)
                 );
