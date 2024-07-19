@@ -111,13 +111,13 @@ def session2db(session_dir, fname, database_name):
     # and the rat_vr_test.db will be cleared anyway
     try:
         test_database_name = database_name + "_pre"
-        # write_data2db(conn, cursor, session_dir, fname, test_database_name)
-        # L.spacer()
+        write_data2db(conn, cursor, session_dir, fname, test_database_name)
+        L.spacer()
         write_data2db(conn, cursor, session_dir, fname, database_name)
     except Exception as e:
         L.logger.error(f"Failed to add data from: {session_dir} with error {e}")
     finally:
-        # _clear_tables(cursor, test_database_name)
+        _clear_tables(cursor, test_database_name)
         cursor.close()
         conn.close()
         L.logger.info(f"Disconnected to MySQL server")

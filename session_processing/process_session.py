@@ -10,7 +10,7 @@ import pandas as pd
 import h5py
 from CustomLogger import CustomLogger as Logger
 
-from session_processing.db.session2db import session2db
+from session_processing.db_mysql.session2db import session2db
 from check_session_files import check_file_existence
 from check_session_files import check_log_files
 from load_session_data import load_session_metadata
@@ -293,7 +293,7 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
 
     # read the moved data on the NAS, not local (faster in the future)
     if write_to_db:
-        session2db(nas_session_dir, merged_fname, database_location, database_name)
+        session2db(nas_session_dir, merged_fname, database_name)
     
     L.logger.info(f"Session processing finished")
     #TODO run on all the available data with fast network connection to NAS, 
@@ -312,8 +312,7 @@ if __name__ == "__main__":
     argParser.add_argument("--copy_to_nas", action="store_true")
     argParser.add_argument("--nas_dir", default="/mnt/NTnas/nas_vrdata")
     argParser.add_argument("--write_to_db", action="store_true")
-    argParser.add_argument("--database_location", default=None)
-    argParser.add_argument("--database_name", default=None)
+    argParser.add_argument("--database_name", default='rat_vr')
     kwargs = vars(argParser.parse_args())
     
     L = Logger()

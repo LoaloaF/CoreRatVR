@@ -191,7 +191,7 @@ def open_process_session_proc(session_dir):
         "--nas_dir", P.NAS_DATA_DIRECTORY,
         "--render_videos",
         # "--integrate_ephys",
-        "--write_to_db",
+        # "--write_to_db",
         "--database_location", P.DB_LOCATION,
         "--database_name", P.DB_NAME,
     ])
