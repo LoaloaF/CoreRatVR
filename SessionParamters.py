@@ -131,10 +131,10 @@ class SessionParamters:
                                    else vv for kk, vv in v.items()} 
                           for k, v in pillar_details.items()}
         
-        envX_size, envY_size = env_params_df.iloc[0,14:16]
-        base_length = env_params_df.iloc[1,14]
-        wallzone_size = env_params_df.iloc[2,14]
-        wallzone_collider_size = env_params_df.iloc[3,14]
+        envX_size, envY_size = env_params_df.iloc[0,15:17]
+        base_length = env_params_df.iloc[1,15]
+        wallzone_size = env_params_df.iloc[2,15]
+        wallzone_collider_size = env_params_df.iloc[3,15]
         
         self.environment_parameters_dict = {
             "pillars": pillars,
