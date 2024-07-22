@@ -114,6 +114,30 @@ def attach_general_endpoints(app):
         if "FAILED" in stderr.decode():
             raise HTTPException(status_code=400, detail=f"Failed to flash Portenta")
         return True
+    
+    @app.post("/start_paradigm")
+    def start_paradigm(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True,
+                       valid_paradigmRunning=False,
+                       valid_shm_created={P.SHM_NAME_PARADIGM_RUNNING_FLAG: True}
+                       )
+        session_paramters.handle_start_session()
+        paradigm_running_shm_interface = request.app.state.state["paradigm_running_shm_interface"]
+        # exclusive raise flag here
+        paradigm_running_shm_interface.set()
+        request.app.state.state["paradigmRunning"] = True
+        
+    @app.post("/stop_paradigm")
+    def stop_paradigm(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True,
+                       valid_paradigmRunning=True,
+                       valid_shm_created={P.SHM_NAME_PARADIGM_RUNNING_FLAG: True}
+                       )
+        session_paramters.handle_stop_session()
+        paradigm_running_shm_interface = request.app.state.state["paradigm_running_shm_interface"]
+        # exclusive lower flag here
+        paradigm_running_shm_interface.reset()
+        request.app.state.state["paradigmRunning"] = False
 
     @app.post("/unityinput/{msg}")
     def unityinput(msg: str, request: Request):
@@ -123,22 +147,25 @@ def attach_general_endpoints(app):
         if msg.startswith("Paradigm,"):
             session_paramters.paradigm_name = msg.split(",")[1]
         
-        if msg == "Start":
-            # TODO check this
+        # if msg == "Start":
+        #     start_paradigm(request)
+        #     # TODO check this
             # validate_state(request.app.state.state,{"unitySesssionRunning": False})
-            if not request.app.state.state["unitySessionRunning"]:
-                request.app.state.state["unitySessionRunning"] = True
-                # here, the session flag is raised - portenta2shm.py will send pause
-                # command to portenta - loggers and shm writers will listen to this 
-                # flag as well
-                session_paramters.handle_start_session()
+            # if not request.app.state.state["paradigmRunning"]:
+            #     request.app.state.state["paradigmRunning"] = True
+            #     # here, the session flag is raised - portenta2shm.py will send pause
+            #     # command to portenta - loggers and shm writers will listen to this 
+            #     # flag as well
+            #     session_paramters.handle_start_session()
         
-        elif msg == "Stop":
-            # TODO check this
+        # elif msg == "Stop":
+        #     stop_paradigm(request)
+            
+        #     # TODO check this
             # validate_state(request.app.state.state,{"unitySesssionRunning": True})
-            if request.app.state.state["unitySessionRunning"]:
-                request.app.state.state["unitySessionRunning"] = False
-                session_paramters.handle_stop_session()
+            # if request.app.state.state["paradigmRunning"]:
+            #     request.app.state.state["paradigmRunning"] = False
+            #     session_paramters.handle_stop_session()
         
         # send message to unity through shared memory
         request.app.state.state["unityinput_shm_interface"].push(msg.encode())
@@ -154,6 +181,7 @@ def attach_general_endpoints(app):
         procs_state = request.app.state.state['procs']
         termflag_shm_interface = request.app.state.state["termflag_shm_interface"]
         unityinput_shm_interface = request.app.state.state["unityinput_shm_interface"]
+        paradigm_running_shm_interface = request.app.state.state["paradigm_running_shm_interface"]
         
         # send termination flag to all processes
         termflag_shm_interface.set()
@@ -176,8 +204,12 @@ def attach_general_endpoints(app):
                 if shm_name == "unityinput_shm_interface":
                     unityinput_shm_interface.close_shm()
                     request.app.state.state["unityinput_shm_interface"] = None
+                if shm_name == "paradigm_running_shm_interface":
+                    paradigm_running_shm_interface.close_shm()
+                    request.app.state.state["paradigm_running_shm_interface"] = None
         
         request.app.state.state["initiated"] = False
+        request.app.state.state["paradigmRunning"] = False
 
         if msg == "delete":
             send2trash(P.SESSION_DATA_DIRECTORY)
@@ -267,20 +299,20 @@ def attach_general_endpoints(app):
     @app.post("/session/animal/{msg}")
     def sessionanimal(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
-                       valid_unitySessionRunning=False)
+                       valid_paradigmRunning=False)
         session_paramters.animal = msg
     
     @app.post("/session/animalweight/{msg}")
     def sessionanimal(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
-                       valid_unitySessionRunning=False)
+                       valid_paradigmRunning=False)
         if msg.isnumeric() and int(msg) not in (0, -1):
             session_paramters.animal_weight = msg
     
     @app.post("/session/notes/{msg}")
     def sessionnotes(msg: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
-                       valid_unitySessionRunning=True)
+                       valid_paradigmRunning=True)
         session_paramters.notes = msg
     return app
 

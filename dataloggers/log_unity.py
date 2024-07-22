@@ -33,7 +33,7 @@ def _save_package_set(package_buf, full_fname, key):
     except ValueError as e:
         L.logger.error(f"Error saving to hdf5:\n{e}\n\n{df.to_string()}")
 
-def _log(termflag_shm, unityout_shm, full_fname):
+def _log(termflag_shm, unityout_shm, paradigm_running_shm, full_fname):
     L = Logger()
     L.logger.info("Reading Unity packges from SHM and saving them...")
 
@@ -46,8 +46,10 @@ def _log(termflag_shm, unityout_shm, full_fname):
             L.logger.info("Termination flag raised")
             if package_buf:
                 _save_package_set(package_buf, full_fname, key="unityframes")
-            sleep(.5)
             break
+        if not paradigm_running_shm.is_set():
+            L.logger.debug("Paradigm stopped, on halt....")
+            continue
         
         if unityout_shm.usage == 0:
             nchecks += 1
@@ -80,23 +82,37 @@ def _log(termflag_shm, unityout_shm, full_fname):
         nchecks = 1
 
 def run_log_unity(termflag_shm_struc_fname, unityoutput_shm_struc_fname, 
-                  session_data_dir):
+                  paradigmflag_shm_struc_fname, session_data_dir):
     # shm access
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     unityout_shm = CyclicPackagesSHMInterface(unityoutput_shm_struc_fname)
+    paradigm_running_shm = FlagSHMInterface(paradigmflag_shm_struc_fname)
+
+    while not paradigm_running_shm.is_set():
+        # arduino pauses 1000ms, at some point in this inveral (between 0 and 500ms)
+        # the logger wakes up - but there are no packages coming from the arudino 
+        # yet bc it's still in wait mode. Ensures that we get first pack
+        sleep(.5) # 500ms 
+        L.logger.debug("Waiting for paradigm flag to be raised...")  
+        L.logger.debug(f"Usage: {unityout_shm.usage}")  
+        
+    unityout_shm.reset_reader()
+    L.logger.info(f"Paradigm flag raised. unityout shm usage: "
+                  f"{unityout_shm.usage} - Starting to save data...")
 
     full_fname = os.path.join(session_data_dir, "unity_output.hdf5")
     with pd.HDFStore(full_fname) as hdf:
         hdf.put('unityframes', pd.DataFrame(), format='table', append=False)
         hdf.put('trialPackages', pd.DataFrame(), format='table', append=False)
 
-    _log(termflag_shm, unityout_shm, full_fname)
+    _log(termflag_shm, unityout_shm, paradigm_running_shm, full_fname)
 
 if __name__ == "__main__":
     descr = ("Write Unity packages from SHM to a file.")
     argParser = argparse.ArgumentParser(descr)
     argParser.add_argument("--termflag_shm_struc_fname")
     argParser.add_argument("--unityoutput_shm_struc_fname")
+    argParser.add_argument("--paradigmflag_shm_struc_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level")
@@ -109,6 +125,7 @@ if __name__ == "__main__":
     L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
                   kwargs.pop("logging_level"))
     L.logger.info("Subprocess started")
+    L.logger.debug(L.fmtmsg(kwargs))
     
     prio = kwargs.pop("process_prio")
     if sys.platform.startswith('linux'):

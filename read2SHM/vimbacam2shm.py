@@ -12,14 +12,14 @@ from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 from CustomLogger import CustomLogger as Logger
 
-def _read_vimbastream(frame_shm, termflag_shm):
+def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm):
     L = Logger()
     L.logger.info("Reading camera stream & writing to SHM...")
+    paradigm_running_state = paradigmflag_shm.is_set()
 
     with Vimba() as vimba:
         vimbacam = vimba.camera(0)
         vimbacam.open()
-
         vimbacam.arm('SingleFrame')
 
         try:
@@ -29,6 +29,21 @@ def _read_vimbastream(frame_shm, termflag_shm):
                     L.logger.info("Termination flag raised")
                     break
                 
+                # switching event 
+                if paradigmflag_shm.is_set() != paradigm_running_state:
+                    new_state = paradigmflag_shm.is_set()
+                    vimbacam.disarm()
+                    vimbacam.close()
+                    # when flipped to True, wait 200ms longer than Arudino ensuring 
+                    # that first frame that is acuired again and read by the logger
+                    # also emitted a recorded TTL
+                    pause_length = 1200 if new_state else 2200 # when flipped to True
+                    time.sleep(pause_length/1000.)
+                
+                    vimbacam.open()
+                    vimbacam.arm('SingleFrame')
+                    paradigm_running_state = new_state
+                    
                 frame = vimbacam.acquire_frame()
                 image = frame.buffer_data_numpy()
 
@@ -46,19 +61,22 @@ def _read_vimbastream(frame_shm, termflag_shm):
             vimbacam.disarm()
             vimbacam.close()
 
-def run_vimbacam2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname, cam_name,
+def run_vimbacam2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname, 
+                     paradigmflag_shm_struc_fname, cam_name,
                      x_topleft, y_topleft, camera_idx):
     # shm access
     frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
+    paradigmflag_shm = FlagSHMInterface(paradigmflag_shm_struc_fname)
     
-    _read_vimbastream(frame_shm, termflag_shm)
+    _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm)
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Read camera stream, timestamp, ",
                                         "and place in SHM")
     argParser.add_argument("--videoframe_shm_struc_fname")
     argParser.add_argument("--termflag_shm_struc_fname")
+    argParser.add_argument("--paradigmflag_shm_struc_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level")

@@ -14,7 +14,7 @@ class Parameters:
             return cls._instance
         cls._instance = super(Parameters, cls).__new__(cls)
 
-        # basic path parameters
+        # basic path parametersPPRO
         p = os.path.abspath(inspect.getfile(inspect.currentframe()))
         cls._instance.PROJECT_DIRECTORY = os.path.join(os.path.dirname(p), "..")
         p = cls._instance.PROJECT_DIRECTORY, "tmp_shm_structure_JSONs"
@@ -39,6 +39,8 @@ class Parameters:
 
         # Portenta SHM parameters
         cls._instance.SHM_NAME_TERM_FLAG = 'termflag'
+        
+        cls._instance.SHM_NAME_PARADIGM_RUNNING_FLAG = 'paradigmflag'
         
         cls._instance.SHM_NAME_BALLVELOCITY = 'ballvelocity'
         cls._instance.SHM_NPACKAGES_BALLVELOCITY = int(2**12) # 4k
@@ -103,8 +105,6 @@ class Parameters:
         cls._instance.LOG_CAMERA_PROC_PRIORITY = -1
         cls._instance.LOG_UNITY_PROC_PRIORITY = -1
 
-        cls._instance.UNITY_BUILD_NAME = "build00.x86_64"
-
         # laptop camera parameters for testing
         # cls._instance.FRONT_WEBCAM_IDX = 0
         # cls._instance.FRONT_WEBCAM_NAME = "LogitechMainWebcam2"
@@ -122,6 +122,9 @@ class Parameters:
 
         info = get_all_system_info()
         
+        p = cls._instance.PROJECT_DIRECTORY, info["UNITY_BUILD_DIRECTORY"]
+        cls._instance.UNITY_BUILD_DIRECTORY = os.path.join(*p)
+        cls._instance.UNITY_BUILD_NAME = info["UNITY_BUILD_NAME"]
         cls._instance.NAS_DATA_DIRECTORY = info["NAS_DATA_DIRECTORY"]
         
         # system parameters
@@ -155,8 +158,8 @@ class Parameters:
         return {
             "Directories": (
                 "PROJECT_DIRECTORY", "SHM_STRUCTURE_DIRECTORY", "DATA_DIRECTORY", 
-                "NAS_DATA_DIRECTORY", "LOGGING_DIRECTORY", "UNITY_BUILD_NAME",
-                "DB_LOCATION", "DB_NAME"),
+                "NAS_DATA_DIRECTORY", "LOGGING_DIRECTORY", "UNITY_BUILD_DIRECTORY",
+                "UNITY_BUILD_NAME","DB_LOCATION", "DB_NAME"),
             "Data/Log Saving": (
                 "SESSION_NAME_TEMPLATE", "SESSION_DATA_DIRECTORY", 
                 "LOGGING_LEVEL", "LOG_TO_DATA_DIR", "CONSOLE_LOGGING_FMT", 

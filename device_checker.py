@@ -121,6 +121,16 @@ def _get_system_dep_defaults(sys_info):
         p = "/", "Volumes", "large", "simon", "nas_vrdata"
     defaults["NAS_DATA_DIRECTORY"] = os.path.join(*p)
     
+    # unity build
+    if sys_info['SYSTEM'] in ("Windows", "Linux"):
+        p = "UnityRatVR", "builds"
+        build_name = 'build00.x86_64'
+    elif sys_info['SYSTEM'] == "Darwin":
+        p = "UnityRatVR", "builds", "build00.app", "Contents", "MacOS"
+        build_name = "build00"
+    defaults["UNITY_BUILD_DIRECTORY"] = os.path.join(*p)
+    defaults["UNITY_BUILD_NAME"] = build_name
+    
     return defaults
 
 def get_all_system_info():

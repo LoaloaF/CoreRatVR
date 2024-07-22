@@ -28,7 +28,7 @@ def _save_frame_packages(package_buf, full_fname):
     except ValueError as e:
         L.logger.error(f"Error saving to hdf5:\n{e}\n\n{df.to_string()}")
 
-def _log(frame_shm, termflag_shm, full_fname, videowriter=None):
+def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, videowriter=None):
     L = Logger()
     L.logger.info("Reading video frames from SHM and saving them...")
 
@@ -42,12 +42,23 @@ def _log(frame_shm, termflag_shm, full_fname, videowriter=None):
             if package_buf:
                 _save_frame_packages(package_buf, full_fname)
             break
-
+        
+        if not paradigm_running_shm.is_set():
+            L.logger.debug("Paradigm stopped, on halt....")
+            continue
+        
         # wait until new frame is available
         if (frame_package := frame_shm.get_package(dict)).get('ID') in (prv_id, None):
             sleep(0.001)
             nchecks += 1
             continue
+        
+        # skip the first frame, it may have sat there for very long (probabmatic for logger)
+        if prv_id == -1:
+            prv_id = frame_package["ID"]
+            L.logger.debug(f"Skipping first frame with id {prv_id}")
+            continue
+        
         frame = frame_shm.get_frame()
         # check for ID discontinuity
         if (dif := (frame_package["ID"]-prv_id)) != 1:
@@ -76,10 +87,21 @@ def _log(frame_shm, termflag_shm, full_fname, videowriter=None):
             package_buf.clear()
 
 def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname, 
-                   logging_name, session_data_dir, fps, cam_name):
+                   paradigmflag_shm_struc_fname, logging_name, session_data_dir, 
+                   fps, cam_name):
     # shm access
     frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
+    paradigm_running_shm = FlagSHMInterface(paradigmflag_shm_struc_fname)
+
+    while not paradigm_running_shm.is_set():
+        # arduino pauses 1000ms, at some point in this inveral (between 0 and 500ms)
+        # the logger wakes up - but there are no packages coming from the arudino 
+        # yet bc it's still in wait mode. Ensures that we get first pack
+        sleep(.5) # 500ms 
+        L.logger.debug("Waiting for paradigm flag to be raised...")  
+        
+    L.logger.info(f"Paradigm flag raised. Starting to save data...")
 
     full_fname = os.path.join(session_data_dir, f"{logging_name.replace('log_','')}.hdf5")
     with pd.HDFStore(full_fname) as hdf:
@@ -87,9 +109,11 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
     # single frame saving
     with h5py.File(full_fname, "a") as hdf:
         hdf.create_group('frames')
+    Logger().logger.debug(full_fname)
+        
     # video saving
-    fourcc = cv.VideoWriter_fourcc(*'mp4v')
 
+    # fourcc = cv.VideoWriter_fourcc(*'mp4v')
     # for speed, don't render videos yet, do it in post
     # if cam_name == "bodycam":
     #     videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
@@ -100,14 +124,13 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
     # elif cam_name == "unitycam":
     #     videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
     #                         fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
-    
-    Logger().logger.debug(full_fname)
-    _log(frame_shm, termflag_shm, full_fname)
+    _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname)
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Log camera from SHM to save directory")
     argParser.add_argument("--videoframe_shm_struc_fname")
     argParser.add_argument("--termflag_shm_struc_fname")
+    argParser.add_argument("--paradigmflag_shm_struc_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level")

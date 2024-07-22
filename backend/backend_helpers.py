@@ -66,15 +66,15 @@ def init_logger(session_save_dir):
     L.init_logger("__main__", log_dir, P.LOGGING_LEVEL)
     return log_dir
 
-def validate_state(state, valid_initiated=None, valid_unitySessionRunning=None, 
+def validate_state(state, valid_initiated=None, valid_paradigmRunning=None, 
                    valid_shm_created=None, valid_proc_running=None):
     L = Logger()
 
     # check if passed unitySessionRunning var matches state
-    if (valid_unitySessionRunning is not None and 
-        state["unitySessionRunning"] != valid_unitySessionRunning):
+    if (valid_paradigmRunning is not None and 
+        state["paradigmRunning"] != valid_paradigmRunning):
         detail = "Unity session" 
-        detail += "not running" if valid_unitySessionRunning else "already running"
+        detail += "not running" if valid_paradigmRunning else "already running"
         L.logger.error(detail)
         raise HTTPException(status_code=400, detail=detail)
 
@@ -112,6 +112,7 @@ def state2serializable(state):
     S = state.copy()
     S['termflag_shm_interface'] = False if S['termflag_shm_interface'] is None else True
     S['unityinput_shm_interface'] = False if S['unityinput_shm_interface'] is None else True
+    S['paradigm_running_shm_interface'] = False if S['paradigm_running_shm_interface'] is None else True
     return json.dumps(S)
 
 

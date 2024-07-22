@@ -78,7 +78,8 @@ def _process_packet(L, ballvel_shm, portentaoutput_shm, bytes_packet, pc_ts,
     L.spacer("debug")
     L.combi_msg = ""
 
-def _handle_input(L, sport, ballvel_shm, portentaoutput_shm, packets_buf, prv_pc_ts):
+def _handle_input(ser_port, ballvel_shm, portentaoutput_shm, packets_buf, prv_pc_ts):
+    L = Logger()
     L.logger.debug("Handling input")
     is_fresh = False
     
@@ -100,10 +101,10 @@ def _handle_input(L, sport, ballvel_shm, portentaoutput_shm, packets_buf, prv_pc
     #                     f'{(pc_ts/1e6-int(pc_ts/1e6))*1000:.2f}(ms part)\n\t')
 
     # default: check if there is something in hardware buffer and read it
-    if sport.in_waiting:
-        if sport.in_waiting > 2048:
+    if ser_port.in_waiting:
+        if ser_port.in_waiting > 2048:
             L.logger.warning("More then 2048b in ser port. Reading too slow?")
-        packet, packets_buf, new_pc_ts = _get_serial_input(L, sport, packets_buf)
+        packet, packets_buf, new_pc_ts = _get_serial_input(L, ser_port, packets_buf)
         pc_ts = new_pc_ts if new_pc_ts else prv_pc_ts
 
         # fresh if you read a partial pack (ideal) or a single full one 
@@ -118,8 +119,20 @@ def _handle_input(L, sport, ballvel_shm, portentaoutput_shm, packets_buf, prv_pc
         L.logger.debug("Nothing in the port...")
     return packets_buf, pc_ts
 
-def _handle_output(L, sport, portentainput_shm):
+def _handle_output(ser_port, portentainput_shm, paradigmflag_shm,
+                   paradigm_running_state):
+    L = Logger()
     L.logger.debug("Handling output")
+    
+    if paradigmflag_shm.is_set() != paradigm_running_state:
+        new_state = paradigmflag_shm.is_set()
+        pause_length = 1000 if new_state else 2000 # when flipped to True
+        cmd = f"W,{pause_length}\r\n".encode()
+        L.logger.info(f"ParadigmRunning state changed - Sending {pause_length}ms"
+                      f" pause to serial: `{cmd}`")
+        ser_port.write(cmd)
+        return new_state
+    
     cmd = portentainput_shm.popitem(return_type=str)
     if cmd is not None:
         if cmd.find("\r\n") == -1:
@@ -127,7 +140,7 @@ def _handle_output(L, sport, portentainput_shm):
             return
         cmd = cmd[:cmd.find("\r\n")+2].encode()
         L.logger.info(f"Command found in SHM: `{cmd}` - Writing to serial.")
-        sport.write(cmd)
+        ser_port.write(cmd)
         L.spacer()
 
 def _open_serial_port(port_name, baud_rate):
@@ -140,45 +153,50 @@ def _open_serial_port(port_name, baud_rate):
         L.logger.error(f"Error opening serial port: {e}")
         sys.exit(1)
 
-def _close_serial_port(sport):
-    if sport and sport.is_open:
-        sport.close()
+def _close_serial_port(ser_port):
+    if ser_port and ser_port.is_open:
+        ser_port.close()
         L = Logger()
         L.logger.info("Serial Port closed")
 
 def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm, 
-                     portentainput_shm, sport):
+                     portentainput_shm, paradigmflag_shm, ser_port):
     L = Logger()
     L.logger.info("Reading serial port packages & writing to SHM...")
     L.logger.info("Reading command packages from SHM & writing to serial port...")
     
     packets_buf = bytearray()
     pc_ts = None # won't be used, updapted in first get_packet()
+    paradigm_running_state = paradigmflag_shm.is_set()
     while True:
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
             break
         
         # check for command packages in shm, transmit if any
-        _handle_output(L, sport, portentainput_shm)
+        paradigm_running_state = _handle_output(ser_port, portentainput_shm,
+                                                paradigmflag_shm,
+                                                paradigm_running_state)
         
         # check for incoming packages on serial port, timestamp and write shm
         # buf and timestamp are stateful, relevant for consecutive serial checks 
-        packets_buf, pc_ts = _handle_input(L, sport, ballvel_shm, portentaoutput_shm, packets_buf, pc_ts)
+        packets_buf, pc_ts = _handle_input(ser_port, ballvel_shm, portentaoutput_shm, packets_buf, pc_ts)
 
 def run_portenta2shm2portenta(termflag_shm_struc_fname, ballvelocity_shm_struc_fname, 
                               portentaoutput_shm_struc_fname, 
-                              portentainput_shm_struc_fname, port_name, baud_rate):
+                              portentainput_shm_struc_fname, 
+                              paradigmflag_shm_struc_fname, port_name, baud_rate):
     # shm access
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     ballvel_shm = CyclicPackagesSHMInterface(ballvelocity_shm_struc_fname)
     portentaoutput_shm = CyclicPackagesSHMInterface(portentaoutput_shm_struc_fname)
     portentainput_shm = CyclicPackagesSHMInterface(portentainput_shm_struc_fname)
+    paradigmflag_shm = FlagSHMInterface(paradigmflag_shm_struc_fname)
     
-    sport = _open_serial_port(port_name, baud_rate)
-    atexit.register(_close_serial_port, sport)
+    ser_port = _open_serial_port(port_name, baud_rate)
+    atexit.register(_close_serial_port, ser_port)
     _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm, 
-                     portentainput_shm, sport)
+                     portentainput_shm, paradigmflag_shm, ser_port)
 
 if __name__ == "__main__":
     descr = ("Read incoming Portenta packages, timestamp and place in SHM. Also"
@@ -188,6 +206,7 @@ if __name__ == "__main__":
     argParser.add_argument("--ballvelocity_shm_struc_fname")
     argParser.add_argument("--portentaoutput_shm_struc_fname")
     argParser.add_argument("--portentainput_shm_struc_fname")
+    argParser.add_argument("--paradigmflag_shm_struc_fname")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level")

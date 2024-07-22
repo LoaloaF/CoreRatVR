@@ -22,6 +22,16 @@ def attach_shm_endpoints(app):
         shm_interface = FlagSHMInterface(shm_struct_fname(P.SHM_NAME_TERM_FLAG))
         request.app.state.state["termflag_shm_interface"] = shm_interface
 
+    @app.post("/shm/create_paradigm_running_shm")
+    def create_termflag_shm(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_PARADIGM_RUNNING_FLAG: False})
+        sc.create_singlebyte_shm(shm_name=P.SHM_NAME_PARADIGM_RUNNING_FLAG)
+        request.app.state.state["shm"][P.SHM_NAME_PARADIGM_RUNNING_FLAG] = True
+
+        # create an interface for closing procesces
+        shm_interface = FlagSHMInterface(shm_struct_fname(P.SHM_NAME_PARADIGM_RUNNING_FLAG))
+        request.app.state.state["paradigm_running_shm_interface"] = shm_interface
 
     @app.post("/shm/create_ballvelocity_shm")
     def create_ballvelocity_shm(request: Request):
