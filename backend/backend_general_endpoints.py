@@ -241,7 +241,7 @@ def attach_general_endpoints(app):
 
     @app.get("/animals")
     def animals():
-        static_animals = ["rYL_001","rYL_003","rYL_004","AI_001","dummyAnimal"]
+        static_animals = ["rYL_001","rYL_002","rYL_003","rYL_004","AI_001","dummyAnimal"]
         return static_animals
 
     @app.get("/trial_variable_names")

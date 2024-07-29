@@ -3,6 +3,7 @@ import sys
 import os
 # when executed as a process add parent SHM dir to path again
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(sys.path[0], 'db_mysql'))
 
 import argparse
 from send2trash import send2trash
@@ -10,7 +11,7 @@ import pandas as pd
 import h5py
 from CustomLogger import CustomLogger as Logger
 
-from session_processing.db_mysql.session2db import session2db
+from session2db import session2db
 from check_session_files import check_file_existence
 from check_session_files import check_log_files
 from load_session_data import load_session_metadata
@@ -221,7 +222,7 @@ def _handle_rename_nas_session_dirs(session_dir, nas_dir, new_dir_name):
     return nas_session_dir
 
 def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys, 
-                    copy_to_nas, write_to_db, database_location, database_name,
+                    copy_to_nas, write_to_db, database_name,
                     render_videos):
     L = Logger()
     L.logger.info(f"Processing session {session_dir}")

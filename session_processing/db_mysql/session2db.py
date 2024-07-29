@@ -15,7 +15,7 @@ from session_processing.db_mysql.db_writing  import write_camera2db
 from session_processing.db_mysql.db_utils import read_file_from_hdf5
 from session_processing.db_mysql.db_utils import camel_to_snake
 from session_processing.db_mysql.db_utils import add_file_from_hdf5_to_db
-from session_processing.db_mysql.createDB import create_ratvr_db
+from session_processing.db_mysql.createDB_mysql import create_ratvr_db
 
 def _clear_tables(cursor, database_name):
 

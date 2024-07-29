@@ -189,7 +189,7 @@ def open_process_session_proc(session_dir):
         "--render_videos",
         # "--integrate_ephys",
         # "--write_to_db",
-        "--database_location", P.DB_LOCATION,
+        # "--database_location", P.DB_LOCATION,
         "--database_name", P.DB_NAME,
     ])
     return _launch(P.WHICH_PYTHON, script_fullfname, *args)
