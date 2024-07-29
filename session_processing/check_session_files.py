@@ -114,7 +114,7 @@ def check_file_existence(session_dir, fnames):
     
     for key, which_fnamelist in zip(keys, [expected_log_fnames, expected_data_fnames,  expected_json_fnames]):
         for expec_fname in which_fnamelist:
-
+            Logger().logger.debug(f"Checking for {expec_fname}")
             # check if file exists
             if expec_fname in fnames:
                 info = get_fsize(os.path.join(session_dir, expec_fname))

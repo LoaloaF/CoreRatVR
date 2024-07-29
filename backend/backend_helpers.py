@@ -102,7 +102,14 @@ def validate_state(state, valid_initiated=None, valid_paradigmRunning=None,
 
 def check_processes(app):
     for proc_name, pid in app.state.state["procs"].items():
-        if pid != 0 and psutil.Process(pid).status() == psutil.STATUS_ZOMBIE:
+        if pid != 0:
+            try:
+                proc_status = psutil.Process(pid).status()
+                if proc_status != psutil.STATUS_ZOMBIE:
+                    continue
+            # PID doesn't exist
+            except psutil.NoSuchProcess:
+                pass
             # PID doesn't exist
             app.state.state["procs"][proc_name] = 0
             if proc_name != "process_session":
@@ -115,7 +122,10 @@ def state2serializable(state):
     S['paradigm_running_shm_interface'] = False if S['paradigm_running_shm_interface'] is None else True
     return json.dumps(S)
 
-
+class MockProcess:
+            def __init__(self, pid=0):
+                self.pid = pid
+                
 # DONETODO - check if arduino is connceted before launching process or try to auto flash Portenta:
 # end point with exec platformio run --target upload --environment portenta_h7_m7 --project-dir /home/loaloa/homedataXPS/projects/ratvr/VirtualReality/PlatformIO/Projects/PortentaRatVR
 # TODO - sudo chprio command passwordless - not important

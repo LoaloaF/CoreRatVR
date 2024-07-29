@@ -84,9 +84,9 @@ def attach_stream_endpoints(app):
         await websocket.accept()
         try:
             ballvel_pkgs = []
-            t0 = time.time()                
+            t0 = time.time()
             while True:
-                await asyncio.sleep(0.010) # check memory every 1ms
+                await asyncio.sleep(0.020) # check memory every 1ms
                 if portentaout_shm.usage > 0:
                     pack = portentaout_shm.popitem(return_type=dict)
                     ballvel_pkgs.append(pack)
@@ -140,6 +140,30 @@ def attach_stream_endpoints(app):
             pass
         finally:
             unityout_shm.close_shm()
+            websocket.close()
+    
+    @app.websocket("/stream/portentainput")
+    async def stream_unityoutput(websocket: WebSocket):
+        validate_state(app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_PORTENTA_INPUT: True},
+                       valid_proc_running=None)
+        
+        L = Logger()
+        portentainput_shm = CyclicPackagesSHMInterface(shm_struct_fname(P.SHM_NAME_PORTENTA_INPUT))
+        await websocket.accept()
+        while portentainput_shm.popitem():
+            pass
+        try:
+            while True:
+                await asyncio.sleep(0.1) # check memory every 100ms
+                if portentainput_shm.usage > 0:
+                    portenta_cmd = portentainput_shm.popitem(return_type=str)
+                    await websocket.send_json(portenta_cmd)
+                    
+        except:
+            pass
+        finally:
+            portentainput_shm.close_shm()
             websocket.close()
         
     @app.websocket("/stream/bodycam")
@@ -230,8 +254,11 @@ def attach_stream_endpoints(app):
                 if (frame_package := frame_shm.get_package()) == prv_frame_package:
                     continue
                 prv_frame_package = frame_package
-
-                frame = cv2.flip(frame_shm.get_frame(), -1)
+                
+                frame = cv2.flip(frame_shm.get_frame(), 0)
+                # frame = cv2.flip(frame)
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                
                 L.logger.debug(f"New frame {frame.shape} read from SHM: {frame_package}")
                 
                 frame_encoded = cv2.imencode('.jpg', frame)[1].tobytes()  # Encode the frame as JPEG

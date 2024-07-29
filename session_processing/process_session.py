@@ -1,11 +1,12 @@
 import shutil
+import traceback
 import sys
 import os
 # when executed as a process add parent SHM dir to path again
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
 import argparse
-from send2trash import send2trash
+# from send2trash import send2trash
 import pandas as pd
 import h5py
 from CustomLogger import CustomLogger as Logger
@@ -127,10 +128,12 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
     full_fname = os.path.join(session_dir, fname)
     if os.path.exists(full_fname):
         L.logger.error(f"File {full_fname} already exists!")
+        raise Exception(f"File {full_fname} already exists!")
         return
     
     with pd.HDFStore(full_fname, 'w') as store:
-        store.put('metadata', pd.DataFrame(metadata, index=[0]))
+        L.logger.info(f"Merging metadata {metadata}...")
+        store.put('metadata', pd.DataFrame([metadata], index=[0]))
     
         L.logger.info(f"Merging unity data...")
         store.put('unity_trial', unity_trials_data)
@@ -235,11 +238,14 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     _handle_logs(session_dir)
 
     # load the metadata, unity, camera, ballvelocity and event data
-    data = _handle_data(session_dir)
+    # data = _handle_data(session_dir)
     try:
         data = _handle_data(session_dir)
     except Exception as e:
+        L.logger.error(traceback.format_exc())  # Log the detailed stack trace
+        L.spacer()
         L.logger.error(f"Failed to load data, check logs for details.\n{e}")
+
         if prompt_user_decision:
             answer = input("\nPermanently delete session? [y/n]: ")
             if answer.lower() == 'y':
@@ -286,6 +292,12 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
         L.logger.info(f"Copying session to NAS...")
         _handle_move2nas(session_dir, nas_dir, merged_fname)
         L.spacer()
+        
+        # Remove the existing NTnas directory
+        os.system("sudo rm -rf /Volumes/NTnas")
+        
+        # Create a new NTnas directory
+        os.system("sudo mkdir -p /Volumes/NTnas")
 
     # change the session dir name to the session_name
     nas_session_dir = _handle_rename_nas_session_dirs(session_dir, nas_dir, 
@@ -296,7 +308,7 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     if write_to_db:
         session2db(nas_session_dir, merged_fname, database_location, database_name)
     
-    L.logger.info(f"Session processing finished")
+    L.logger.info(f"Session processing finished sucessfully")
     #TODO run on all the available data with fast network connection to NAS, 
     #TODO test with a session that has ephys data
 
