@@ -127,7 +127,7 @@ def _handle_output(ser_port, portentainput_shm, paradigmflag_shm,
     if paradigmflag_shm.is_set() != paradigm_running_state:
         new_state = paradigmflag_shm.is_set()
         pause_length = 1000 if new_state else 2000 # when flipped to True
-        cmd = f"W,{pause_length}\r\n".encode()
+        cmd = f"W{pause_length}\r\n".encode()
         L.logger.info(f"ParadigmRunning state changed - Sending {pause_length}ms"
                       f" pause to serial: `{cmd}`")
         ser_port.write(cmd)
@@ -142,6 +142,8 @@ def _handle_output(ser_port, portentainput_shm, paradigmflag_shm,
         L.logger.info(f"Command found in SHM: `{cmd}` - Writing to serial.")
         ser_port.write(cmd)
         L.spacer()
+    return paradigm_running_state
+        
 
 def _open_serial_port(port_name, baud_rate):
     L = Logger()
@@ -172,7 +174,7 @@ def _read_write_loop(termflag_shm, ballvel_shm, portentaoutput_shm,
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
             break
-        
+        L.logger.debug(f"Flag state: {paradigmflag_shm.is_set()}, {paradigm_running_state}")
         # check for command packages in shm, transmit if any
         paradigm_running_state = _handle_output(ser_port, portentainput_shm,
                                                 paradigmflag_shm,
