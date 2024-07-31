@@ -49,15 +49,15 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data,
             col = 'red'
             msg += " - ERROR: Start < previous trial stop"
             
-        # # for checking the trial start and end times
-        # plt.scatter([start], [trial_id], edgecolors=col, s=60, zorder=2, color='none', marker='>')
-        # plt.scatter([stop], [trial_id], edgecolors=col, s=60, zorder=2, color='none', marker='o')
-        # plt.plot([start, stop], [trial_id, trial_id], color=col, linewidth=3)
-        # plt.text(start, trial_id+.3, f"{trial['trial_start_frame']:.0f}", fontsize=8)
-        # plt.text(stop, trial_id+.3, f"{trial['trial_end_frame']:.0f}", fontsize=8)
-        # print(msg)
-        # msg = ""
-    # plt.show()        
+        # for checking the trial start and end times
+        plt.scatter([start], [trial_id], edgecolors=col, s=60, zorder=2, color='none', marker='>')
+        plt.scatter([stop], [trial_id], edgecolors=col, s=60, zorder=2, color='none', marker='o')
+        plt.plot([start, stop], [trial_id, trial_id], color=col, linewidth=3)
+        plt.text(start, trial_id+.3, f"{trial['trial_start_frame']:.0f}", fontsize=8)
+        plt.text(stop, trial_id+.3, f"{trial['trial_end_frame']:.0f}", fontsize=8)
+        print(msg)
+        msg = ""
+    plt.show()        
     
     trial_starts = unity_trials_data[trials_tstamp_col]
     trial_ends = unity_trials_data[trials_tstamp_col.replace('start', 'end')]
