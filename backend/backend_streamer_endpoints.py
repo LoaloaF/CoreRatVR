@@ -1,7 +1,9 @@
+import os
 from fastapi import WebSocket
 from fastapi import HTTPException, Request
 from starlette.types import Scope
 
+import glob
 import asyncio
 import time
 import cv2
@@ -267,4 +269,39 @@ def attach_stream_endpoints(app):
             pass
         finally:
             # frame_shm.close_shm()
+            websocket.close() 
+    
+    @app.websocket("/stream/logfiles")
+    async def stream_unityoutput(websocket: WebSocket):
+        P = Parameters()
+        validate_state(app.state.state, valid_initiated=True)
+        
+        L = Logger()
+        
+        await websocket.accept()
+        logfile_content = {}
+        new_logfile_content = {}
+        try:
+            while True:
+                await asyncio.sleep(1)
+                # logfile_names = [fname for fname in os.listdir(P.SESSION_DATA_DIRECTORY) if fname.endswith(".log")]
+                logfile_names = glob.glob(P.SESSION_DATA_DIRECTORY+"/*.log")
+                # L.logger.info(f"Logfiles: {[os.path.basename(f) for f in logfile_names]}")
+                for logfile_name in logfile_names:
+                    # L.logger.info(logfile_name)
+                    with open(logfile_name, 'r') as logfile:
+                        logfile_content[os.path.basename(logfile_name)] = logfile.read()
+                        # if logfile_name in logfile_content:
+                        #     cur_content = logfile_content[logfile_name]
+                        # else:
+                        #     cur_content = ""
+                        #     logfile_content[logfile_name] = cur_content
+                        # new_logfile_content[logfile_name] = logfile.read()[len(cur_content):]
+                    # await websocket.send_text(logfile_content[logfile_name])
+                
+                # L.logger.info(f"New logfiles: {logfile_content}")
+                await websocket.send_json(logfile_content)  # Send the encoded frame
+        except:
+            pass
+        finally:
             websocket.close() 
