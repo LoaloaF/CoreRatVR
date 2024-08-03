@@ -208,23 +208,22 @@ def attach_general_endpoints(app):
                     paradigm_running_shm_interface.close_shm()
                     request.app.state.state["paradigm_running_shm_interface"] = None
         
-        request.app.state.state["initiated"] = False
-        request.app.state.state["paradigmRunning"] = False
+        # request.app.state.state["paradigmRunning"] = False
 
         if body.get("deleteVal"):
             session_dir = body.get("sessionDir")
             send2trash(session_dir)
             if os.path.exists(session_dir): # sometimes empty dir left
                 os.rmdir(session_dir)
-            if P.CREATE_NAS_SESSION_DIR:
-                full_nas_dir = os.path.join(P.NAS_DATA_DIRECTORY, os.path.basename(session_dir))
-                L.logger.info(f"Deleting NAS session directory "
-                              f"{full_nas_dir} (if empty)")
-                try:
-                    os.rmdir(full_nas_dir)
-                except Exception as e:
-                    L.logger.error(f"Failed to delete NAS session directory "
-                                   f"{full_nas_dir} {e}")
+            # if P.CREATE_NAS_SESSION_DIR:
+            #     full_nas_dir = os.path.join(P.NAS_DATA_DIRECTORY, os.path.basename(session_dir))
+            #     L.logger.info(f"Deleting NAS session directory "
+            #                   f"{full_nas_dir} (if empty)")
+            #     try:
+            #         os.rmdir(full_nas_dir)
+            #     except Exception as e:
+            #         L.logger.error(f"Failed to delete NAS session directory "
+            #                        f"{full_nas_dir} {e}")
 
         else:
             session_dir = body.get("sessionDir")
@@ -234,7 +233,9 @@ def attach_general_endpoints(app):
                     body["copy2NASVal"], body["write2DBVal"], body["interactiveVal"])
             proc = process_launcher.open_process_session_proc(*args)
             request.app.state.state["procs"]["process_session"] = proc.pid
-            
+
+        sleep(1)
+        request.app.state.state["initiated"] = False
         P.SESSION_DATA_DIRECTORY = "set-at-init"
 
     @app.get("/paradigms")

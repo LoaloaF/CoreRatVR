@@ -280,26 +280,26 @@ def attach_stream_endpoints(app):
         
         await websocket.accept()
         logfile_content = {}
-        new_logfile_content = {}
+        cur_session_dir = P.SESSION_DATA_DIRECTORY
         try:
             while True:
                 await asyncio.sleep(1)
                 # logfile_names = [fname for fname in os.listdir(P.SESSION_DATA_DIRECTORY) if fname.endswith(".log")]
-                logfile_names = glob.glob(P.SESSION_DATA_DIRECTORY+"/*.log")
-                # L.logger.info(f"Logfiles: {[os.path.basename(f) for f in logfile_names]}")
+                logfile_names = glob.glob(cur_session_dir+"/*.log")
+                L.logger.info(f"Logfiles: {[os.path.basename(f) for f in logfile_names]}")
                 for logfile_name in logfile_names:
-                    # L.logger.info(logfile_name)
-                    with open(logfile_name, 'r') as logfile:
-                        logfile_content[os.path.basename(logfile_name)] = logfile.read()
-                        # if logfile_name in logfile_content:
-                        #     cur_content = logfile_content[logfile_name]
-                        # else:
-                        #     cur_content = ""
-                        #     logfile_content[logfile_name] = cur_content
-                        # new_logfile_content[logfile_name] = logfile.read()[len(cur_content):]
-                    # await websocket.send_text(logfile_content[logfile_name])
+                    with open(logfile_name, 'rb+') as logfile:  # Open the file in binary mode
+                        if os.path.getsize(logfile_name) > 300_000:  # 300KB
+                            L.logger.info(f"Logfile {logfile_name} is too large. Truncating...")
+                            logfile.seek(0)
+                            content = logfile.read(150_000).decode('utf-8')  # Decode binary content to string
+                            logfile.seek(-150_000, os.SEEK_END)
+                            content += "\n\n\n...\n\n\n" + logfile.read().decode('utf-8')  # Decode binary content to string
+                            
+                        else:
+                            content = logfile.read().decode('utf-8')  # Decode binary content to string 
+                        logfile_content[os.path.basename(logfile_name)] = content
                 
-                # L.logger.info(f"New logfiles: {logfile_content}")
                 await websocket.send_json(logfile_content)  # Send the encoded frame
         except:
             pass
