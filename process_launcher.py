@@ -130,6 +130,21 @@ def open_log_portenta_proc():
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
+def open_log_ephys_proc():
+    P = Parameters()
+    script = "log_ephys.py"
+    path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
+    stream_script = os.path.join(*path)
+    
+    args = _make_proc_args(shm_args=("termflag", "paradigmflag"))
+    args.extend([
+        "--logging_name", script.replace(".py", ""),
+        "--process_prio", str(P.LOG_PORTENTA_PROC_PRIORITY),
+        "--session_data_dir", P.SESSION_DATA_DIRECTORY,
+    ])
+    # this runs on a differnt python version (system python)
+    return _launch('/bin/python3.12', stream_script, *args)
+
 def open_stream_portenta_proc():
     P = Parameters()
     script = "display_packages.py"

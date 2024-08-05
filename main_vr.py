@@ -31,6 +31,7 @@ async def lifespan(app: FastAPI):
             "stream_bodycam": 0,
             "log_unity": 0,
             "log_unitycam": 0,
+            "log_ephys": 0,
             "unity": 0,
             "process_session": 0,
         },

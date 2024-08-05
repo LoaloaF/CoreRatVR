@@ -271,7 +271,7 @@ def attach_stream_endpoints(app):
             # frame_shm.close_shm()
             websocket.close() 
     
-    @app.websocket("/stream/logfiles")
+    @app.websocket("/stream/logfiless")
     async def stream_unityoutput(websocket: WebSocket):
         P = Parameters()
         validate_state(app.state.state, valid_initiated=True)
