@@ -257,7 +257,7 @@ def attach_general_endpoints(app):
         var_names = session_paramters.session_parameters_dict["trialPackageVariables"]
         if var_names == "none":
             return {}
-        full_var_names = session_paramters.session_parameters_dict["trialPackageVariablesFulllNames"]
+        full_var_names = session_paramters.session_parameters_dict["trialPackageVariablesFullNames"]
         if full_var_names == "none":
             full_var_names = var_names
         return dict(zip(var_names, full_var_names))

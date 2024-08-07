@@ -271,7 +271,7 @@ def attach_stream_endpoints(app):
             # frame_shm.close_shm()
             websocket.close() 
     
-    @app.websocket("/stream/logfiless")
+    @app.websocket("/stream/logfiles")
     async def stream_unityoutput(websocket: WebSocket):
         P = Parameters()
         validate_state(app.state.state, valid_initiated=True)
@@ -286,11 +286,11 @@ def attach_stream_endpoints(app):
                 await asyncio.sleep(1)
                 # logfile_names = [fname for fname in os.listdir(P.SESSION_DATA_DIRECTORY) if fname.endswith(".log")]
                 logfile_names = glob.glob(cur_session_dir+"/*.log")
-                L.logger.info(f"Logfiles: {[os.path.basename(f) for f in logfile_names]}")
+                # L.logger.info(f"Logfiles: {[os.path.basename(f) for f in logfile_names]}")
                 for logfile_name in logfile_names:
                     with open(logfile_name, 'rb+') as logfile:  # Open the file in binary mode
                         if os.path.getsize(logfile_name) > 300_000:  # 300KB
-                            L.logger.info(f"Logfile {logfile_name} is too large. Truncating...")
+                            # L.logger.info(f"Logfile {logfile_name} is too large. Truncating...")
                             logfile.seek(0)
                             content = logfile.read(150_000).decode('utf-8')  # Decode binary content to string
                             logfile.seek(-150_000, os.SEEK_END)

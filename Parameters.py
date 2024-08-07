@@ -64,7 +64,7 @@ class Parameters:
         
         cls._instance.SHM_NAME_UNITY_INPUT = 'unityinput'
         cls._instance.SHM_NPACKAGES_UNITY_INPUT = 16
-        cls._instance.SHM_PACKAGE_NBYTES_UNITY_INPUT = 64
+        cls._instance.SHM_PACKAGE_NBYTES_UNITY_INPUT = 256
 
         cls._instance.SHM_NAME_UNITY_CAM = 'unitycam'
         cls._instance.UNITY_CAM_X_RES = 500
