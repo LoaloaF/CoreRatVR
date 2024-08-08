@@ -317,7 +317,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/2024-07-04_12-48-15_active")
+    argParser.add_argument("--session_dir", default="/mnt/NTnas/Unprocessed/2024-08-06_16-36-45_active_goodone/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments
