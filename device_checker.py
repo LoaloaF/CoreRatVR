@@ -116,7 +116,7 @@ def _get_system_dep_defaults(sys_info):
     if sys_info['SYSTEM'] == "Windows":
         p = "D:", "NTnas", "nas_vrdata"
     elif sys_info['SYSTEM'] == "Linux":
-        p = "/", "mnt", "NTnas", "nas_vrdata"
+        p =  "run", "user", "1000", "gvfs", "smb-share:server=yaniklab-data.local,share=large", "BMI", "VirtualReality", "SpatialSequenceLearning",
     elif sys_info['SYSTEM'] == "Darwin":
         p = "/", "Volumes", "large", "simon", "nas_vrdata"
     defaults["NAS_DATA_DIRECTORY"] = os.path.join(*p)
