@@ -258,7 +258,6 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     _handle_logs(session_dir)
 
     # load the metadata, unity, camera, ballvelocity and event data
-    # data = _handle_data(session_dir)
     try:
         data = _handle_data(session_dir)
     except Exception as e:
@@ -319,7 +318,7 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
 
     # read the moved data on the NAS, not local (faster in the future)
     if write_to_db:
-        session2db(nas_session_dir, merged_fname, database_location, database_name)
+        session2db(nas_dir, merged_fname, database_location, database_name)
     
     L.logger.info(f"Session processing finished sucessfully")
     #TODO run on all the available data with fast network connection to NAS, 
@@ -330,7 +329,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir")
+    argParser.add_argument("--session_dir", default="/home/ntgroup/Project/data/2024-08-14_12-20-37_active/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments
