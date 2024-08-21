@@ -48,6 +48,16 @@ def attach_proc_endpoints(app):
                        valid_proc_running={"log_portenta": False})
         proc = pl.open_log_portenta_proc()
         request.app.state.state["procs"]["log_portenta"] = proc.pid
+    
+    @app.post("/procs/launch_log_ephys")
+    def launch_log_ephys(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                          P.SHM_NAME_PARADIGM_RUNNING_FLAG: True,
+                                          },
+                       valid_proc_running={"log_ephys": False})
+        proc = pl.open_log_ephys_proc()
+        request.app.state.state["procs"]["log_ephys"] = proc.pid
 
     @app.post("/procs/launch_stream_portenta")
     def launch_stream_portenta(request: Request):

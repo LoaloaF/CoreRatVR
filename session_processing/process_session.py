@@ -1,4 +1,5 @@
 import shutil
+import traceback
 import sys
 import os
 # when executed as a process add parent SHM dir to path again
@@ -6,7 +7,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 sys.path.insert(1, os.path.join(sys.path[0], 'db_mysql'))
 
 import argparse
-from send2trash import send2trash
+# from send2trash import send2trash
 import pandas as pd
 import h5py
 from CustomLogger import CustomLogger as Logger
@@ -128,10 +129,12 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
     full_fname = os.path.join(session_dir, fname)
     if os.path.exists(full_fname):
         L.logger.error(f"File {full_fname} already exists!")
+        raise Exception(f"File {full_fname} already exists!")
         return
     
     with pd.HDFStore(full_fname, 'w') as store:
-        store.put('metadata', pd.DataFrame(metadata, index=[0]))
+        # L.logger.info(f"Merging metadata {metadata}...")
+        store.put('metadata', pd.DataFrame([metadata], index=[0]))
     
         L.logger.info(f"Merging unity data...")
         store.put('unity_trial', unity_trials_data)
@@ -195,31 +198,51 @@ def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
     add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
                          ballvel_data, event_data, facecam_packages, unitycam_packages)
     
-def _handle_move2nas(session_dir, nas_dir, merged_fname):
+def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
     L.logger.info(f"Copying files to the NAS")
-    # copy only these selected files to NAS (merged file, log files, bodycam video)
-    fnames = [fname for fname in os.listdir(session_dir) 
-              if fname.endswith(".log") or fname in (merged_fname, "bodycam.mp4")]
-    for fn in fnames:
-        src = os.path.join(session_dir, fn)
-        if os.path.exists(src):
-            if fn == merged_fname:
-                L.logger.info(f"Copying {fn} ({os.path.getsize(src)/(1024**3):.1}GB)"
-                              f" to NAS...")
-            dst = os.path.join(nas_dir, os.path.basename(session_dir), fn)
-            shutil.copy(src, dst)
+    try:
+        # create the dir on the NAS
+        nas_dir_animal = os.path.join(nas_dir, f"RUN_{animal}")
+        if not os.path.exists(nas_dir_animal):
+            os.mkdir(nas_dir_animal)
+            L.logger.info(f"Created directory {nas_dir_animal}")
+        nas_dir_animal_paradigm = os.path.join(nas_dir_animal, f"{animal}_{paradigm[:5]}")
+        # see if the paradigm dir exists
+        if not os.path.exists(nas_dir_animal_paradigm):
+            os.mkdir(nas_dir_animal_paradigm)
+            L.logger.info(f"Created directory {nas_dir_animal_paradigm}")
+        
+        
+        L.logger.info(f"Directory {nas_dir_animal_paradigm}")
+        
+        full_nas_dir = os.path.join(nas_dir_animal_paradigm, merged_fname[:-5])
+        os.mkdir(full_nas_dir)
+        L.logger.info(f"Created directory {full_nas_dir}")
+        
+        # copy only these selected files to NAS (merged file, log files, bodycam video)
+        fnames = [fname for fname in os.listdir(session_dir) 
+                if fname.endswith(".log") or fname in (merged_fname, "bodycam.mp4")]
+        for fn in fnames:
+            src = os.path.join(session_dir, fn)
+            if os.path.exists(src):
+                if fn == merged_fname:
+                    L.logger.info(f"Copying {fn} ({os.path.getsize(src)/(1024**3):.1}GB)"
+                                f" to NAS...")
+                dst = os.path.join(full_nas_dir, fn)
+                shutil.copyfile(src, dst)
+    except Exception as e:
+        L.logger.error(f"Failed to copy files to NAS: {e}")
+        return
     
-def _handle_rename_nas_session_dirs(session_dir, nas_dir, new_dir_name):
-    print(nas_dir, session_dir, new_dir_name)
-    L.logger.info(f"Renaming session directory on NAS")
-    old_dir_name = os.path.basename(session_dir)
-    
-    nas_session_dir = os.path.join(nas_dir, new_dir_name)
-    # TODO os.rename doesn't work for non-empty folders?
-    # os.rename(os.path.join(nas_dir, old_dir_name), nas_session_dir)
-    os.rename(session_dir, (os.path.join(os.path.split(session_dir[:-1])[0], new_dir_name)))
-
-    return nas_session_dir
+# def _handle_rename_nas_session_dirs(session_dir, nas_dir, new_dir_name):
+#     print(nas_dir, session_dir, new_dir_name)
+#     L.logger.info(f"Renaming session directory on NAS")
+#     # old_dir_name = os.path.basename(session_dir)
+#     # nas_session_dir = os.path.join(nas_dir, new_dir_name)
+#     # TODO os.rename doesn't work for non-empty folders?
+#     # os.rename(os.path.join(nas_dir, old_dir_name), nas_session_dir)
+#     os.rename(session_dir, (os.path.join(os.path.split(session_dir[:-1])[0], new_dir_name)))
+#     return session_dir
 
 def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys, 
                     copy_to_nas, write_to_db, database_name,
@@ -239,7 +262,10 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     try:
         data = _handle_data(session_dir)
     except Exception as e:
+        L.logger.error(traceback.format_exc())  # Log the detailed stack trace
+        L.spacer()
         L.logger.error(f"Failed to load data, check logs for details.\n{e}")
+
         if prompt_user_decision:
             answer = input("\nPermanently delete session? [y/n]: ")
             if answer.lower() == 'y':
@@ -271,7 +297,7 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
             return
     
     # merge all data into a single hdf5 file and store in session_dir
-    merged_fname = f"behavior_{metadata['session_name']}.hdf5"
+    merged_fname = f"{metadata['session_name']}.hdf5"
     _save_merged_hdf5_data(session_dir, merged_fname, metadata, unity_trials_data, 
                            unity_frames_data, paradigmVariable_data, 
                            facecam_packages, bodycam_packages, 
@@ -282,21 +308,20 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
         hdf5_frames2mp4(session_dir, merged_fname)
     L.spacer()
     
-    if copy_to_nas and os.path.exists(nas_dir):
-        L.logger.info(f"Copying session to NAS...")
-        _handle_move2nas(session_dir, nas_dir, merged_fname)
-        L.spacer()
-
     # change the session dir name to the session_name
-    nas_session_dir = _handle_rename_nas_session_dirs(session_dir, nas_dir, 
-                                                        metadata["session_name"])
+    # session_dir = _handle_rename_nas_session_dirs(session_dir, nas_dir, 
+    #                                               metadata["session_name"])
+    
+    if copy_to_nas and os.path.exists(nas_dir):
+        _handle_move2nas(session_dir, nas_dir, merged_fname, metadata['animal_name'], 
+                         metadata['paradigm_name'])
     L.spacer()
 
     # read the moved data on the NAS, not local (faster in the future)
     if write_to_db:
-        session2db(nas_session_dir, merged_fname, database_name)
+        session2db(nas_dir, merged_fname, database_name)
     
-    L.logger.info(f"Session processing finished")
+    L.logger.info(f"Session processing finished sucessfully")
     #TODO run on all the available data with fast network connection to NAS, 
     #TODO test with a session that has ephys data
 
@@ -305,7 +330,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/mnt/NTnas/nas_vrdata/2024-07-05_17-02_rYL001_P0400_4PillarDirected_5min")
+    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-08-20_16-57-15_active/")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")

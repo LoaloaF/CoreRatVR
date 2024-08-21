@@ -5,6 +5,7 @@ from Parameters import Parameters
 from SessionParamters import SessionParamters
 
 from CustomLogger import CustomLogger as Logger
+from backend.backend_helpers import MockProcess
 
 def open_camera2shm_proc(cam_name):
     P = Parameters()
@@ -129,6 +130,21 @@ def open_log_portenta_proc():
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
+def open_log_ephys_proc():
+    P = Parameters()
+    script = "log_ephys.py"
+    path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
+    stream_script = os.path.join(*path)
+    
+    args = _make_proc_args(shm_args=("termflag", "paradigmflag"))
+    args.extend([
+        "--logging_name", script.replace(".py", ""),
+        "--process_prio", str(P.LOG_PORTENTA_PROC_PRIORITY),
+        "--session_data_dir", P.SESSION_DATA_DIRECTORY,
+    ])
+    # this runs on a differnt python version (system python)
+    return _launch('/home/vrmaster/MaxLab/python/bin/python3.10', stream_script, *args)
+
 def open_stream_portenta_proc():
     P = Parameters()
     script = "display_packages.py"
@@ -174,7 +190,8 @@ def open_unity_proc():
     L.logger.info(f"Logging to {log_fullfname}")
     return subprocess.Popen((script, *args))
 
-def open_process_session_proc(session_dir):
+def open_process_session_proc(session_dir, render_videos, integrate_ephys, 
+                              copy2NAS, write_to_db, interactive):
     P = Parameters()
     script = 'process_session.py'
     script_fullfname = os.path.join(P.PROJECT_DIRECTORY, "CoreRatVR", 
@@ -184,7 +201,6 @@ def open_process_session_proc(session_dir):
     args.extend([
         "--logging_name", script.replace(".py", ""),
         "--session_dir", session_dir,
-        "--copy_to_nas",
         "--nas_dir", P.NAS_DATA_DIRECTORY,
         "--render_videos",
         # "--integrate_ephys",
@@ -192,6 +208,21 @@ def open_process_session_proc(session_dir):
         # "--database_location", P.DB_LOCATION,
         "--database_name", P.DB_NAME,
     ])
+    
+    if render_videos:
+        args.append("--render_videos")
+    if integrate_ephys:
+        args.append("--integrate_ephys")
+    if copy2NAS:
+        args.append("--copy_to_nas")
+    if write_to_db:
+        args.append("--write_to_db")
+    if interactive:
+        args.append("--prompt_user_decision")
+        final_cmd = " ".join([P.WHICH_PYTHON, script_fullfname, *args])
+        Logger().logger.info(f"Run this yourself:\n\n{final_cmd}\n\n")
+        return MockProcess()
+    
     return _launch(P.WHICH_PYTHON, script_fullfname, *args)
 
 def shm_struct_fname(shm_name):

@@ -3,7 +3,7 @@ from time import sleep
 import time
 
 def test_endpoints():
-    base_url = "http://localhost:8001"
+    base_url = "http://localhost:8000"
 
     def createshm():
         # POST /initiate
@@ -121,18 +121,12 @@ def test_endpoints():
         
     # POST /initiate
     response = requests.post(f"{base_url}/initiate")
-    print("POST /initiate:", response.json())
-
-    # POST /shm/create_termflag_shm
+        # POST /shm/create_termflag_shm
     response = requests.post(f"{base_url}/shm/create_termflag_shm")
-    print("POST /shm/create_termflag_shm:", response.json())
+    response = requests.post(f"{base_url}/shm/create_paradigm_running_shm")
+    # POST /shm/create_termflag_shm
+    response = requests.post(f"{base_url}/procs/launch_log_ephys")
     
-    # POST /shm/create_ballvelocity_shm
-    response = requests.post(f"{base_url}/shm/create_ballvelocity_shm")
-    print("POST /shm/create_ballvelocity_shm:", response.json())
-
-    
-    term()
     
 if __name__ == "__main__":
     test_endpoints()

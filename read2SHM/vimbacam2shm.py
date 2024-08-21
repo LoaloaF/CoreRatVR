@@ -6,7 +6,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 
 import time
 import argparse
-from pymba import Vimba
+# from pymba import Vimba
 
 from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
@@ -95,5 +95,11 @@ if __name__ == "__main__":
     if sys.platform.startswith('linux'):
         if (prio := kwargs.pop("process_prio")) != -1:
             os.system(f'sudo chrt -f -p {prio} {os.getpid()}')
+    
+    try:
+        from pymba import Vimba
+    except ImportError:
+        L.logger.error("Failed to import pymba. Install via pip.")
+        sys.exit(1)
             
     run_vimbacam2shm(**kwargs)

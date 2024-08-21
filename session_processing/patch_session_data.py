@@ -53,7 +53,15 @@ def patch_paradigmVariable_data(paradigmVariable_trials_data):
             "PD": "pillar_distance",
             "PA": "pillar_angle",
             "MRN":"maximum_reward_number", # set at trial start
-            'RN': "reward_number" # like an outcome
+            "RN": "reward_number", # like an outcome
+            "MT": "movement_time", # time required to move to straight move
+            "MTH": "movement_threshold", # threshold to detect movement
+            "STH": "stay_threshold", # threshold to detect stay
+            "R": "raw", # raw movement enabled
+            "Y": "yaw", # yaw movement enabled
+            "P": "pitch", # pitch movement enabled
+            "ST": "stay_time", # time required to stay in the reward zone
+            "C": "cue", # cue number
             # add more here
         }
         paradigmVariable_trials_data = paradigmVariable_trials_data.rename(columns=paradigmVariable_toDBnames_mapping_patch)
@@ -65,6 +73,7 @@ def patch_paradigmVariable_data(paradigmVariable_trials_data):
         L.logger.error("No paradigm-specific variables found in the unity output file. Set it to None")
         paradigmVariable_trials_data = None  
     
+    L.logger.info("Paradigm variables patched as \n" + str(paradigmVariable_trials_data))
     return paradigmVariable_trials_data
 
 

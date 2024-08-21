@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 from starlette.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 
-from typing import Any
+from typing import Any, Dict
 import subprocess
 
 from Parameters import Parameters
@@ -170,10 +170,10 @@ def attach_general_endpoints(app):
         # send message to unity through shared memory
         request.app.state.state["unityinput_shm_interface"].push(msg.encode())
     
-    @app.post("/raise_term_flag/{msg}")
-    def raise_term_flag(msg: str, request: Request):
+    @app.post("/raise_term_flag")
+    def raise_term_flag(body: Dict[str, Any], request: Request):
         L = Logger()
-        L.logger.info(f"Handling raised term flag with msg={msg}")
+        L.logger.info(L.fmtmsg([f"Handling raised term flag with processing parameters: ", body]))
 
         validate_state(request.app.state.state, valid_initiated=True, 
                 valid_shm_created={P.SHM_NAME_TERM_FLAG: True})
@@ -208,29 +208,34 @@ def attach_general_endpoints(app):
                     paradigm_running_shm_interface.close_shm()
                     request.app.state.state["paradigm_running_shm_interface"] = None
         
-        request.app.state.state["initiated"] = False
-        request.app.state.state["paradigmRunning"] = False
+        # request.app.state.state["paradigmRunning"] = False
 
-        if msg == "delete":
-            send2trash(P.SESSION_DATA_DIRECTORY)
-            if os.path.exists(P.SESSION_DATA_DIRECTORY): # sometimes empty dir left
-                os.rmdir(P.SESSION_DATA_DIRECTORY)
-            if P.CREATE_NAS_SESSION_DIR:
-                full_nas_dir = os.path.join(P.NAS_DATA_DIRECTORY, os.path.basename(P.SESSION_DATA_DIRECTORY))
-                L.logger.info(f"Deleting NAS session directory "
-                              f"{full_nas_dir} (if empty)")
-                try:
-                    os.rmdir(full_nas_dir)
-                except Exception as e:
-                    L.logger.error(f"Failed to delete NAS session directory "
-                                   f"{full_nas_dir} {e}")
-            # pass
-        #TODO proper endpoint with multiple arguments for different session processing
-        elif msg == "post-process":
-            Logger().logger.info(f"Processing session {P.SESSION_DATA_DIRECTORY}")
-            proc = process_launcher.open_process_session_proc(P.SESSION_DATA_DIRECTORY)
-            request.app.state.state["procs"]["process_session"] = proc.pid
+        if body.get("deleteVal"):
+            session_dir = body.get("sessionDir")
+            send2trash(session_dir)
+            if os.path.exists(session_dir): # sometimes empty dir left
+                os.rmdir(session_dir)
+            # if P.CREATE_NAS_SESSION_DIR:
+            #     full_nas_dir = os.path.join(P.NAS_DATA_DIRECTORY, os.path.basename(session_dir))
+            #     L.logger.info(f"Deleting NAS session directory "
+            #                   f"{full_nas_dir} (if empty)")
+            #     try:
+            #         os.rmdir(full_nas_dir)
+            #     except Exception as e:
+            #         L.logger.error(f"Failed to delete NAS session directory "
+            #                        f"{full_nas_dir} {e}")
+
+        else:
+            session_dir = body.get("sessionDir")
+            L.logger.info(f"Processing session {session_dir}")
             
+            args = (session_dir, body["rnderCamVal"], body["integrEphysVal"], 
+                    body["copy2NASVal"], body["write2DBVal"], body["interactiveVal"])
+            proc = process_launcher.open_process_session_proc(*args)
+            request.app.state.state["procs"]["process_session"] = proc.pid
+
+        sleep(1)
+        request.app.state.state["initiated"] = False
         P.SESSION_DATA_DIRECTORY = "set-at-init"
 
     @app.get("/paradigms")
@@ -241,7 +246,7 @@ def attach_general_endpoints(app):
 
     @app.get("/animals")
     def animals():
-        static_animals = ["rYL_001","rYL_002","rYL_003","rYL_004","AI_001","dummyAnimal"]
+        static_animals = ["rYL_001","rYL_002","rYL_003","rYL_004","rYL_006","rYL_008","AI_001","dummyAnimal"]
         return static_animals
 
     @app.get("/trial_variable_names")
@@ -249,11 +254,19 @@ def attach_general_endpoints(app):
         if "trialPackageVariables" not in session_paramters.session_parameters_dict:
             raise HTTPException(status_code=400, detail="Trial variables not in Excel sheet")
         
-        val = session_paramters.session_parameters_dict["trialPackageVariables"]
-        if val == "none":
+        var_names = session_paramters.session_parameters_dict["trialPackageVariables"]
+        if var_names == "none":
             return {}
-        return val
+        full_var_names = session_paramters.session_parameters_dict["trialPackageVariablesFullNames"]
+        if full_var_names == "none":
+            full_var_names = var_names
+        return dict(zip(var_names, full_var_names))
 
+    @app.get("/session_start_time")
+    def session_start_time(request: Request):
+        validate_state(request.app.state.state, valid_paradigmRunning=True)
+        return session_paramters.start_time
+        
     @app.get("/trial_variable_default_values")
     def trial_variable_default_values():
         if "trialPackageVariablesDefault" not in session_paramters.session_parameters_dict:
