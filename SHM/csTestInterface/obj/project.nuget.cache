@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "2/sGGi9Lc4m3ljRvqbeWJEliTyTQ2apRsOj2yCqoME4pWm9jdy/LnW3d0H/pw1i7dLyAAAaDaYoIKw6xKaqGIQ==",
+  "dgSpecHash": "ipxNJ3VpFougK9vtlcTwcOiWn7d1XRmEfSELbzp5JzBL6uox80P7nxf4iqvhhCupX6emXbnEqgwx8MoWDF+GRQ==",
   "success": true,
-  "projectFilePath": "/Users/loaloa/homedataAir/phd/ratvr/VirtualReality/CoreRatVR/SHM/csTestInterface/csharp_shm_test.csproj",
+  "projectFilePath": "/home/vrmaster/Projects/VirtualReality/CoreRatVR/SHM/csTestInterface/csharp_shm_test.csproj",
   "expectedPackageFiles": [
-    "/Users/loaloa/.nuget/packages/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg.sha512",
-    "/Users/loaloa/.nuget/packages/microsoft.netcore.app.ref/6.0.29/microsoft.netcore.app.ref.6.0.29.nupkg.sha512",
-    "/Users/loaloa/.nuget/packages/microsoft.aspnetcore.app.ref/6.0.29/microsoft.aspnetcore.app.ref.6.0.29.nupkg.sha512",
-    "/Users/loaloa/.nuget/packages/microsoft.netcore.app.host.osx-arm64/6.0.29/microsoft.netcore.app.host.osx-arm64.6.0.29.nupkg.sha512"
+    "/home/vrmaster/.nuget/packages/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg.sha512",
+    "/home/vrmaster/.nuget/packages/microsoft.netcore.app.ref/6.0.30/microsoft.netcore.app.ref.6.0.30.nupkg.sha512",
+    "/home/vrmaster/.nuget/packages/microsoft.aspnetcore.app.ref/6.0.30/microsoft.aspnetcore.app.ref.6.0.30.nupkg.sha512",
+    "/home/vrmaster/.nuget/packages/microsoft.netcore.app.host.linux-x64/6.0.30/microsoft.netcore.app.host.linux-x64.6.0.30.nupkg.sha512"
   ],
   "logs": []
 }
