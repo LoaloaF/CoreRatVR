@@ -62,6 +62,11 @@ def _log(termflag_shm, unityout_shm, paradigm_running_shm, full_fname):
             L.logger.debug(f"after {nchecks} SHM checks found unity package:"
                            f"\n\t{unity_package}")
 
+            if unity_package == "":
+                # check for unexpected error cases when reading from SHM
+                L.logger.error("Empty package!")
+                continue
+            
             # trial data is directly saved to the trialPackages key
             if unity_package["N"] == "T":
                 _save_package_set([unity_package], full_fname, key="trialPackages")

@@ -44,6 +44,15 @@ def load_session_metadata(session_dir, dbNames):
     session_metadata['metadata'] = {}
     [session_metadata['metadata'].update({k:session_metadata.pop(k)}) 
                                   for k in list(session_metadata.keys()) if k not in dbNames]
+    
+    # Add log files to metadata
+    for filename in os.listdir(session_dir):
+        if filename.endswith('.log'):
+            file_path = os.path.join(session_dir, filename)
+            with open(file_path, 'r') as file:
+                log_data = file.read()
+                session_metadata['metadata'][filename] = log_data
+
     # convert to json 
     session_metadata['metadata'] = json.dumps(session_metadata['metadata'], indent=2)
     L.logger.debug(L.fmtmsg(["Metadata patched: ", session_metadata]))
@@ -53,6 +62,9 @@ def load_session_metadata(session_dir, dbNames):
     metadata_to_print['configuration'] = f"{metadata_to_print['configuration'][:50]}..."
     metadata_to_print['metadata'] = f"{metadata_to_print['metadata'][:50]}..."
     L.logger.info(L.fmtmsg(["Metadata: ", metadata_to_print]))
+
+
+
     return session_metadata
 
 def load_unity_frames_data(session_dir, toDBnames_mapping):

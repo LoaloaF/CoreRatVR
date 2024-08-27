@@ -144,7 +144,7 @@ def open_log_ephys_proc():
         "--session_data_dir", P.SESSION_DATA_DIRECTORY,
     ])
     # this runs on a differnt python version (system python)
-    return _launch('/bin/python3.12', stream_script, *args)
+    return _launch('/home/vrmaster/MaxLab/python/bin/python3.10', stream_script, *args)
 
 def open_stream_portenta_proc():
     P = Parameters()
