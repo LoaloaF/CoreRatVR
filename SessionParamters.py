@@ -64,7 +64,7 @@ class SessionParamters:
         paradigm_excelfullfname = self._copy_paradigm_excel_to_session_dir()
         self._extract_metadata_from_paradigm_excel(paradigm_excelfullfname)
         self._read_paradigmFSM_json_assets()
-
+    
     def handle_stop_session(self):
         self.stop_time = datetime.now()
         self.duration = self.stop_time - self.start_time
@@ -94,7 +94,7 @@ class SessionParamters:
 
     def _copy_paradigm_excel_to_session_dir(self):
         P = Parameters()
-        p = P.PROJECT_DIRECTORY, "UnityRatVR", "Paradigms", self.paradigm_name+".xlsx"
+        p = P.PROJECT_DIRECTORY, "UnityRatVR", "Paradigms", self.paradigm_name
         src_paradigm_excelfullfname = os.path.join(*p)
         dst_paradigm_excelfullfname = os.path.join(P.SESSION_DATA_DIRECTORY, 
                                                    self.paradigm_name+".xlsx")
@@ -195,5 +195,51 @@ class SessionParamters:
         with open(fullffname, 'w') as f:
             json.dump(params, f, indent=2)
             
-#TODO
-# rename file , has type
+    def load_session_parameters(self, metadata):
+        self.paradigm_name = metadata.get("paradigm_name")
+        if self.paradigm_name is not None and self.paradigm_name.shape[0]: 
+            self.paradigm_name = self.paradigm_name.item()
+            self.paradigm_id = int(self.paradigm_name[1:5])
+        
+        self.animal = metadata.get("animal_name")
+        if self.animal is not None and self.animal.shape[0]: 
+            self.animal = self.animal.item()
+        
+        self.animal_weight = metadata.get("animal_weight")
+        if self.animal_weight is not None and self.animal_weight.shape[0]: 
+            self.animal_weight = self.animal_weight.item()
+        
+        self.start_time = metadata.get("start_time")
+        if self.start_time is not None and self.start_time.shape[0]: 
+            self.start_time = self.start_time.item()
+        
+        self.stop_time = metadata.get("stop_time")
+        if self.stop_time is not None and self.stop_time.shape[0]: 
+            self.stop_time = self.stop_time.item()
+        
+        self.duration = metadata.get("duration")
+        if self.duration is not None and self.duration.shape[0]: 
+            self.duration = self.duration.item()
+        
+        self.notes = metadata.get("notes")
+        if self.notes is not None and self.notes.shape[0]: 
+            self.notes = self.notes.item()
+        
+        
+        metadata = json.loads(metadata.metadata.item())
+        self.session_parameters_dict = {}
+        
+        self.environment_parameters_dict = {
+            "pillars": metadata.get("pillars"),
+            "pillar_details": metadata.get("pillar_details"),
+            "envX_size": metadata.get("envX_size"),
+            "envY_size": metadata.get("envY_size"),
+            "base_length": metadata.get("base_length"),
+            "wallzone_size": metadata.get("wallzone_size"),
+            "wallzone_collider_size": metadata.get("wallzone_collider_size"),
+        }
+        
+        self.paradigms_states = metadata.get("paradigms_states")
+        self.paradigms_transitions = metadata.get("paradigms_transitions")
+        self.paradigms_decisions = metadata.get("paradigms_decisions")
+        self.paradigms_actions = metadata.get("paradigms_actions")

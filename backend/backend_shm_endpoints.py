@@ -1,6 +1,6 @@
 from fastapi import Request
 from backend_helpers import validate_state
-from process_launcher import shm_struct_fname
+from backend.backend_helpers import shm_struct_fname
 
 from Parameters import Parameters
 import SHM.shm_creation as sc

@@ -73,7 +73,6 @@ def _handle_data(session_dir):
                          "BLP": 'ballvelocity_last_package'}
     unity_frames_data = load_unity_frames_data(session_dir, toDBnames_mapping)
     
-    
     L.logger.info(f"Loading portenta data...")
     # load portenta ballvelocity and event data
     toDBnames_mapping = {"ID": "ballvelocity_package_id", 

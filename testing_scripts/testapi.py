@@ -119,14 +119,15 @@ def test_endpoints():
         response = requests.post(f"{base_url}/procs/launch_process_session")
         print("POST /procs/launch_process_session:", response.json())
         
-    # POST /initiate
-    response = requests.post(f"{base_url}/initiate")
-        # POST /shm/create_termflag_shm
-    response = requests.post(f"{base_url}/shm/create_termflag_shm")
-    response = requests.post(f"{base_url}/shm/create_paradigm_running_shm")
-    # POST /shm/create_termflag_shm
-    response = requests.post(f"{base_url}/procs/launch_log_ephys")
+    # # POST /initiate
+    # response = requests.post(f"{base_url}/initiate")
+    #     # POST /shm/create_termflag_shm
+    # response = requests.post(f"{base_url}/shm/create_termflag_shm")
+    # response = requests.post(f"{base_url}/shm/create_paradigm_running_shm")
+    # # POST /shm/create_termflag_shm
+    # response = requests.post(f"{base_url}/procs/launch_log_ephys")
     
+    requests.get(f"{base_url}/inspect/trials")
     
 if __name__ == "__main__":
     test_endpoints()

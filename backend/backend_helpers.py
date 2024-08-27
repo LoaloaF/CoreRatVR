@@ -1,14 +1,19 @@
 import os
-from time import sleep
+import psutil
+import json
+import h5py
 from datetime import datetime as dt
+import pandas as pd
 
 from fastapi import HTTPException
 from typing import Any
-import psutil
-import json
 
 from Parameters import Parameters
 from CustomLogger import CustomLogger as Logger
+
+def shm_struct_fname(shm_name):
+    P = Parameters()
+    return os.path.join(P.SHM_STRUCTURE_DIRECTORY, shm_name+"_shmstruct.json")
 
 def _parse2type(value: str, correct_type: type):
     try:
@@ -45,8 +50,6 @@ def init_save_dir():
     dirname = dt.now().strftime(P.SESSION_NAME_TEMPLATE)
     full_path = os.path.join(P.DATA_DIRECTORY, dirname)
     os.mkdir(full_path)
-    if P.CREATE_NAS_SESSION_DIR:
-        os.mkdir(os.path.join(P.NAS_DATA_DIRECTORY, dirname))
     return full_path
 
 def check_base_dirs():
@@ -66,9 +69,14 @@ def init_logger(session_save_dir):
     L.init_logger("__main__", log_dir, P.LOGGING_LEVEL)
     return log_dir
 
-def validate_state(state, valid_initiated=None, valid_paradigmRunning=None, 
-                   valid_shm_created=None, valid_proc_running=None):
+def validate_state(state, valid_initiated=None, valid_initiated_inspect=None, 
+                   valid_paradigmRunning=None, valid_shm_created=None, 
+                   valid_proc_running=None):
     L = Logger()
+    if (valid_initiated_inspect is not None and state["initiatedInspect"] != valid_initiated_inspect):
+        detail = "No session loaded" if valid_initiated_inspect else "Already loaded session"
+        L.logger.error(detail)
+        raise HTTPException(status_code=400, detail=detail)
 
     # check if passed unitySessionRunning var matches state
     if (valid_paradigmRunning is not None and 
@@ -122,28 +130,76 @@ def state2serializable(state):
     S['paradigm_running_shm_interface'] = False if S['paradigm_running_shm_interface'] is None else True
     return json.dumps(S)
 
+def access_session_data(key, pct_as_index=True, na2null=False, rename2oldkeys=False):
+    P = Parameters()
+    L = Logger()
+    session_fullfname = os.path.join(P.SESSION_DATA_DIRECTORY, P.SESSION_NAME)
+    
+    try:
+        data = pd.read_hdf(session_fullfname, key=key)
+        L.logger.debug(f"Successfully accessed {key} from session data:\n{data}")
+    except KeyError:
+        raise HTTPException(status_code=400, detail=f"Key {key} not found in session data")
+
+    if na2null:
+        # Convert float64 columns to object type
+        for col in data.select_dtypes(include=['float64']).columns:
+            data[col] = data[col].astype(object)
+        # Fill NaN values with "null"
+        data.fillna("null", inplace=True)
+        
+    if pct_as_index:
+        pct_col = [col for col in data.columns if col.endswith("_pc_timestamp")][0]
+        if data[pct_col].is_unique:
+            data.set_index(data[pct_col], inplace=True, drop=True)
+        else:
+            n = data.shape[0]
+            data = data.drop_duplicates(subset=[pct_col])
+            L.logger.warning(f"Non-unique index values found in the "
+                            f"timestamp column. Before {n} rows, after "
+                            f"{data.shape[0]}, diff {n-data.shape[0]}")
+        data.set_index(pd.to_datetime(data[pct_col], unit='us'), 
+                        inplace=True, drop=True)
+    
+    if rename2oldkeys:
+        if key == "unity_frame":
+            rename_dict = {
+                'frame_id': 'ID',
+                'frame_pc_timestamp': 'PCT',
+                'frame_x_position': 'X',
+                'frame_z_position': 'Z',
+                'frame_angle': 'A',
+                'frame_state': 'S' ,
+                'frame_blinker': 'FB',
+                'ballvelocity_first_package': 'BFP',
+                'ballvelocity_last_package': 'BLP',
+            }
+            # add back the name "U", indicating Unity frame
+            data['N'] = "U"
+        elif key in ["event", "ballvelocity"]:
+            rename_dict = {
+                f'{key}_package_id': 'ID',
+                f'{key}_portenta_timestamp': 'T',
+                f'{key}_pc_timestamp': 'PCT',
+                f'{key}_value': 'V',
+                f'{key}_name': 'N',
+            }
+            if key == "ballvelocity":
+                rename_dict.update({
+                    'ballvelocity_raw': "raw",
+                    'ballvelocity_yaw': "yaw",
+                    'ballvelocity_pitch': "pitch",
+                    })
+        L.logger.debug(f"Renaming columns to old keys: {data.columns}")
+        data = data.rename(columns=rename_dict)
+
+
+    if "cam" in key:
+        # return the 
+        sessionfile = h5py.File(session_fullfname, 'r')
+        return data, sessionfile
+    return data
+
 class MockProcess:
-            def __init__(self, pid=0):
-                self.pid = pid
-                
-# DONETODO - check if arduino is connceted before launching process or try to auto flash Portenta:
-# end point with exec platformio run --target upload --environment portenta_h7_m7 --project-dir /home/loaloa/homedataXPS/projects/ratvr/VirtualReality/PlatformIO/Projects/PortentaRatVR
-# TODO - sudo chprio command passwordless - not important
-# DONETODO - FastAPI state control
-    # DONETODO - check if process is already running before launching (add to state?)
-# TODO - design and build protoype user web interface 
-# Unity
-    # DONETODO - Fix empty arduino package error in Unity
-    # DONETODO - Unity input SHM: think of instructions to be sent to Unity (before and after session start)
-    # DONETODO - Unity start game with button
-    # DONETODO - Unity link portenta input to UnityInputSHM
-    # DONETODO - Unity UI
-    # TODO - Unity gloabl sessionStarted conditinal for everything 9logging, state machine etc)
-    # TODO - Unity fix lighting
-    # TODO - Unity integrate Yuanzhao's FSM code
-    # TODO - Unity Start stop sesion state machine interaction
-    # DONETODO - Unity Teleportation
-# TODO - TTL camera logger, check libraries, drivers etc
-# TODO - from x from y integration into camera reader
-# DONETODO - create folder data and tmp_shm if not exist
-# DONETODO - add YAML file, use venv not conda
+    def __init__(self, pid=0):
+        self.pid = pid

@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
             P.SHM_NAME_UNITY_CAM: False,
         },
         "initiated": False,
+        "initiatedInspect": False,
         "paradigmRunning": False,
         "termflag_shm_interface": None,
         "unityinput_shm_interface": None,

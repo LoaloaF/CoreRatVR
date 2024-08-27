@@ -161,7 +161,7 @@ def _handle_paradigm_specific_variables(unity_trials_data, frames_toDBnames_mapp
         trialVariables_full_names = json.loads(metadata.get('metadata')).get('trialPackageVariablesFullNames')
         paradigmVariable_toDBnames_mapping = dict(zip(trialVariables, trialVariables_full_names))
         paradigmVariable_trials_data.rename(columns=paradigmVariable_toDBnames_mapping, 
-                                            inplace=True)
+                                             inplace=True)
         return paradigmVariable_trials_data
     except:
         L.logger.warning(L.fmtmsg(("Failed to find the paradigm-specific variables in metadata/excel. ",
