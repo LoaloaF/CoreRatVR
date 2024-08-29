@@ -253,7 +253,7 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
             validate_state(app.state.state, valid_initiated_inspect=True)
             await websocket.accept()
             data = access_session_data(data_name, na2null=True, rename2oldkeys=True)
-            L.logger.info(f"{data_name} data: {", ".join(data.columns)}\n\n{data}")
+            L.logger.info(f"{data_name} data: {', '.join(data.columns)}\n\n{data}")
         
         packages = []
         t0 = 0
