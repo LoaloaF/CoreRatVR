@@ -1,3 +1,4 @@
+import json
 import requests
 from time import sleep
 import time
@@ -127,7 +128,14 @@ def test_endpoints():
     # # POST /shm/create_termflag_shm
     # response = requests.post(f"{base_url}/procs/launch_log_ephys")
     
-    requests.get(f"{base_url}/inspect/trials")
+    requests.get(f"{base_url}/inspect/events")
+    data = json.loads(requests.get(f"{base_url}/inspect/forwardvelocity").json())
+    print(data)
+    import matplotlib.pyplot as plt
+    
+    plt.plot(list(data.keys())[:100000], list(data.values())[:100000])
+    plt.show()
+    
     
 if __name__ == "__main__":
     test_endpoints()

@@ -206,7 +206,7 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
             shm = _access_shm(P.SHM_NAME_UNITY_CAM, "unity", app)
     else:
         validate_state(app.state.state, valid_initiated_inspect=True)
-        packages, sessionfile = access_session_data(f"{cam_name}_packages")
+        packages, sessionfile = access_session_data(f"{cam_name}_packages", rename2oldkeys=False, na2null=False) #TODO: rename2oldkeys=True
     await websocket.accept()
 
     frame_package = {}

@@ -130,7 +130,7 @@ def state2serializable(state):
     S['paradigm_running_shm_interface'] = False if S['paradigm_running_shm_interface'] is None else True
     return json.dumps(S)
 
-def access_session_data(key, pct_as_index=True, na2null=False, rename2oldkeys=False):
+def access_session_data(key, pct_as_index=True, na2null=True, rename2oldkeys=True):
     P = Parameters()
     L = Logger()
     session_fullfname = os.path.join(P.SESSION_DATA_DIRECTORY, P.SESSION_NAME)
@@ -176,6 +176,18 @@ def access_session_data(key, pct_as_index=True, na2null=False, rename2oldkeys=Fa
             }
             # add back the name "U", indicating Unity frame
             data['N'] = "U"
+        elif key == "unity_trial":
+            rename_dict = {
+                "trial_id": "ID", 
+                "trial_start_frame": "SFID", 
+                "trial_start_pc_timestamp": "SPCT", 
+                "trial_end_frame": "EFID", 
+                "trial_end_pc_timestamp": "EPCT",
+                "trial_pc_duration": "TD", 
+                "trial_outcome": "O"}
+        elif key == "paradigmVariable_data":
+            rename_dict = {}
+            
         elif key in ["event", "ballvelocity"]:
             rename_dict = {
                 f'{key}_package_id': 'ID',
@@ -190,6 +202,7 @@ def access_session_data(key, pct_as_index=True, na2null=False, rename2oldkeys=Fa
                     'ballvelocity_yaw': "yaw",
                     'ballvelocity_pitch': "pitch",
                     })
+        
         L.logger.debug(f"Renaming columns to old keys: {data.columns}")
         data = data.rename(columns=rename_dict)
 
