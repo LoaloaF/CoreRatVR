@@ -54,7 +54,7 @@ class Parameters:
         # Unity SHM parameters
         self.SHM_NAME_UNITY_OUTPUT = 'unityoutput'
         self.SHM_NPACKAGES_UNITY_OUTPUT = 128
-        self.SHM_PACKAGE_NBYTES_UNITY_OUTPUT = 128
+        self.SHM_PACKAGE_NBYTES_UNITY_OUTPUT = 256
         self.SHM_NAME_UNITY_INPUT = 'unityinput'
         self.SHM_NPACKAGES_UNITY_INPUT = 16
         self.SHM_PACKAGE_NBYTES_UNITY_INPUT = 256
@@ -224,7 +224,7 @@ class Parameters:
         if platform.uname().system == "Windows":
             p = "D:", "NTnas", "nas_vrdata"
         elif platform.uname().system == "Linux":
-            p = "/", "mnt", "NTnas", "nas_vrdata"
+            p = "/", "mnt", "SpatialSequenceLearning"
         elif platform.uname().system == "Darwin":
             p = "/", "Volumes", "large", "BMI", "VirtualReality", "SpatialSequenceLearning"
         return os.path.join(*p)

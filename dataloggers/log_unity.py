@@ -56,7 +56,7 @@ def _log(termflag_shm, unityout_shm, paradigm_running_shm, full_fname):
                 L.logger.info(f"Paradigm start not running at {current_time}, on halt....")
                 portenta_start_stop_flag = True
                 portenta_start_stop_pct = int(time.time()*1e6)
-            elif not current_time-portenta_start_stop_pct > 1000000:            
+            elif current_time-portenta_start_stop_pct > 1000000:            
                 L.logger.debug("Paradigm stopped, on halt....")
                 continue
         
