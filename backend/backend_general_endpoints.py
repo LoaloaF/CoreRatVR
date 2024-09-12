@@ -4,6 +4,8 @@ sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
 sys.path.insert(1, os.path.join(sys.path[0], 'backend'))
 
 import pandas as pd
+import numpy as np
+
 import asyncio
 import shutil
 from send2trash import send2trash
@@ -335,6 +337,8 @@ def attach_general_endpoints(app):
     def session_selection(session_name: str, request: Request):
         validate_state(request.app.state.state, valid_initiated=False, 
                        valid_initiated_inspect=False)
+        L = Logger()
+        L.logger.info(f"Initiating session inspection for {session_name}")
         P = Parameters()
         source, session_name = session_name.split(";", 1)
         if source == "NAS":
@@ -353,7 +357,7 @@ def attach_general_endpoints(app):
             session_params = json.loads(metadata.loc[:,"configuration"].iloc[0])
             # keep the defalts for thoese params
             [session_params.pop(k) for k in ["LOGGING_LEVEL", "PROJECT_DIRECTORY", 
-                                             "NAS_DATA_DIRECTORY"]]
+                                             "NAS_DATA_DIRECTORY"] if k in session_params]
             P.update_from_json(session_params)
             # except Exception as e:
             #     print("Error loading parameter defauls from session: ", e)
@@ -397,8 +401,88 @@ def attach_general_endpoints(app):
     @app.get("/inspect/trials")
     def inspect_trials(request: Request):
         validate_state(request.app.state.state, valid_initiated_inspect=True)
-        trials = access_session_data("unity_trial").to_json(orient="records")
-        return trials
+        trials = access_session_data("unity_trial")
+        
+        # merge with variable data
+        trials_variable = access_session_data("paradigm_variable", pct_as_index=False, 
+                                              rename2oldkeys=False, na2null=True)
+        trials.set_index("ID", inplace=True, drop=False)
+        trials_variable.set_index("trial_id", inplace=True)
+        trials = pd.concat([trials, trials_variable], axis=1)
+        trials.set_index(pd.to_datetime(trials["SPCT"], unit='us'), 
+                         inplace=True, drop=False)
+        
+        frames = access_session_data("unity_frame", na2null=True, rename2oldkeys=True)
+        staytimes = []
+        for t, trial in trials.iterrows():
+            trial_frames = frames.loc[frames["trial_id"] == trial["ID"]]
+            within_cue1_frames = trial_frames.loc[trial_frames["S"] == 804]
+            within_cue1_us = within_cue1_frames["PCT"].iloc[-1] - within_cue1_frames["PCT"].iloc[0]
+            within_cue2_frames = trial_frames.loc[trial_frames["S"] == 808]
+            within_cue2_us = within_cue2_frames["PCT"].iloc[-1] - within_cue2_frames["PCT"].iloc[0]
+
+            within_r1_frames = trial_frames.loc[trial_frames["S"] == 811]
+            within_r1_us = within_r1_frames["PCT"].iloc[-1] - within_r1_frames["PCT"].iloc[0]
+            within_r2_frames = trial_frames.loc[trial_frames["S"] == 813]
+            within_r2_us = within_r2_frames["PCT"].iloc[-1] - within_r2_frames["PCT"].iloc[0]
+            
+            staytimes.append(pd.Series(name=t, data={
+                "staytime_cue1": within_cue1_us,
+                "PCT_enter_cue1": within_cue1_frames["PCT"].iloc[0],
+                "staytime_cue2": within_cue2_us,
+                "PCT_enter_cue2": within_cue2_frames["PCT"].iloc[0],
+                "staytime_r1": within_r1_us,
+                "PCT_enter_r1": within_r1_frames["PCT"].iloc[0],
+                "staytime_r2": within_r2_us,
+                "PCT_enter_r2": within_r2_frames["PCT"].iloc[0],
+            }))
+        
+        #TODO: add this below 
+        # if 'cue' in trials.columns:
+        #     if cue == 1:
+        #         correct_region_col = "staytime_r1"
+        #         incorrect_region_col = "staytime_r2"
+        #     elif cue == 2:
+        #         correct_region_col = "staytime_r2"
+        #         incorrect_region_col = "staytime_r1"
+        #     else:
+        #         print("Cue with other then 1,2! :", cue)
+        #         continue
+        # correct_region_staytime = trial_data.loc[correct_region_col]
+        # incorrect_region_staytime = trial_data.loc[incorrect_region_col]
+            
+        
+        trials = pd.concat([trials, pd.concat(staytimes, axis=1).T], axis=1)
+        
+        # print(trials.iloc[-1])
+        return trials.to_json(orient="records")
+    
+    @app.get("/inspect/events")
+    def inspect_events(request: Request):
+        validate_state(request.app.state.state, valid_initiated_inspect=True)
+        events = access_session_data("event", rename2oldkeys=True, na2null=True)
+        return events.to_json(orient="records")
+    
+    @app.get("/inspect/forwardvelocity")
+    def inspect_forwardvelocity(request: Request):
+        validate_state(request.app.state.state, valid_initiated_inspect=True)
+        unityframes = access_session_data("unity_frame", na2null=False, 
+                                          rename2oldkeys=True)
+        
+        t = unityframes["PCT"].values/1e6
+        z = unityframes["Z"].values
+        z[unityframes.loc[:,"trial_id"] == -1] = np.nan
+        velocity = pd.Series(np.gradient(z,t), index=t)
+        velocity = velocity.rolling(window=40).mean().iloc[::20].dropna()
+        return velocity.to_json()
+    
+    @app.get("/inspect/unityframes")
+    def inspect_forwardvelocity(request: Request):
+        validate_state(request.app.state.state, valid_initiated_inspect=True)
+        unityframes = access_session_data("unity_frame", na2null=True, 
+                                          rename2oldkeys=True)
+        return unityframes.to_json(orient="records")
+    
     return app
 
 def attach_UI_endpoint(app):

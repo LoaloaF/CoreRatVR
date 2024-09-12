@@ -130,8 +130,7 @@ def attach_stream_endpoints(app):
         try:
             while True:
                 await asyncio.sleep(check_interval)
-                logfile_names = glob.glob(os.path.join(P.SESSION_DATA_DIRECTORY, "/*.log"))
-                
+                logfile_names = glob.glob(os.path.join(P.SESSION_DATA_DIRECTORY, "*.log"))
                 for logfile_name in logfile_names:
                     with open(logfile_name, 'rb+') as logfile:
                         if os.path.getsize(logfile_name) > 300_000:  # 300KB
@@ -189,6 +188,12 @@ def _live_get_frame(shm, prv_frame_package):
         return None, prv_frame_package
     
     frame_jpg = shm.get_frame()
+    
+    # unity frame is written in other colorformat and flipped, fix here 
+    if shm._shm_name == 'unitycam':
+        frame_jpg = cv2.flip(frame_jpg, 0)
+        frame_jpg = cv2.cvtColor(frame_jpg, cv2.COLOR_RGB2BGR)
+    
     L.logger.debug(f"New frame {frame_jpg.shape} read from SHM: {frame_package}")
     return cv2.imencode('.jpg', frame_jpg)[1].tobytes(), frame_package
 
@@ -206,7 +211,7 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
             shm = _access_shm(P.SHM_NAME_UNITY_CAM, "unity", app)
     else:
         validate_state(app.state.state, valid_initiated_inspect=True)
-        packages, sessionfile = access_session_data(f"{cam_name}_packages")
+        packages, sessionfile = access_session_data(f"{cam_name}_packages", rename2oldkeys=False, na2null=False) #TODO: rename2oldkeys=True
     await websocket.accept()
 
     frame_package = {}
