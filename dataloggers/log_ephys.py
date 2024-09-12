@@ -6,7 +6,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 
 import argparse
 from time import sleep
-
+import time
 from CustomLogger import CustomLogger as Logger
 from FlagSHMInterface import FlagSHMInterface
 
@@ -20,20 +20,28 @@ def _log(termflag_shm, paradigm_running_shm, session_data_dir, fname):
     s = mx.Saving()
     recording_wells = [0]
     is_recording = False
+    portenta_start_stop_flag = False
+    portenta_start_stop_pct = 0
     while True:
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
             return
         
+        current_time = int(time.time()*1e6)  
         if not paradigm_running_shm.is_set():
-            L.logger.debug("Paradigm not running, on halt....")
-            # if the flag is not raised, and we are recording, stop recording
-            if is_recording:
-                L.logger.debug("Paradigm not running, stopping recording...")
-                s.stop_recording()
-                s.stop_file()
-                s.group_delete_all()
-                is_recording = False
+            if not portenta_start_stop_flag:
+                L.logger.info(f"Paradigm start not running at {current_time}, on halt....")
+                portenta_start_stop_flag = True
+                portenta_start_stop_pct = int(time.time()*1e6)
+            elif current_time-portenta_start_stop_pct > 1000000:            
+                L.logger.debug("Paradigm not running, on halt....")
+                # if the flag is not raised, and we are recording, stop recording
+                if is_recording:
+                    L.logger.debug("Paradigm not running, stopping recording...")
+                    s.stop_recording()
+                    s.stop_file()
+                    s.group_delete_all()
+                    is_recording = False
         
         # if the flag is raised, and we are noot already recording, start recording
         elif not is_recording:        
@@ -61,7 +69,8 @@ def run_log_ephys(termflag_shm_struc_fname, paradigmflag_shm_struc_fname,
         sleep(.5) # 500ms 
         L.logger.debug("Waiting for paradigm flag to be raised...")  
         
-    L.logger.info(f"Paradigm flag raised. Starting to log ephys data now...")
+    current_time = int(time.time()*1e6)
+    L.logger.info(f"Paradigm flag raised at {current_time}. Starting to log ephys data now...")
 
     _log(termflag_shm, paradigm_running_shm, session_data_dir, fname="ephys_output")
 
