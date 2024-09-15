@@ -23,7 +23,9 @@ from backend.backend_helpers import shm_struct_fname
 from SHM.CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from SHM.VideoFrameSHMInterface import VideoFrameSHMInterface
 
-from backend_helpers import access_session_data
+# using ../analysisVR/sessionWiseProcessing PATH extensions
+from session_loading import load_session_hdf5
+from session_loading import get_session_modality
 
 def attach_stream_endpoints(app):
     # singlton class - reference to instance created in lifespan
@@ -211,7 +213,14 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
             shm = _access_shm(P.SHM_NAME_UNITY_CAM, "unity", app)
     else:
         validate_state(app.state.state, valid_initiated_inspect=True)
-        packages, sessionfile = access_session_data(f"{cam_name}_packages", rename2oldkeys=False, na2null=False) #TODO: rename2oldkeys=True
+
+        nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
+        from_nas = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
+        packages = get_session_modality(from_nas=from_nas, 
+                                        modality=f"{cam_name}_packages", 
+                                        pct_as_index=True,
+                                        rename2oldkeys=True)
+        sessionfile = load_session_hdf5(os.path.join(P.SESSION_DATA_DIRECTORY, P.SESSION_NAME))
     await websocket.accept()
 
     frame_package = {}
@@ -247,6 +256,7 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
 async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name, 
                                 check_interval=0.01, maxpops=3):
     L = Logger()
+    P = Parameters()
     try: 
         # initialize for either viewing a recordded session or stream live from memory    
         if not inspect:
@@ -257,8 +267,14 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
         else:
             validate_state(app.state.state, valid_initiated_inspect=True)
             await websocket.accept()
-            data = access_session_data(data_name, na2null=True, rename2oldkeys=True)
-            L.logger.info(f"{data_name} data: {', '.join(data.columns)}\n\n{data}")
+            
+            nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
+            from_nas = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
+            data = get_session_modality(from_nas=from_nas, 
+                                        modality=data_name,
+                                        na2null=True,
+                                        pct_as_index=True,
+                                        rename2oldkeys=True,)
         
         packages = []
         t0 = 0
