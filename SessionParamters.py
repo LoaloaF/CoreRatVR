@@ -225,21 +225,21 @@ class SessionParamters:
         if self.notes is not None and self.notes.shape[0]: 
             self.notes = self.notes.item()
         
-        
-        metadata = json.loads(metadata.metadata.item())
-        self.session_parameters_dict = {}
-        
-        self.environment_parameters_dict = {
-            "pillars": metadata.get("pillars"),
-            "pillar_details": metadata.get("pillar_details"),
-            "envX_size": metadata.get("envX_size"),
-            "envY_size": metadata.get("envY_size"),
-            "base_length": metadata.get("base_length"),
-            "wallzone_size": metadata.get("wallzone_size"),
-            "wallzone_collider_size": metadata.get("wallzone_collider_size"),
-        }
-        
-        self.paradigms_states = metadata.get("paradigms_states")
-        self.paradigms_transitions = metadata.get("paradigms_transitions")
-        self.paradigms_decisions = metadata.get("paradigms_decisions")
-        self.paradigms_actions = metadata.get("paradigms_actions")
+        if metadata.get("metadata") is not None:
+            metadata = json.loads(metadata.metadata.item())
+            self.session_parameters_dict = {}
+            
+            self.environment_parameters_dict = {
+                "pillars": metadata.get("pillars"),
+                "pillar_details": metadata.get("pillar_details"),
+                "envX_size": metadata.get("envX_size"),
+                "envY_size": metadata.get("envY_size"),
+                "base_length": metadata.get("base_length"),
+                "wallzone_size": metadata.get("wallzone_size"),
+                "wallzone_collider_size": metadata.get("wallzone_collider_size"),
+            }
+            
+            self.paradigms_states = metadata.get("paradigms_states")
+            self.paradigms_transitions = metadata.get("paradigms_transitions")
+            self.paradigms_decisions = metadata.get("paradigms_decisions")
+            self.paradigms_actions = metadata.get("paradigms_actions")
