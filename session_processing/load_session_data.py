@@ -44,7 +44,7 @@ def load_session_metadata(session_dir, dbNames):
     # session_metadata['metadata'] = {}
     # [session_metadata['metadata'].update({k:session_metadata.pop(k)}) 
     #                               for k in list(session_metadata.keys()) if k not in dbNames]
-    
+    L.logger.info(session_metadata.keys())
     env_metadata = {k: session_metadata[k] for k in dbNames['env_metadata']}
     fsm_metadata = {k: session_metadata[k] for k in dbNames['fsm_metadata']}
     log_file_content = {}
