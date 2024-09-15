@@ -183,6 +183,7 @@ def convert_hdf5_fixed_to_table(session_fullfname, dummyrun=True, final_cleanup=
         return
     
     session_fixed_fullfname = session_fixed_fullfname.replace("/behavior_", "/")
+    session_fixed_fullfname = session_fixed_fullfname.replace(".xlsx", "")
     # print(f"Fixing {session_fullfname}\nNew name:\n{session_fixed_fullfname}")
     # Open the input HDF5 file
     try:
