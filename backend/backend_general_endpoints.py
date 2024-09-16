@@ -195,7 +195,7 @@ def attach_general_endpoints(app):
             proc = process_launcher.open_process_session_proc(*args)
             request.app.state.state["procs"]["process_session"] = proc.pid
 
-        P.initialize_defaults()
+        # P.initialize_defaults()
         session_paramters.clear()
         sleep(1)
         request.app.state.state["initiated"] = False
