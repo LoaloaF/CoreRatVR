@@ -255,6 +255,11 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     L = Logger()
     L.logger.info(f"Processing session {session_dir}")
     
+    if ".xlsx" in session_dir:
+        session_dir_new = session_dir.replace(".xlsx", "")
+        os.rename(session_dir, session_dir_new)
+        session_dir = session_dir_new
+    
     if prompt_user_decision:
         answer = input("\nSkip this session? [y/n]: ")
         if answer.lower() == 'y':
@@ -335,7 +340,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-09-16_12-04-11_active/")
+    argParser.add_argument("--session_dir", default="/mnt/SpatialSequenceLearning/RUN_rYL003/rYL003_P0800/2024-07-29_16-04_rYL003_P0800_LinearTrack_41min/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments

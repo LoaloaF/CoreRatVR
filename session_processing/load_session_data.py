@@ -37,7 +37,7 @@ def load_session_metadata(session_dir, dbNames):
     
     # this key is supposed to be constructed only in postprocessing
     name = (f'{session_metadata["start_time"]}_{session_metadata["animal_name"]}_'
-            f'{session_metadata["paradigm_name"]:04}_{session_metadata["duration"]}')
+            f'{session_metadata["paradigm_name"].replace(".xlsx","")}_{session_metadata["duration"]}')
     session_metadata['session_name'] = name
     
     # remove explicit keys from metadata and add them to metadata field
@@ -49,8 +49,21 @@ def load_session_metadata(session_dir, dbNames):
     if "paradigms_transitions " in session_metadata:
         session_metadata["paradigms_transitions"] = session_metadata.pop("paradigms_transitions ")
      
-    env_metadata = {k: session_metadata[k] for k in dbNames['env_metadata']}
-    fsm_metadata = {k: session_metadata[k] for k in dbNames['fsm_metadata']}
+    env_metadata = {}
+    fsm_metadata = {}
+    for k in dbNames['metadata']:
+        if k in session_metadata:
+            env_metadata[k] = session_metadata[k]
+        else:
+            env_metadata[k] = ""
+    
+    for k in dbNames['fsm_metadata']:
+        if k in session_metadata:
+            fsm_metadata[k] = session_metadata[k]
+        else:
+            fsm_metadata[k] = ""
+            
+     
     log_file_content = {}
     # Add log files to metadata
     for filename in os.listdir(session_dir):
@@ -61,7 +74,7 @@ def load_session_metadata(session_dir, dbNames):
     # convert to json 
     session_metadata['env_metadata'] = json.dumps(env_metadata, indent=2)
     session_metadata['fsm_metadata'] = json.dumps(fsm_metadata, indent=2)
-    session_metadata['log_file_content'] = json.dumps(log_file_content, indent=2)
+    session_metadata['log_file_content'] = json.dumps(log_file_content)
     # session_metadata['metadata'] = json.dumps(session_metadata['metadata'], indent=2)
     L.logger.debug(L.fmtmsg(["Metadata patched: ", session_metadata]))
 
