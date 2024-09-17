@@ -136,7 +136,6 @@ def attach_stream_endpoints(app):
                 for logfile_name in logfile_names:
                     with open(logfile_name, 'rb+') as logfile:
                         if os.path.getsize(logfile_name) > 300_000:  # 300KB
-                            # L.logger.info(f"Logfile {logfile_name} is too large. Truncating...")
                             logfile.seek(0)
                             content = logfile.read(150_000).decode('utf-8')  
                             logfile.seek(-150_000, os.SEEK_END)
