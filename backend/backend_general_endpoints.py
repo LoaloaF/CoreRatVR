@@ -1,11 +1,6 @@
 import os
-import sys
-sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
-sys.path.insert(1, os.path.join(sys.path[0], 'backend'))
 
-import pandas as pd
 import asyncio
-import shutil
 from send2trash import send2trash
 from time import sleep
 import json
@@ -28,7 +23,6 @@ from backend_helpers import init_logger
 from backend_helpers import validate_state
 from backend_helpers import check_processes
 from backend_helpers import state2serializable
-from backend_helpers import access_session_data
 
 from SHM.shm_creation import delete_shm
 
@@ -201,7 +195,7 @@ def attach_general_endpoints(app):
             proc = process_launcher.open_process_session_proc(*args)
             request.app.state.state["procs"]["process_session"] = proc.pid
 
-        P.initialize_defaults()
+        # P.initialize_defaults()
         session_paramters.clear()
         sleep(1)
         request.app.state.state["initiated"] = False
@@ -239,7 +233,8 @@ def attach_general_endpoints(app):
 
     @app.get("/animals")
     def animals():
-        static_animals = ["rYL_001","rYL_002","rYL_003","rYL_004","rYL_006","rYL_008","AI_001","dummyAnimal"]
+        static_animals = ["rYL_001","rYL_002","rYL_003","rYL_004","rYL_006","rYL_008","rYL_005","rYL_007","rYL_009","AI_001","dummyAnimal"]
+
         return static_animals
 
     @app.get("/trial_variable_names")
@@ -299,105 +294,6 @@ def attach_general_endpoints(app):
             fsm_actions = json.load(f)
         return {"states": fsm_states, "transitions": fsm_transitions, 
                 "decisions": fsm_decisions, "actions": fsm_actions}
-
-    @app.get("/inspect/sessions")
-    def sessions(request: Request):
-        # get all sessions from NAS
-        validate_state(request.app.state.state)
-        sessions = []
-        
-        if not os.path.exists(P.NAS_DATA_DIRECTORY):
-            return []
-            # raise HTTPException(status_code=400, detail="NAS directory not found")
-        
-        animal_dirs = [f for f in os.listdir(P.NAS_DATA_DIRECTORY) 
-                       if f[:7] in ("RUN_rYL", "RUN_rSS")]
-        for an_dir in animal_dirs:
-            animal_dir = os.path.join(P.NAS_DATA_DIRECTORY, an_dir)
-            
-            paradigm_dirs = [f for f in os.listdir(animal_dir) 
-                             if os.path.isdir(os.path.join(animal_dir, f))]
-            for par_dir in paradigm_dirs:
-                paradigm_dir = os.path.join(P.NAS_DATA_DIRECTORY, animal_dir, par_dir)
-
-                session_dirs = [f for f in os.listdir(paradigm_dir) if f.endswith("min")]
-                for ses_dir in session_dirs:
-                    session_dir = os.path.join(P.NAS_DATA_DIRECTORY, animal_dir, par_dir, ses_dir)
-                    fname = [f for f in os.listdir(session_dir) 
-                             if f.endswith("min.hdf5")][0]
-                    if fname:
-                        sessions.append({"animal": an_dir, "paradigm": par_dir[-5:], 
-                                         "session": fname})
-        return sessions
-    
-    @app.post("/inspect/initiate_session_selection/{session_name}")
-    def session_selection(session_name: str, request: Request):
-        validate_state(request.app.state.state, valid_initiated=False, 
-                       valid_initiated_inspect=False)
-        P = Parameters()
-        source, session_name = session_name.split(";", 1)
-        if source == "NAS":
-            animal, paradigm = session_name.split("_")[-4:-2]
-            base_dir = os.path.join(P.NAS_DATA_DIRECTORY, f"RUN_{animal}", f"{animal}_{paradigm}")
-            # base_dir = os.path.expanduser("~/local_data") # local hack, cut later
-            
-            session_dir = os.path.join(base_dir, session_name.replace("behavior_", "")[:-5])
-            logging_dir = P.LOGGING_DIRECTORY # the default logging dir on this machine
-            
-            # attempt to load parameter defaults from session, old sessions might not have this
-            # try:
-            metadata = pd.read_hdf(os.path.join(session_dir, session_name),
-                                    key="metadata")
-            session_paramters.load_session_parameters(metadata)
-            session_params = json.loads(metadata.loc[:,"configuration"].iloc[0])
-            # keep the defalts for thoese params
-            [session_params.pop(k) for k in ["LOGGING_LEVEL", "PROJECT_DIRECTORY", 
-                                             "NAS_DATA_DIRECTORY"]]
-            P.update_from_json(session_params)
-            # except Exception as e:
-            #     print("Error loading parameter defauls from session: ", e)
-        
-        else: #DB
-            #TODO: implement
-            pass
-                
-        # for inspect some parameters need to changed eg paths
-        # P.PROJECT_DIRECTORY = P.get_default_project_directory()
-        # P.NAS_DATA_DIRECTORY = P.get_default_nas_directory()
-        P.SESSION_DATA_DIRECTORY = session_dir
-        P.SESSION_NAME = session_name
-        P.LOGGING_DIRECTORY = logging_dir
-        P.INSPECT_FROM_DB = source == "db"
-        P.LOG_TO_DATA_DIR = False
-        
-        init_logger(session_save_dir=None)  # log to log dir
-        request.app.state.state["initiatedInspect"] = True
-
-        L = Logger()
-        L.spacer()
-        L.logger.info(f"Session inspection initiated for {session_name}")
-        return True
-    
-    @app.get("/inspect/selected_session")
-    def selected_session(request: Request):
-        validate_state(request.app.state.state, valid_initiated_inspect=True)
-        session_name = [f for f in os.listdir(P.SESSION_DATA_DIRECTORY) if f.endswith("min.hdf5")][0][:-5]
-        return session_name
-    
-    @app.post("/inspect/terminate_inspection")
-    def terminate_inspection(request: Request):
-        validate_state(request.app.state.state, valid_initiated_inspect=True)
-        request.app.state.state["initiatedInspect"] = False
-        
-        P.initialize_defaults()
-        session_paramters.clear()
-        return True
-    
-    @app.get("/inspect/trials")
-    def inspect_trials(request: Request):
-        validate_state(request.app.state.state, valid_initiated_inspect=True)
-        trials = access_session_data("unity_trial").to_json(orient="records")
-        return trials
     return app
 
 def attach_UI_endpoint(app):

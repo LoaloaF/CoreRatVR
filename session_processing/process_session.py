@@ -36,12 +36,18 @@ def _handle_data(session_dir):
     L = Logger()
     L.logger.info(f"Loading metadata...")
     # first 4 keys are required
-    dbNames = ['session_name', 'paradigm_name', 'animal_name', 'paradigm_id',
-               'start_time', 'stop_time', 'duration', 'notes', 'rewardPostSoundDelay', 
-               'rewardAmount', 'punishmentLength', 'punishInactivationLength', 
-               'interTrialIntervalLength', 'abortInterTrialIntervalLength',
-               'successSequenceLength', 'maxiumTrialLength', 'sessionDescription',
-               'configuration', 'metadata']
+    dbNames = {"metadata": ['session_name', 'paradigm_name', 'animal_name', 'paradigm_id',
+                            'start_time', 'stop_time', 'duration', 'notes', 'rewardPostSoundDelay', 
+                            'rewardAmount', 'punishmentLength', 'punishInactivationLength', 
+                            'interTrialIntervalLength', 'abortInterTrialIntervalLength',
+                            'successSequenceLength', 'maxiumTrialLength', 'sessionDescription',
+                            'configuration'],
+               "env_metadata": ["pillars","pillar_details","envX_size",
+                                "envY_size", "base_length","wallzone_size",
+                                "wallzone_collider_size"],
+               "fsm_metadata": ["paradigms_states", "paradigms_transitions", 
+                                "paradigms_decisions", "paradigms_actions"],
+               "log_files": []} # add whatever log files are present
     metadata = load_session_metadata(session_dir, dbNames)
     
     
@@ -132,26 +138,27 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
     
     with pd.HDFStore(full_fname, 'w') as store:
         # L.logger.info(f"Merging metadata {metadata}...")
-        store.put('metadata', pd.DataFrame([metadata], index=[0]))
+        metadata = {key: str(value) for key, value in metadata.items()}
+        store.put('metadata', pd.DataFrame([metadata], index=[0]), format='table')
     
         L.logger.info(f"Merging unity data...")
-        store.put('unity_trial', unity_trials_data)
-        store.put('unity_frame', unity_frames_data)
+        store.put('unity_trial', unity_trials_data, format='table')
+        store.put('unity_frame', unity_frames_data, format='table')
         if paradigmVariable_data is not None:
-            store.put('paradigm_variable', paradigmVariable_data)
+            store.put('paradigm_variable', paradigmVariable_data, format='table')
 
         L.logger.info(f"Merging portenta data...")
         if ballvel_data is not None:
-            store.put('ballvelocity', ballvel_data)
+            store.put('ballvelocity', ballvel_data, format='table')
         if event_data is not None:
-            store.put('event', event_data)
+            store.put('event', event_data, format='table')
         
         if facecam_packages is not None:
-            store.put('facecam_packages', facecam_packages)    
+            store.put('facecam_packages', facecam_packages, format='table')    
         if bodycam_packages is not None:
-            store.put('bodycam_packages', bodycam_packages)
+            store.put('bodycam_packages', bodycam_packages, format='table')
         if unitycam_packages is not None:
-            store.put('unitycam_packages', unitycam_packages)
+            store.put('unitycam_packages', unitycam_packages, format='table')
 
     # copy the camera data into the behavior file
     with h5py.File(full_fname, 'a') as output_file:
@@ -248,6 +255,11 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     L = Logger()
     L.logger.info(f"Processing session {session_dir}")
     
+    if ".xlsx" in session_dir:
+        session_dir_new = session_dir.replace(".xlsx", "")
+        os.rename(session_dir, session_dir_new)
+        session_dir = session_dir_new
+    
     if prompt_user_decision:
         answer = input("\nSkip this session? [y/n]: ")
         if answer.lower() == 'y':
@@ -328,7 +340,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/home/vrmaster/projects/ratvr/VirtualReality/data/2024-09-11_17-08-09_active/")
+    argParser.add_argument("--session_dir", default="/mnt/SpatialSequenceLearning/RUN_rYL003/rYL003_P0800/2024-07-29_16-04_rYL003_P0800_LinearTrack_41min/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments

@@ -37,33 +37,54 @@ def load_session_metadata(session_dir, dbNames):
     
     # this key is supposed to be constructed only in postprocessing
     name = (f'{session_metadata["start_time"]}_{session_metadata["animal_name"]}_'
-            f'{session_metadata["paradigm_name"]:04}_{session_metadata["duration"]}')
+            f'{session_metadata["paradigm_name"].replace(".xlsx","")}_{session_metadata["duration"]}')
     session_metadata['session_name'] = name
     
     # remove explicit keys from metadata and add them to metadata field
-    session_metadata['metadata'] = {}
-    [session_metadata['metadata'].update({k:session_metadata.pop(k)}) 
-                                  for k in list(session_metadata.keys()) if k not in dbNames]
+    # session_metadata['metadata'] = {}
+    # [session_metadata['metadata'].update({k:session_metadata.pop(k)}) 
+    #                               for k in list(session_metadata.keys()) if k not in dbNames]
     
+    # rename a problematic key (typo)
+    if "paradigms_transitions " in session_metadata:
+        session_metadata["paradigms_transitions"] = session_metadata.pop("paradigms_transitions ")
+     
+    env_metadata = {}
+    fsm_metadata = {}
+    for k in dbNames['metadata']:
+        if k in session_metadata:
+            env_metadata[k] = session_metadata[k]
+        else:
+            env_metadata[k] = ""
+    
+    for k in dbNames['fsm_metadata']:
+        if k in session_metadata:
+            fsm_metadata[k] = session_metadata[k]
+        else:
+            fsm_metadata[k] = ""
+            
+     
+    log_file_content = {}
     # Add log files to metadata
     for filename in os.listdir(session_dir):
         if filename.endswith('.log'):
-            file_path = os.path.join(session_dir, filename)
-            with open(file_path, 'r') as file:
-                log_data = file.read()
-                session_metadata['metadata'][filename] = log_data
+            with open(os.path.join(session_dir, filename), 'r') as file:
+                log_file_content[filename] = file.read()
 
     # convert to json 
-    session_metadata['metadata'] = json.dumps(session_metadata['metadata'], indent=2)
+    session_metadata['env_metadata'] = json.dumps(env_metadata, indent=2)
+    session_metadata['fsm_metadata'] = json.dumps(fsm_metadata, indent=2)
+    session_metadata['log_file_content'] = json.dumps(log_file_content)
+    # session_metadata['metadata'] = json.dumps(session_metadata['metadata'], indent=2)
     L.logger.debug(L.fmtmsg(["Metadata patched: ", session_metadata]))
 
     # simplify the log message, don't print deeply nested values
     metadata_to_print = session_metadata.copy()
     metadata_to_print['configuration'] = f"{metadata_to_print['configuration'][:50]}..."
-    metadata_to_print['metadata'] = f"{metadata_to_print['metadata'][:50]}..."
+    metadata_to_print['env_metadata'] = f"{metadata_to_print['env_metadata'][:50]}..."
+    metadata_to_print['fsm_metadata'] = f"{metadata_to_print['fsm_metadata'][:50]}..."
+    metadata_to_print.pop('log_file_content')
     L.logger.info(L.fmtmsg(["Metadata: ", metadata_to_print]))
-
-
 
     return session_metadata
 

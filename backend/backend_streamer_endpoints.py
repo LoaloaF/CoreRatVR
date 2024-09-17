@@ -23,7 +23,9 @@ from backend.backend_helpers import shm_struct_fname
 from SHM.CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from SHM.VideoFrameSHMInterface import VideoFrameSHMInterface
 
-from backend_helpers import access_session_data
+# using ../analysisVR/sessionWiseProcessing PATH extensions
+from session_loading import load_session_hdf5
+from session_loading import get_session_modality
 
 def attach_stream_endpoints(app):
     # singlton class - reference to instance created in lifespan
@@ -130,12 +132,10 @@ def attach_stream_endpoints(app):
         try:
             while True:
                 await asyncio.sleep(check_interval)
-                logfile_names = glob.glob(os.path.join(P.SESSION_DATA_DIRECTORY, "/*.log"))
-                
+                logfile_names = glob.glob(os.path.join(P.SESSION_DATA_DIRECTORY, "*.log"))
                 for logfile_name in logfile_names:
                     with open(logfile_name, 'rb+') as logfile:
                         if os.path.getsize(logfile_name) > 300_000:  # 300KB
-                            # L.logger.info(f"Logfile {logfile_name} is too large. Truncating...")
                             logfile.seek(0)
                             content = logfile.read(150_000).decode('utf-8')  
                             logfile.seek(-150_000, os.SEEK_END)
@@ -189,6 +189,12 @@ def _live_get_frame(shm, prv_frame_package):
         return None, prv_frame_package
     
     frame_jpg = shm.get_frame()
+    
+    # unity frame is written in other colorformat and flipped, fix here 
+    if shm._shm_name == 'unitycam':
+        frame_jpg = cv2.flip(frame_jpg, 0)
+        frame_jpg = cv2.cvtColor(frame_jpg, cv2.COLOR_RGB2BGR)
+    
     L.logger.debug(f"New frame {frame_jpg.shape} read from SHM: {frame_package}")
     return cv2.imencode('.jpg', frame_jpg)[1].tobytes(), frame_package
 
@@ -206,7 +212,14 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
             shm = _access_shm(P.SHM_NAME_UNITY_CAM, "unity", app)
     else:
         validate_state(app.state.state, valid_initiated_inspect=True)
-        packages, sessionfile = access_session_data(f"{cam_name}_packages")
+
+        nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
+        from_nas = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
+        packages = get_session_modality(from_nas=from_nas, 
+                                        modality=f"{cam_name}_packages", 
+                                        pct_as_index=True,
+                                        rename2oldkeys=True)
+        sessionfile = load_session_hdf5(os.path.join(P.SESSION_DATA_DIRECTORY, P.SESSION_NAME))
     await websocket.accept()
 
     frame_package = {}
@@ -242,6 +255,7 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
 async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name, 
                                 check_interval=0.01, maxpops=3):
     L = Logger()
+    P = Parameters()
     try: 
         # initialize for either viewing a recordded session or stream live from memory    
         if not inspect:
@@ -252,8 +266,14 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
         else:
             validate_state(app.state.state, valid_initiated_inspect=True)
             await websocket.accept()
-            data = access_session_data(data_name, na2null=True, rename2oldkeys=True)
-            L.logger.info(f"{data_name} data: {', '.join(data.columns)}\n\n{data}")
+            
+            nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
+            from_nas = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
+            data = get_session_modality(from_nas=from_nas, 
+                                        modality=data_name,
+                                        na2null=True,
+                                        pct_as_index=True,
+                                        rename2oldkeys=True,)
         
         packages = []
         t0 = 0
