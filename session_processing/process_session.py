@@ -185,7 +185,7 @@ def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
     # read the ephys file bits field
     # integrate with behavior data with extensive alignment chacking
     ephys_fname = [f for f in os.listdir(os.path.join(nas_dir, session_dir)) 
-                if f.endswith(".h5.raw") and 'vr_ephys' in f]
+                if f.endswith(".raw.h5") and 'ephys' in f]
     if len(ephys_fname) != 1:
         L.logger.error(f"Failed to find ephys recording file in {nas_dir}/{session_dir}")
         return
@@ -328,7 +328,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-08-19_17-53_rYL008_P0500_MotorLearning_19min")
+    argParser.add_argument("--session_dir", default="/home/vrmaster/projects/ratvr/VirtualReality/data/2024-09-11_17-08-09_active/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments
