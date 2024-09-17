@@ -179,7 +179,7 @@ class SessionParamters:
 
         params.update({
             "paradigms_states": self.paradigms_states,
-            "paradigms_transitions ": self.paradigms_transitions,
+            "paradigms_transitions": self.paradigms_transitions,
             "paradigms_decisions": self.paradigms_decisions,
             "paradigms_actions": self.paradigms_actions})
         

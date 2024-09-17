@@ -138,6 +138,7 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
     
     with pd.HDFStore(full_fname, 'w') as store:
         # L.logger.info(f"Merging metadata {metadata}...")
+        metadata = {key: str(value) for key, value in metadata.items()}
         store.put('metadata', pd.DataFrame([metadata], index=[0]), format='table')
     
         L.logger.info(f"Merging unity data...")
@@ -334,7 +335,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-08-19_17-53_rYL008_P0500_MotorLearning_19min")
+    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-09-16_12-04-11_active/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments

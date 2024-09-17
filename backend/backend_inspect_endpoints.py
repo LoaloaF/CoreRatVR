@@ -44,18 +44,21 @@ def attach_inspect_endpoints(app):
                 session_dirs = [f for f in os.listdir(paradigm_dir) if f.endswith("min")]
                 for ses_dir in sorted(session_dirs):
                     session_dir = os.path.join(P.NAS_DATA_DIRECTORY, animal_dir, par_dir, ses_dir)
-                    fname = [f for f in os.listdir(session_dir) 
-                             if f.endswith("min.hdf5")][0]
-                    if fname:
-                        sessions.append({"animal": an_dir, "paradigm": par_dir[-5:], 
-                                         "session": fname})
+                    fnames = [f for f in os.listdir(session_dir) 
+                             if f.endswith("min.hdf5")]
+                    if len(fnames):
+                        for fname in fnames:
+                            sessions.append({"animal": an_dir, "paradigm": par_dir[-5:], 
+                                            "session": fnames[0]})
                         
-                        # print("=============================================")
-                        # print(i)
-                        # print("=============================================")
-                        # session_fullfname = os.path.join(session_dir, fname)
-                        # patch_session_data.convert_hdf5_fixed_to_table(session_fullfname, dummyrun=False)
-                        # i += 1
+                            # print("=============================================")
+                            # print(i)
+                            # session_fullfname = os.path.join(session_dir, fname)
+                            # patch_session_data.convert_hdf5_fixed_to_table(session_fullfname, dummyrun=True)
+                            # i += 1
+                            # print("=============================================")
+                    # else:
+                    #     print(session_dir)
         
         return sessions
     

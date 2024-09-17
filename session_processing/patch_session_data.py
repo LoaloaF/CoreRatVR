@@ -164,26 +164,40 @@ def patch_trial_packages(unity_trials_data_package, df_unity_frame, metadata):
     return unity_trials_data
 
 def convert_hdf5_fixed_to_table(session_fullfname, dummyrun=True, final_cleanup=False):
+    # count how often the string _fixed is in the filename
+    n_fixed = session_fullfname.count("_fixed")
+    n_old = session_fullfname.count("_old")
+    s = os.path.getsize(session_fullfname) / 1e6
+    print(session_fullfname)
+    print(n_fixed, n_old, s)
+    return    
+    
     idx = session_fullfname.rfind("_")
     session_fixed_fullfname = session_fullfname[:idx] + "_fixed" + session_fullfname[idx:]
+    session_fixed_fullfname = session_fixed_fullfname.replace("/behavior_", "/")
+
     session_old_fullfname = session_fullfname[:idx] + "_old" + session_fullfname[idx:]
     print("Fixing:")
     print(os.path.basename(session_fullfname))
     print("->")
     print(os.path.basename(session_fixed_fullfname))
     
-    if os.path.basename(session_fullfname) != "2024-08-22_15-11_rYL008_P0800_LinearTrack_18min.hdf5":
-        return
+    # if os.path.basename(session_fullfname) != "2024-08-22_15-11_rYL008_P0800_LinearTrack_18min.hdf5":
+    #     return
 
     if final_cleanup:
         print("Final cleanup")
-        session_fixed_fullfname_rename = session_fixed_fullfname.replace("_fixed", "")
-        os.rename(session_fixed_fullfname, session_fixed_fullfname_rename)
-        # os.remove(session_old_fullfname)
-        return
+        if "_old" in session_fullfname:
+            # treat with care, maybe use send2trash?
+            # os.remove(session_fullfname)
+            return
+        elif "_fixed" in session_fullfname:
+            session_fixed_fullfname_rename = session_fixed_fullfname.replace("_fixed", "")
+            os.rename(session_fixed_fullfname, session_fixed_fullfname_rename)
+            return
+        else:
+            print("No cleanup needed")
     
-    session_fixed_fullfname = session_fixed_fullfname.replace("/behavior_", "/")
-    session_fixed_fullfname = session_fixed_fullfname.replace(".xlsx", "")
     # print(f"Fixing {session_fullfname}\nNew name:\n{session_fixed_fullfname}")
     # Open the input HDF5 file
     try:
