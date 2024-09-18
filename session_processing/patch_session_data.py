@@ -55,14 +55,16 @@ def patch_paradigmVariable_data(paradigmVariable_trials_data):
             "PA": "pillar_angle",
             "MRN":"maximum_reward_number", # set at trial start
             "RN": "reward_number", # like an outcome
-            "MT": "movement_time", # time required to move to straight move
+            "MT": "movement_time", # time required to move to straight move,
+            "ST": "stay_time", # time required to stay in the reward zone,
             "MTH": "movement_threshold", # threshold to detect movement
             "STH": "stay_threshold", # threshold to detect stay
+            "SSTH": "stay_stop_threshold", # threshold to detect stay stop
             "R": "raw", # raw movement enabled
             "Y": "yaw", # yaw movement enabled
             "P": "pitch", # pitch movement enabled
-            "ST": "stay_time", # time required to stay in the reward zone
             "C": "cue", # cue number
+            "LR": "lick_reward", # lick reward
             # add more here
         }
         paradigmVariable_trials_data = paradigmVariable_trials_data.rename(columns=paradigmVariable_toDBnames_mapping_patch)
@@ -170,7 +172,7 @@ def convert_hdf5_fixed_to_table(session_fullfname, dummyrun=True, final_cleanup=
     s = os.path.getsize(session_fullfname) / 1e6
     print(session_fullfname)
     print(n_fixed, n_old, s)
-    return    
+       
     
     idx = session_fullfname.rfind("_")
     session_fixed_fullfname = session_fullfname[:idx] + "_fixed" + session_fullfname[idx:]

@@ -314,30 +314,30 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data,
     # if unity_trials_data is None, this will enter the catch block in main function
     # get the trial time boundaries and constuct an interval index from it
 
-    import matplotlib.pyplot as plt
-    for idx, trial in unity_trials_data.iterrows():
-        start, stop = trial["trial_start_pc_timestamp"], trial["trial_end_pc_timestamp"]
-        trial_id = trial["trial_id"]
-        msg = f"Trial ID: {trial_id}"
-        if start>stop: 
-            col = 'red'
-            msg += " - ERROR: Start > Stop"
-        else:
-            col = "green"
+    # import matplotlib.pyplot as plt
+    # for idx, trial in unity_trials_data.iterrows():
+    #     start, stop = trial["trial_start_pc_timestamp"], trial["trial_end_pc_timestamp"]
+    #     trial_id = trial["trial_id"]
+    #     msg = f"Trial ID: {trial_id}"
+    #     if start>stop: 
+    #         col = 'red'
+    #         msg += " - ERROR: Start > Stop"
+    #     else:
+    #         col = "green"
             
-        if idx and start < unity_trials_data.loc[idx-1,"trial_end_pc_timestamp"]:
-            col = 'red'
-            msg += " - ERROR: Start < previous trial stop"
+    #     if idx and start < unity_trials_data.loc[idx-1,"trial_end_pc_timestamp"]:
+    #         col = 'red'
+    #         msg += " - ERROR: Start < previous trial stop"
             
-        # for checking the trial start and end times
-        plt.scatter([start], [trial_id], edgecolors=col, s=60, zorder=2, color='none', marker='>')
-        plt.scatter([stop], [trial_id], edgecolors=col, s=60, zorder=2, color='none', marker='o')
-        plt.plot([start, stop], [trial_id, trial_id], color=col, linewidth=3)
-        plt.text(start, trial_id+.3, f"{trial['trial_start_frame']:.0f}", fontsize=8)
-        plt.text(stop, trial_id+.3, f"{trial['trial_end_frame']:.0f}", fontsize=8)
-        print(msg)
-        msg = ""
-    plt.show()        
+    #     # for checking the trial start and end times
+    #     plt.scatter([start], [trial_id], edgecolors=col, s=60, zorder=2, color='none', marker='>')
+    #     plt.scatter([stop], [trial_id], edgecolors=col, s=60, zorder=2, color='none', marker='o')
+    #     plt.plot([start, stop], [trial_id, trial_id], color=col, linewidth=3)
+    #     plt.text(start, trial_id+.3, f"{trial['trial_start_frame']:.0f}", fontsize=8)
+    #     plt.text(stop, trial_id+.3, f"{trial['trial_end_frame']:.0f}", fontsize=8)
+    #     print(msg)
+    #     msg = ""
+    # plt.show()        
     
     trial_starts = unity_trials_data[trials_tstamp_col]
     trial_ends = unity_trials_data[trials_tstamp_col.replace('start', 'end')]
