@@ -72,11 +72,16 @@ def patch_metadata(fname):
                             fsm_keys = ["paradigms_states", "paradigms_transitions", 
                                         "paradigms_decisions", "paradigms_actions"]
                             fsm_metadata = {k: nested_metadata.get(k) for k in fsm_keys}
-                            log_file_content = nested_metadata.get("log_files")
+                            
+                            log_file_content = {}
+                            log_keys = [key for key in list(nested_metadata.keys()) if key.endswith('.log')]
+                            for log_key in log_keys:
+                                log_file_content[log_key] = nested_metadata[log_key]
+                            log_file_content = str(log_file_content)
                             
                             data['env_metadata'] = [json.dumps(pillar_metadata)]
                             data['fsm_metadata'] = [json.dumps(fsm_metadata)]
-                            data['log_file_content'] = [json.dumps(log_file_content)]
+                            # data['log_file_content'] = [json.dumps(log_file_content)]
 
                         new_pd_store.put(key, data, format='table')
                     else:
@@ -85,6 +90,10 @@ def patch_metadata(fname):
                             
         # copy the camera data into the behavior file
         with h5py.File(session_fixed_fullfname, 'a') as output_file:
+            if log_file_content is not None:
+                output_file.create_dataset("log_file_content", data=log_file_content)
+                L.logger.info("Log file content copied")
+                
             with h5py.File(fname, 'r') as source_file:
                 if "facecam_frames" in source_file.keys():
                     source_file.copy(source_file["facecam_frames"], output_file, name="facecam_frames")
@@ -223,9 +232,11 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         raise Exception(f"File {full_fname} already exists!")
         return
     
+    metadata = {key: str(value) for key, value in metadata.items()}
+    log_file_content = metadata.pop("log_file_content", None)
+    
     with pd.HDFStore(full_fname, 'w') as store:
-        # L.logger.info(f"Merging metadata {metadata}...")
-        metadata = {key: str(value) for key, value in metadata.items()}
+        L.logger.info(f"Merging metadata {metadata}...")
         store.put('metadata', pd.DataFrame([metadata], index=[0]), format='table')
     
         L.logger.info(f"Merging unity data...")
@@ -249,6 +260,9 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
 
     # copy the camera data into the behavior file
     with h5py.File(full_fname, 'a') as output_file:
+        L.logger.info(f"Merging log file data...")
+        output_file.create_dataset("log_file_content", data=log_file_content)
+        
         L.logger.info(f"Merging facecam data...")
         if os.path.exists(os.path.join(session_dir, 'facecam.hdf5')):
             with h5py.File(os.path.join(session_dir, 'facecam.hdf5'), 'r') as source_file:
@@ -424,8 +438,8 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
-    argParser.add_argument("--logging_dir")
-    argParser.add_argument("--logging_name")
+    argParser.add_argument("--logging_dir", default="../logs")
+    argParser.add_argument("--logging_name", default="process_session_batch.log")
     argParser.add_argument("--logging_level", default="INFO")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
@@ -454,7 +468,8 @@ if __name__ == "__main__":
     database_name = kwargs.pop("database_name")
     render_videos = kwargs.pop("render_videos")
     
-    animal_ids = [1,2,3,4,5,6,7,8,9]
+    # animal_ids = [1,2,3,4,5,6,7,8,9]
+    animal_ids = [1,2,3,4]
     
     parent_folder = "/mnt/SpatialSequenceLearning/"
     # TODO
@@ -475,14 +490,21 @@ if __name__ == "__main__":
             paradigm_dir = os.path.join(animal_dir, paradigm_name)
             
             for session in os.listdir(paradigm_dir):
+                if "DS_Store" in session:
+                    continue
                 session_dir = os.path.join(paradigm_dir, session)
-                session_dir = "/mnt/SpatialSequenceLearning/RUN_rYL008/rYL008_P0800/2024-09-10_15-54_rYL008_P0800_LinearTrack_42min/"
+                # session_dir = "/mnt/SpatialSequenceLearning/RUN_rYL008/rYL008_P0800/2024-08-22_15-11_rYL008_P0800_LinearTrack_18min/"
                 session_dir_new = session_dir.replace(".xlsx", "")
                 os.rename(session_dir, session_dir_new)
                 session_dir = session_dir_new
                 fnames = [f for f in os.listdir(session_dir) if f.endswith("min.hdf5")]
+                all_fnames = os.listdir(session_dir)
                 
-                if len(fnames) == 0:
+                if "unity_output.hdf5" in all_fnames:
+                    for fname in fnames:
+                        full_fname = os.path.join(session_dir, fname)
+                        os.remove(full_fname)
+                    
                     try:
                         process_session(session_dir, nas_dir, prompt_user_decision, 
                                         integrate_ephys, copy_to_nas, write_to_db,
@@ -494,14 +516,9 @@ if __name__ == "__main__":
                 else:
                     for fname in fnames:
                         full_fname = os.path.join(session_dir, fname)
-                        if "_old" in full_fname: 
+                        if "_old" in full_fname or '_fixed' in full_fname: 
                             # os.remove(full_fname)
                             continue
-                        elif "_fixed" in full_fname:
-                            full_fname_new = full_fname.replace("_fixed", "")
-                            os.rename(full_fname, full_fname_new)
-                            L.logger.info(f"Renamed {full_fname} to {full_fname_new}")
-                            break
                         else:
                             patch_metadata(full_fname)
             L.spacer()

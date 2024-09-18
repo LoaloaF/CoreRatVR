@@ -74,7 +74,7 @@ def load_session_metadata(session_dir, dbNames):
     # convert to json 
     session_metadata['env_metadata'] = json.dumps(env_metadata, indent=2)
     session_metadata['fsm_metadata'] = json.dumps(fsm_metadata, indent=2)
-    session_metadata['log_file_content'] = json.dumps(log_file_content)
+    session_metadata['log_file_content'] = json.dumps(log_file_content, indent=2)
     # session_metadata['metadata'] = json.dumps(session_metadata['metadata'], indent=2)
     L.logger.debug(L.fmtmsg(["Metadata patched: ", session_metadata]))
 

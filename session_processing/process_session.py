@@ -136,9 +136,11 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         raise Exception(f"File {full_fname} already exists!")
         return
     
+    metadata = {key: str(value) for key, value in metadata.items()}
+    log_file_content = metadata.pop("log_file_content", None)
+    
     with pd.HDFStore(full_fname, 'w') as store:
-        # L.logger.info(f"Merging metadata {metadata}...")
-        metadata = {key: str(value) for key, value in metadata.items()}
+        L.logger.info(f"Merging metadata {metadata}...")
         store.put('metadata', pd.DataFrame([metadata], index=[0]), format='table')
     
         L.logger.info(f"Merging unity data...")
@@ -162,6 +164,9 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
 
     # copy the camera data into the behavior file
     with h5py.File(full_fname, 'a') as output_file:
+        L.logger.info(f"Merging log file data...")
+        output_file.create_dataset("log_file_content", data=log_file_content)
+        
         L.logger.info(f"Merging facecam data...")
         if os.path.exists(os.path.join(session_dir, 'facecam.hdf5')):
             with h5py.File(os.path.join(session_dir, 'facecam.hdf5'), 'r') as source_file:
@@ -340,7 +345,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/mnt/SpatialSequenceLearning/RUN_rYL003/rYL003_P0800/2024-07-25_15-25_rYL003_P0800_LinearTrack_25min/")
+    argParser.add_argument("--session_dir", default="/mnt/SpatialSequenceLearning/RUN_rYL003/rYL003_P0800/2024-07-24_17-45_rYL003_P0800_LinearTrack_25min/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments
