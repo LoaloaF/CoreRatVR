@@ -6,6 +6,7 @@ from SessionParamters import SessionParamters
 
 from CustomLogger import CustomLogger as Logger
 from backend.backend_helpers import MockProcess
+from backend.backend_helpers import shm_struct_fname
 
 def open_camera2shm_proc(cam_name):
     P = Parameters()
@@ -224,10 +225,6 @@ def open_process_session_proc(session_dir, render_videos, integrate_ephys,
         return MockProcess()
     
     return _launch(P.WHICH_PYTHON, script_fullfname, *args)
-
-def shm_struct_fname(shm_name):
-    P = Parameters()
-    return os.path.join(P.SHM_STRUCTURE_DIRECTORY, shm_name+"_shmstruct.json")
 
 def _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput"),
                    logging_args=True):

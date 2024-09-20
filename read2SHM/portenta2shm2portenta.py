@@ -128,7 +128,8 @@ def _handle_output(ser_port, portentainput_shm, paradigmflag_shm,
         new_state = paradigmflag_shm.is_set()
         pause_length = 1000 if new_state else 2000 # when flipped to True
         cmd = f"W{pause_length}\r\n".encode()
-        L.logger.info(f"ParadigmRunning state changed - Sending {pause_length}ms"
+        current_pct = int(time.time()*1e6)
+        L.logger.info(f"ParadigmRunning state changed at {current_pct} - Sending {pause_length}ms"
                       f" pause to serial: `{cmd}`")
         ser_port.write(cmd)
         return new_state

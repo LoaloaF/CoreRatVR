@@ -6,6 +6,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 
 import argparse
 from time import sleep
+import time
 import pandas as pd
 
 from CustomLogger import CustomLogger as Logger
@@ -20,8 +21,8 @@ def _check_package(ballvel_pack, last_ballvel_pack_id):
     # update dict with previous ID (specific for each package type/ "N")
     last_ballvel_pack_id[ballvel_pack["N"]] = ballvel_pack["ID"]
 
-    if ballvel_pack["T"] < 0:
-        L.logger.warning("Portenta timestamp was negative - Reset?")
+    # if ballvel_pack["T"] < 0:
+    #     L.logger.warning("Portenta timestamp was negative - Reset?")
     return last_ballvel_pack_id
 
 def _process_ballvell_package(ballvel_pack):
@@ -50,15 +51,24 @@ def _log(termflag_shm, ballvel_shm, portentaout_shm, paradigm_running_shm, full_
     last_ballvel_pack_id = {}
     nchecks = 1 # for logging
     package_buf_size = 256 # save every 256 ball vel packages
+    portenta_start_stop_flag = False
+    portenta_start_stop_pct = 0
     while True:
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
             if ballvel_packages:
                 _save_package_set(ballvel_packages, full_fname, "ballvelocity")
             break
+        
+        current_time = int(time.time()*1e6)  
         if not paradigm_running_shm.is_set():
-            L.logger.debug("Paradigm stopped, on halt....")
-            continue
+            if not portenta_start_stop_flag:
+                L.logger.info(f"Paradigm start not running at {current_time}, on halt....")
+                portenta_start_stop_flag = True
+                portenta_start_stop_pct = int(time.time()*1e6)
+            elif current_time-portenta_start_stop_pct > 1000000:            
+                L.logger.debug("Paradigm stopped, on halt....")
+                continue
         
         if (ballvel_shm.usage == 0) and (portentaout_shm.usage == 0):
             nchecks += 1
@@ -107,7 +117,8 @@ def run_log_portenta(termflag_shm_struc_fname, ballvelocity_shm_struc_fname,
         
     ballvel_shm.reset_reader()
     portentaout_shm.reset_reader()
-    L.logger.info(f"Paradigm flag raised. ballvel shm usage: {ballvel_shm.usage}"
+    current_time = int(time.time()*1e6)
+    L.logger.info(f"Paradigm flag raised at {current_time}. ballvel shm usage: {ballvel_shm.usage}"
                   f", portenta events shm usage: {portentaout_shm.usage}"
                   f"Starting to save data now...")
 

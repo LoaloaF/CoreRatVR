@@ -1,7 +1,5 @@
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
-sys.path.insert(1, os.path.join(sys.path[0], 'backend'))
 
 from fastapi import HTTPException, Request
 

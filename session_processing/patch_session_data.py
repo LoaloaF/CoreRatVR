@@ -1,5 +1,6 @@
-from datetime import datetime
 import os
+import sys
+import h5py
 import json
 import pandas as pd
 from CustomLogger import CustomLogger as Logger
@@ -54,14 +55,16 @@ def patch_paradigmVariable_data(paradigmVariable_trials_data):
             "PA": "pillar_angle",
             "MRN":"maximum_reward_number", # set at trial start
             "RN": "reward_number", # like an outcome
-            "MT": "movement_time", # time required to move to straight move
+            "MT": "movement_time", # time required to move to straight move,
+            "ST": "stay_time", # time required to stay in the reward zone,
             "MTH": "movement_threshold", # threshold to detect movement
             "STH": "stay_threshold", # threshold to detect stay
+            "SSTH": "stay_stop_threshold", # threshold to detect stay stop
             "R": "raw", # raw movement enabled
             "Y": "yaw", # yaw movement enabled
             "P": "pitch", # pitch movement enabled
-            "ST": "stay_time", # time required to stay in the reward zone
             "C": "cue", # cue number
+            "LR": "lick_reward", # lick reward
             # add more here
         }
         paradigmVariable_trials_data = paradigmVariable_trials_data.rename(columns=paradigmVariable_toDBnames_mapping_patch)
@@ -167,3 +170,114 @@ def patch_trial_packages(unity_trials_data_package, df_unity_frame, metadata):
         unity_trials_data = unity_trials_data_package
 
     return unity_trials_data
+
+def convert_hdf5_fixed_to_table(session_fullfname, dummyrun=True, final_cleanup=False):
+    # count how often the string _fixed is in the filename
+    n_fixed = session_fullfname.count("_fixed")
+    n_old = session_fullfname.count("_old")
+    s = os.path.getsize(session_fullfname) / 1e6
+    print(session_fullfname)
+    print(n_fixed, n_old, s)
+       
+    
+    idx = session_fullfname.rfind("_")
+    session_fixed_fullfname = session_fullfname[:idx] + "_fixed" + session_fullfname[idx:]
+    session_fixed_fullfname = session_fixed_fullfname.replace("/behavior_", "/")
+
+    session_old_fullfname = session_fullfname[:idx] + "_old" + session_fullfname[idx:]
+    print("Fixing:")
+    print(os.path.basename(session_fullfname))
+    print("->")
+    print(os.path.basename(session_fixed_fullfname))
+    
+    # if os.path.basename(session_fullfname) != "2024-08-22_15-11_rYL008_P0800_LinearTrack_18min.hdf5":
+    #     return
+
+    if final_cleanup:
+        print("Final cleanup")
+        if "_old" in session_fullfname:
+            # treat with care, maybe use send2trash?
+            # os.remove(session_fullfname)
+            return
+        elif "_fixed" in session_fullfname:
+            session_fixed_fullfname_rename = session_fixed_fullfname.replace("_fixed", "")
+            os.rename(session_fixed_fullfname, session_fixed_fullfname_rename)
+            return
+        else:
+            print("No cleanup needed")
+    
+    # print(f"Fixing {session_fullfname}\nNew name:\n{session_fixed_fullfname}")
+    # Open the input HDF5 file
+    try:
+        with pd.HDFStore(session_fullfname, 'r') as source_pd_store:
+            keys = source_pd_store.keys()  # Get all keys in the HDF5 file
+            print(f"Keys in {session_fullfname}: {keys}")
+            
+            # Create a new HDF5 file to save the converted data
+            with pd.HDFStore(session_fixed_fullfname, 'w') as new_pd_store:
+                for key in keys:
+                    # Get the storer for each key and check if it's in Fixed format
+                    storer = source_pd_store.get_storer(key)
+                    if not storer.is_table:
+                        print(f"Converting Fixed format dataset '{key}' to Table format.")
+                        
+                        # Read the entire Fixed format dataset
+                        data = source_pd_store[key]
+                        
+                        # fix metadata
+                        if key == '/metadata':
+                            # Ensure each element in 'notes' is a string
+                            if 'notes' in data.columns:
+                                data["notes"] = data["notes"].apply(lambda x: " ".join(x) if isinstance(x, list) else str(x))
+                            
+                            # split the metadata into two parts
+                            nested_metadata = json.loads(data['metadata'].item())
+                            data.drop(columns=['metadata'], inplace=True)
+                            
+                            pillar_keys = ["pillars","pillar_details","envX_size",
+                                            "envY_size", "base_length","wallzone_size",
+                                            "wallzone_collider_size",]
+                            pillar_metadata = {k: nested_metadata.get(k) for k in pillar_keys}
+                            fsm_keys = ["paradigms_states", "paradigms_transitions", 
+                                        "paradigms_decisions", "paradigms_actions"]
+                            fsm_metadata = {k: nested_metadata.get(k) for k in fsm_keys}
+                            log_file_content = nested_metadata.get("log_files")
+                            
+                            data['env_metadata'] = [json.dumps(pillar_metadata)]
+                            data['fsm_metadata'] = [json.dumps(fsm_metadata)]
+                            data['log_file_content'] = [json.dumps(log_file_content)]
+
+                        if not dummyrun:
+                            # Write it to the new store in Table format
+                            new_pd_store.put(key, data, format='table')
+                    else:
+                        print(f"'{key}' is already in Table format, copying as is.")
+                        # If already Table format, just copy it over
+                        if not dummyrun:
+                            new_pd_store.put(key, new_pd_store[key], format='table')
+                            
+        # copy the camera data into the behavior file
+        with h5py.File(session_fixed_fullfname, 'a') as output_file:
+            with h5py.File(session_fullfname, 'r') as source_file:
+                if "facecam_frames" in source_file.keys():
+                    if not dummyrun:
+                        source_file.copy(source_file["facecam_frames"], output_file, name="facecam_frames")
+                    print("Facecam copied")
+                if "bodycam_frames" in source_file.keys():
+                    if not dummyrun:
+                        source_file.copy(source_file["bodycam_frames"], output_file, name="bodycam_frames")
+                    print("Bodycam copied")
+                if "unitycam_frames" in source_file.keys():
+                    if not dummyrun:
+                        source_file.copy(source_file["unitycam_frames"], output_file, name="unitycam_frames")
+                    print("Unitycam copied")
+        print(f"Conversion complete! New HDF5 file saved as: {session_fixed_fullfname}")
+
+        session_fullfname_rename = session_fullfname[:idx] + "_old" + session_fullfname[idx:]
+        if not dummyrun:
+            os.rename(session_fullfname, session_fullfname_rename)
+        print(f"Old file renamed to {session_fullfname_rename}")
+    
+    except Exception as e:
+        print(f"Error: {e} with {session_fullfname}")
+        return 

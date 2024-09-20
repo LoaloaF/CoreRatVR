@@ -4,15 +4,14 @@ import sys
 import os
 # when executed as a process add parent SHM dir to path again
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
-sys.path.insert(1, os.path.join(sys.path[0], 'db_mysql'))
 
 import argparse
 # from send2trash import send2trash
 import pandas as pd
 import h5py
 from CustomLogger import CustomLogger as Logger
-
-from session2db import session2db
+import json
+from session_processing.db.session2db import *
 from check_session_files import check_file_existence
 from check_session_files import check_log_files
 from load_session_data import load_session_metadata
@@ -24,6 +23,144 @@ from load_session_data import load_portenta_event_data
 from polish_session_data import insert_trial_id
 from polish_session_data import add_ephys_timestamps
 from polish_session_data import hdf5_frames2mp4
+
+
+def patch_metadata(fname):
+    L = Logger()
+    idx = fname.rfind("_")
+    session_fixed_fullfname = fname[:idx] + "_fixed" + fname[idx:]
+    session_fixed_fullfname = session_fixed_fullfname.replace("/behavior_", "/")
+    session_fixed_fullfname = session_fixed_fullfname.replace(".xlsx", "")
+
+    session_old_fullfname = fname[:idx] + "_old" + fname[idx:]
+    L.logger.info("Fixing:")
+    L.logger.info(os.path.basename(fname))
+    L.logger.info("->")
+    L.logger.info(os.path.basename(session_fixed_fullfname))
+    
+    with pd.HDFStore(fname, 'r') as source_pd_store:
+        keys = source_pd_store.keys()  # Get all keys in the HDF5 file
+        L.logger.info(f"Keys in {fname}: {keys}")
+        if "metadata" in source_pd_store["metadata"]:
+            patch_mode = "old patch"
+        elif "log_file_content" in source_pd_store["metadata"]:
+            patch_mode = "new patch"
+                
+    try:
+        if patch_mode == "old patch":
+            # with pd.HDFStore(fname, 'r') as source_pd_store:            
+            #     # Create a new HDF5 file to save the converted data
+            #     with pd.HDFStore(session_fixed_fullfname, 'w') as new_pd_store:
+            #         for key in keys:
+            #             # Get the storer for each key and check if it's in Fixed format
+            #             storer = source_pd_store.get_storer(key)
+            #             if not storer.is_table:
+            #                 L.logger.info(f"Converting Fixed format dataset '{key}' to Table format.")
+                            
+            #                 # Read the entire Fixed format dataset
+            #                 data = source_pd_store[key]
+                            
+            #                 # fix metadata
+            #                 if key == '/metadata':
+            #                     # Ensure each element in 'notes' is a string
+            #                     if 'notes' in data.columns:
+            #                         data["notes"] = data["notes"].apply(lambda x: " ".join(x) if isinstance(x, list) else str(x))
+                                
+            #                     # split the metadata into two parts
+            #                     nested_metadata = json.loads(data['metadata'].item())
+            #                     data.drop(columns=['metadata'], inplace=True)
+                                
+            #                     pillar_keys = ["pillars","pillar_details","envX_size",
+            #                                     "envY_size", "base_length","wallzone_size",
+            #                                     "wallzone_collider_size",]
+            #                     pillar_metadata = {k: nested_metadata.get(k) for k in pillar_keys}
+            #                     fsm_keys = ["paradigms_states", "paradigms_transitions", 
+            #                                 "paradigms_decisions", "paradigms_actions"]
+            #                     fsm_metadata = {k: nested_metadata.get(k) for k in fsm_keys}
+                                
+            #                     log_file_content = {}
+            #                     log_keys = [key for key in list(nested_metadata.keys()) if key.endswith('.log')]
+            #                     for log_key in log_keys:
+            #                         log_file_content[log_key] = nested_metadata[log_key]
+            #                     log_file_content = str(log_file_content)
+                                
+            #                     data['env_metadata'] = [json.dumps(pillar_metadata)]
+            #                     data['fsm_metadata'] = [json.dumps(fsm_metadata)]
+            #                     # data['log_file_content'] = [json.dumps(log_file_content)]
+
+            #                 new_pd_store.put(key, data, format='table')
+            #             else:
+            #                 L.logger.info(f"'{key}' is already in Table format, copying as is.")
+            #                 new_pd_store.put(key, source_pd_store[key], format='table')
+                                
+            # # copy the camera data into the behavior file
+            # with h5py.File(session_fixed_fullfname, 'a') as output_file:
+            #     if log_file_content is not None:
+            #         output_file.create_dataset("log_file_content", data=log_file_content)
+            #         L.logger.info("Log file content copied")
+                    
+            #     with h5py.File(fname, 'r') as source_file:
+            #         if "facecam_frames" in source_file.keys():
+            #             source_file.copy(source_file["facecam_frames"], output_file, name="facecam_frames")
+            #             L.logger.info("Facecam copied")
+            #         if "bodycam_frames" in source_file.keys():
+            #             source_file.copy(source_file["bodycam_frames"], output_file, name="bodycam_frames")
+            #             L.logger.info("Bodycam copied")
+            #         if "unitycam_frames" in source_file.keys():
+            #             source_file.copy(source_file["unitycam_frames"], output_file, name="unitycam_frames")
+            #             L.logger.info("Unitycam copied")
+            return
+        
+        elif patch_mode == "new patch":
+            with pd.HDFStore(fname, 'r') as source_pd_store:            
+                # Create a new HDF5 file to save the converted data
+                with pd.HDFStore(session_fixed_fullfname, 'w') as new_pd_store:
+                    for key in keys:
+                        if key == '/metadata':                            
+                            # Read the entire Fixed format dataset
+                            data = source_pd_store[key]
+                            
+                            log_file_content = data['log_file_content'].item()
+                            data.drop(columns=['log_file_content'], inplace=True)
+                            new_pd_store.put(key, data, format='table')
+                        else:
+                            L.logger.info(f"'{key}' is already in Table format, copying as is.")
+                            new_pd_store.put(key, source_pd_store[key], format='table')
+                                
+            # copy the camera data into the behavior file
+            with h5py.File(session_fixed_fullfname, 'a') as output_file:
+                if log_file_content is not None:
+                    output_file.create_dataset("log_file_content", data=log_file_content)
+                    L.logger.info("Log file content copied")
+                    
+                with h5py.File(fname, 'r') as source_file:
+                    if "facecam_frames" in source_file.keys():
+                        source_file.copy(source_file["facecam_frames"], output_file, name="facecam_frames")
+                        L.logger.info("Facecam copied")
+                    if "bodycam_frames" in source_file.keys():
+                        source_file.copy(source_file["bodycam_frames"], output_file, name="bodycam_frames")
+                        L.logger.info("Bodycam copied")
+                    if "unitycam_frames" in source_file.keys():
+                        source_file.copy(source_file["unitycam_frames"], output_file, name="unitycam_frames")
+                        L.logger.info("Unitycam copied")
+                
+        
+        if patch_mode != None:
+            L.logger.info(f"Conversion complete! New HDF5 file saved as: {session_fixed_fullfname}")
+
+            session_fullfname_rename = fname[:idx] + "_old" + fname[idx:]
+            os.rename(fname, session_fullfname_rename)
+            L.logger.info(f"Old file renamed to {session_fullfname_rename}")
+
+            session_fixed_fullfname_new = session_fixed_fullfname.replace("_fixed", "")
+            os.rename(session_fixed_fullfname, session_fixed_fullfname_new)
+            L.logger.info(f"Fixed file renamed to {session_fixed_fullfname_new}")
+            
+    except Exception as e:
+        L.logger.error(f"Error: {e} with {fname}")
+        return 
+
+
 
 def _handle_logs(session_dir):
     fnames = os.listdir(session_dir)
@@ -256,7 +393,7 @@ def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
 #     return session_dir
 
 def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys, 
-                    copy_to_nas, write_to_db, database_name,
+                    copy_to_nas, write_to_db, database_location, database_name,
                     render_videos):
     L = Logger()
     L.logger.info(f"Processing session {session_dir}")
@@ -335,7 +472,7 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
 
     # read the moved data on the NAS, not local (faster in the future)
     if write_to_db:
-        session2db(nas_dir, merged_fname, database_name)
+        session2db(nas_dir, merged_fname, database_location, database_name)
     
     L.logger.info(f"Session processing finished sucessfully")
     #TODO run on all the available data with fast network connection to NAS, 
@@ -343,10 +480,9 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
-    argParser.add_argument("--logging_dir")
-    argParser.add_argument("--logging_name")
+    argParser.add_argument("--logging_dir", default="../logs")
+    argParser.add_argument("--logging_name", default="process_session_batch.log")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-08-20_16-57-15_active/")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")
@@ -354,7 +490,8 @@ if __name__ == "__main__":
     argParser.add_argument("--copy_to_nas", action="store_true")
     argParser.add_argument("--nas_dir", default="/mnt/NTnas/nas_vrdata")
     argParser.add_argument("--write_to_db", action="store_true")
-    argParser.add_argument("--database_name", default='rat_vr')
+    argParser.add_argument("--database_location", default=None)
+    argParser.add_argument("--database_name", default=None)
     kwargs = vars(argParser.parse_args())
     
     L = Logger()
@@ -364,7 +501,70 @@ if __name__ == "__main__":
     L.logger.info("Subprocess started")
     L.logger.info(L.fmtmsg(kwargs))
             
-    process_session(**kwargs)
-    L.spacer()
-    print("\n\n\n\n")
+    prompt_user_decision = kwargs.pop("prompt_user_decision")
+    integrate_ephys = kwargs.pop("integrate_ephys")
+    copy_to_nas = kwargs.pop("copy_to_nas")
+    write_to_db = kwargs.pop("write_to_db")
+    nas_dir = kwargs.pop("nas_dir")
+    database_location = kwargs.pop("database_location")
+    database_name = kwargs.pop("database_name")
+    render_videos = kwargs.pop("render_videos")
+    
+    # animal_ids = [1,2,3,4,5,6,7,8,9]
+    animal_ids = [1,2,3,4,5,6,7,8,99]
+    
+    parent_folder = "/mnt/SpatialSequenceLearning/"
+    # TODO
+    # 1. fix the post processing script with error on log file
+    # 2. for all sessions, if there is unity_output.hdf5
+    #   2.1 clear all the merged files
+    #   2.2 post-process it again
+    # 3. if there is no unity_output.hdf5
+    #   3.1 patch the session based on the left file
+    #   3.2 keep the old file for safety
+    
+    
+    for animal_id in animal_ids:
+        animal_dir = os.path.join(parent_folder, f"RUN_rYL00{animal_id}")
+        for paradigm_name in os.listdir(animal_dir):
+            if "rYL" not in paradigm_name:
+                continue
+            paradigm_dir = os.path.join(animal_dir, paradigm_name)
+            
+            for session in os.listdir(paradigm_dir):
+                if "DS_Store" in session:
+                    continue
+                session_dir = os.path.join(paradigm_dir, session)
+                session_dir = "/mnt/SpatialSequenceLearning/RUN_rYL008/rYL008_P0800/2024-08-27_15-54_rYL008_P0800_LinearTrack_30min/"
+                session_dir_new = session_dir.replace(".xlsx", "")
+                os.rename(session_dir, session_dir_new)
+                session_dir = session_dir_new
+                fnames = [f for f in os.listdir(session_dir) if f.endswith("min.hdf5")]
+                all_fnames = os.listdir(session_dir)
+                
+                if "unity_output.hdf5" in all_fnames:
+                    for fname in fnames:
+                        full_fname = os.path.join(session_dir, fname)
+                        os.remove(full_fname)
+                    
+                    try:
+                        process_session(session_dir, nas_dir, prompt_user_decision, 
+                                        integrate_ephys, copy_to_nas, write_to_db,
+                                        database_location, database_name, 
+                                        render_videos)
+                    except Exception as e:
+                        L.logger.error(f"Failed to process session: {e}")
+                    continue
+                # else:
+                #     for fname in fnames:
+                #         full_fname = os.path.join(session_dir, fname)
+                #         if "_old" not in full_fname:
+                #             os.remove(full_fname)
+                #             continue
+                #         else:
+                #             patch_metadata(full_fname)
+                #             break
+            L.spacer()
+            print("\n\n\n\n")
+            
     

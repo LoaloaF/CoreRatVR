@@ -1,6 +1,8 @@
 import os
 import sys
 sys.path.insert(1, os.path.join(sys.path[0], 'backend'))
+sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
+sys.path.insert(1, os.path.join(sys.path[0], '../analysisVR/sessionWiseProcessing'))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +15,7 @@ from backend_shm_endpoints import attach_shm_endpoints
 from backend_general_endpoints import attach_general_endpoints
 from backend_general_endpoints import attach_UI_endpoint
 from backend_streamer_endpoints import attach_stream_endpoints
+from backend_inspect_endpoints import attach_inspect_endpoints
 
 async def lifespan(app: FastAPI):
     print("Initilizing server state, constructing parameters...")
@@ -48,6 +51,7 @@ async def lifespan(app: FastAPI):
             P.SHM_NAME_UNITY_CAM: False,
         },
         "initiated": False,
+        "initiatedInspect": False,
         "paradigmRunning": False,
         "termflag_shm_interface": None,
         "unityinput_shm_interface": None,
@@ -76,6 +80,7 @@ def main():
     attach_proc_endpoints(app)
     attach_shm_endpoints(app)
     attach_stream_endpoints(app)
+    attach_inspect_endpoints(app)
     attach_UI_endpoint(app)
     uvicorn.run(app, host="0.0.0.0", port=8000)
 

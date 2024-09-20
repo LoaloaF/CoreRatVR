@@ -7,7 +7,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 import argparse
 import pandas as pd
 from time import sleep
-
+import time
 from CustomLogger import CustomLogger as Logger
 from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from FlagSHMInterface import FlagSHMInterface
@@ -41,15 +41,24 @@ def _log(termflag_shm, unityout_shm, paradigm_running_shm, full_fname):
     prv_id, prv_BVid = -1, -1
     nchecks = 1
     package_buf_size = 32
+    portenta_start_stop_flag = False
+    portenta_start_stop_pct = 0
     while True:
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
             if package_buf:
                 _save_package_set(package_buf, full_fname, key="unityframes")
             break
+        
+        current_time = int(time.time()*1e6)  
         if not paradigm_running_shm.is_set():
-            L.logger.debug("Paradigm stopped, on halt....")
-            continue
+            if not portenta_start_stop_flag:
+                L.logger.info(f"Paradigm start not running at {current_time}, on halt....")
+                portenta_start_stop_flag = True
+                portenta_start_stop_pct = int(time.time()*1e6)
+            elif current_time-portenta_start_stop_pct > 1000000:            
+                L.logger.debug("Paradigm stopped, on halt....")
+                continue
         
         if unityout_shm.usage == 0:
             nchecks += 1

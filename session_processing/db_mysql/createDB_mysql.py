@@ -78,7 +78,8 @@ def create_ratvr_db(db_name):
                     maxium_trial_length SMALLINT,
                     session_description TEXT,
                     configuration TEXT,
-                    metadata TEXT,
+                    env_metadata TEXT,
+                    fsm_metadata TEXT,
                     FOREIGN KEY (session_id) REFERENCES session(session_id)
                 );
             """)
@@ -260,6 +261,67 @@ def create_ratvr_db(db_name):
             """)
             cursor.execute("CREATE INDEX paradigm_p0400_session_id_index ON paradigm_P0400(session_id);")
             cursor.execute("CREATE INDEX paradigm_p0400_trial_id_index ON paradigm_P0400(trial_id);")
+
+            # paradigm_P0500 table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS paradigm_P0500 (
+                    paradigm_P0500_id INT AUTO_INCREMENT PRIMARY KEY,
+                    session_id INT NOT NULL,
+                    trial_id BIGINT NOT NULL,
+                    movement_time DOUBLE,
+                    stop_time DOUBLE,
+                    grace_period_time DOUBLE,
+                    movement_threshold DOUBLE,
+                    stop_threshold DOUBLE,
+                    stay_stop_threshold DOUBLE,
+                    maximum_reward_number INT,
+                    raw INT,
+                    yaw INT,
+                    pitch INT,
+                    lick_reward INT,
+                    reward_number INT,
+                    FOREIGN KEY (session_id) REFERENCES session(session_id)
+                );
+            """)
+            cursor.execute("CREATE INDEX paradigm_p0500_session_id_index ON paradigm_P0500(session_id);")
+            cursor.execute("CREATE INDEX paradigm_p0500_trial_id_index ON paradigm_P0500(trial_id);")
+
+            # paradigm_P0800 table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS paradigm_P0800 (
+                    paradigm_P0800_id INT AUTO_INCREMENT PRIMARY KEY,
+                    session_id INT NOT NULL,
+                    trial_id BIGINT NOT NULL,
+                    stay_time DOUBLE,
+                    maximum_reward_number INT,
+                    cue INT,
+                    lick_reward INT,
+                    FOREIGN KEY (session_id) REFERENCES session(session_id)
+                );
+            """)
+            cursor.execute("CREATE INDEX paradigm_p0800_session_id_index ON paradigm_P0800(session_id);")
+            cursor.execute("CREATE INDEX paradigm_p0800_trial_id_index ON paradigm_P0800(trial_id);")
+
+            # paradigm_P0900 table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS paradigm_P0900 (
+                    paradigm_P0900_id INT AUTO_INCREMENT PRIMARY KEY,
+                    session_id INT NOT NULL,
+                    trial_id BIGINT NOT NULL,
+                    movement_time DOUBLE,
+                    grace_period_time DOUBLE,
+                    movement_threshold DOUBLE,
+                    stop_threshold DOUBLE,
+                    maximum_reward_number INT,
+                    raw INT,
+                    yaw INT,
+                    pitch INT,
+                    FOREIGN KEY (session_id) REFERENCES session(session_id)
+                );
+            """)
+            cursor.execute("CREATE INDEX paradigm_p0900_session_id_index ON paradigm_P0900(session_id);")
+            cursor.execute("CREATE INDEX paradigm_p0900_trial_id_index ON paradigm_P0900(trial_id);")
+
 
             # Commit changes and close the connection
             conn.commit()

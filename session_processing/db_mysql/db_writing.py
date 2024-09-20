@@ -103,7 +103,7 @@ def write_camera2db(conn, cursor, engine, session_dir, fname, camera_type):
         package_id = int(each_hdf.split('_')[1])
         image = Image.open(io.BytesIO(hdf_cam[each_hdf][()].item()))
         output_stream = io.BytesIO()
-        image.save(output_stream, format='JPEG', quality=50)
+        image.save(output_stream, format='JPEG', quality=80)
         compressed_image_data = output_stream.getvalue()
         df_cam.loc[df_cam[cam_name_prefix + 'image_id'] == package_id, cam_name_prefix + 'data'] = compressed_image_data
         image_id += 1
