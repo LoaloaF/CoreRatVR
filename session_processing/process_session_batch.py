@@ -38,82 +38,124 @@ def patch_metadata(fname):
     L.logger.info("->")
     L.logger.info(os.path.basename(session_fixed_fullfname))
     
-    
-    try:
-        with pd.HDFStore(fname, 'r') as source_pd_store:
-            keys = source_pd_store.keys()  # Get all keys in the HDF5 file
-            L.logger.info(f"Keys in {fname}: {keys}")
-            
-            # Create a new HDF5 file to save the converted data
-            with pd.HDFStore(session_fixed_fullfname, 'w') as new_pd_store:
-                for key in keys:
-                    # Get the storer for each key and check if it's in Fixed format
-                    storer = source_pd_store.get_storer(key)
-                    if not storer.is_table:
-                        L.logger.info(f"Converting Fixed format dataset '{key}' to Table format.")
-                        
-                        # Read the entire Fixed format dataset
-                        data = source_pd_store[key]
-                        
-                        # fix metadata
-                        if key == '/metadata':
-                            # Ensure each element in 'notes' is a string
-                            if 'notes' in data.columns:
-                                data["notes"] = data["notes"].apply(lambda x: " ".join(x) if isinstance(x, list) else str(x))
-                            
-                            # split the metadata into two parts
-                            nested_metadata = json.loads(data['metadata'].item())
-                            data.drop(columns=['metadata'], inplace=True)
-                            
-                            pillar_keys = ["pillars","pillar_details","envX_size",
-                                            "envY_size", "base_length","wallzone_size",
-                                            "wallzone_collider_size",]
-                            pillar_metadata = {k: nested_metadata.get(k) for k in pillar_keys}
-                            fsm_keys = ["paradigms_states", "paradigms_transitions", 
-                                        "paradigms_decisions", "paradigms_actions"]
-                            fsm_metadata = {k: nested_metadata.get(k) for k in fsm_keys}
-                            
-                            log_file_content = {}
-                            log_keys = [key for key in list(nested_metadata.keys()) if key.endswith('.log')]
-                            for log_key in log_keys:
-                                log_file_content[log_key] = nested_metadata[log_key]
-                            log_file_content = str(log_file_content)
-                            
-                            data['env_metadata'] = [json.dumps(pillar_metadata)]
-                            data['fsm_metadata'] = [json.dumps(fsm_metadata)]
-                            # data['log_file_content'] = [json.dumps(log_file_content)]
-
-                        new_pd_store.put(key, data, format='table')
-                    else:
-                        L.logger.info(f"'{key}' is already in Table format, copying as is.")
-                        new_pd_store.put(key, new_pd_store[key], format='table')
-                            
-        # copy the camera data into the behavior file
-        with h5py.File(session_fixed_fullfname, 'a') as output_file:
-            if log_file_content is not None:
-                output_file.create_dataset("log_file_content", data=log_file_content)
-                L.logger.info("Log file content copied")
+    with pd.HDFStore(fname, 'r') as source_pd_store:
+        keys = source_pd_store.keys()  # Get all keys in the HDF5 file
+        L.logger.info(f"Keys in {fname}: {keys}")
+        if "metadata" in source_pd_store["metadata"]:
+            patch_mode = "old patch"
+        elif "log_file_content" in source_pd_store["metadata"]:
+            patch_mode = "new patch"
                 
-            with h5py.File(fname, 'r') as source_file:
-                if "facecam_frames" in source_file.keys():
-                    source_file.copy(source_file["facecam_frames"], output_file, name="facecam_frames")
-                    L.logger.info("Facecam copied")
-                if "bodycam_frames" in source_file.keys():
-                    source_file.copy(source_file["bodycam_frames"], output_file, name="bodycam_frames")
-                    L.logger.info("Bodycam copied")
-                if "unitycam_frames" in source_file.keys():
-                    source_file.copy(source_file["unitycam_frames"], output_file, name="unitycam_frames")
-                    L.logger.info("Unitycam copied")
-        L.logger.info(f"Conversion complete! New HDF5 file saved as: {session_fixed_fullfname}")
+    try:
+        if patch_mode == "old patch":
+            # with pd.HDFStore(fname, 'r') as source_pd_store:            
+            #     # Create a new HDF5 file to save the converted data
+            #     with pd.HDFStore(session_fixed_fullfname, 'w') as new_pd_store:
+            #         for key in keys:
+            #             # Get the storer for each key and check if it's in Fixed format
+            #             storer = source_pd_store.get_storer(key)
+            #             if not storer.is_table:
+            #                 L.logger.info(f"Converting Fixed format dataset '{key}' to Table format.")
+                            
+            #                 # Read the entire Fixed format dataset
+            #                 data = source_pd_store[key]
+                            
+            #                 # fix metadata
+            #                 if key == '/metadata':
+            #                     # Ensure each element in 'notes' is a string
+            #                     if 'notes' in data.columns:
+            #                         data["notes"] = data["notes"].apply(lambda x: " ".join(x) if isinstance(x, list) else str(x))
+                                
+            #                     # split the metadata into two parts
+            #                     nested_metadata = json.loads(data['metadata'].item())
+            #                     data.drop(columns=['metadata'], inplace=True)
+                                
+            #                     pillar_keys = ["pillars","pillar_details","envX_size",
+            #                                     "envY_size", "base_length","wallzone_size",
+            #                                     "wallzone_collider_size",]
+            #                     pillar_metadata = {k: nested_metadata.get(k) for k in pillar_keys}
+            #                     fsm_keys = ["paradigms_states", "paradigms_transitions", 
+            #                                 "paradigms_decisions", "paradigms_actions"]
+            #                     fsm_metadata = {k: nested_metadata.get(k) for k in fsm_keys}
+                                
+            #                     log_file_content = {}
+            #                     log_keys = [key for key in list(nested_metadata.keys()) if key.endswith('.log')]
+            #                     for log_key in log_keys:
+            #                         log_file_content[log_key] = nested_metadata[log_key]
+            #                     log_file_content = str(log_file_content)
+                                
+            #                     data['env_metadata'] = [json.dumps(pillar_metadata)]
+            #                     data['fsm_metadata'] = [json.dumps(fsm_metadata)]
+            #                     # data['log_file_content'] = [json.dumps(log_file_content)]
 
-        session_fullfname_rename = fname[:idx] + "_old" + fname[idx:]
-        os.rename(fname, session_fullfname_rename)
-        L.logger.info(f"Old file renamed to {session_fullfname_rename}")
-
-        session_fixed_fullfname_new = session_fixed_fullfname.replace("_fixed", "")
-        os.rename(session_fixed_fullfname, session_fixed_fullfname_new)
-        L.logger.info(f"Fixed file renamed to {session_fixed_fullfname_new}")
+            #                 new_pd_store.put(key, data, format='table')
+            #             else:
+            #                 L.logger.info(f"'{key}' is already in Table format, copying as is.")
+            #                 new_pd_store.put(key, source_pd_store[key], format='table')
+                                
+            # # copy the camera data into the behavior file
+            # with h5py.File(session_fixed_fullfname, 'a') as output_file:
+            #     if log_file_content is not None:
+            #         output_file.create_dataset("log_file_content", data=log_file_content)
+            #         L.logger.info("Log file content copied")
+                    
+            #     with h5py.File(fname, 'r') as source_file:
+            #         if "facecam_frames" in source_file.keys():
+            #             source_file.copy(source_file["facecam_frames"], output_file, name="facecam_frames")
+            #             L.logger.info("Facecam copied")
+            #         if "bodycam_frames" in source_file.keys():
+            #             source_file.copy(source_file["bodycam_frames"], output_file, name="bodycam_frames")
+            #             L.logger.info("Bodycam copied")
+            #         if "unitycam_frames" in source_file.keys():
+            #             source_file.copy(source_file["unitycam_frames"], output_file, name="unitycam_frames")
+            #             L.logger.info("Unitycam copied")
+            return
         
+        elif patch_mode == "new patch":
+            with pd.HDFStore(fname, 'r') as source_pd_store:            
+                # Create a new HDF5 file to save the converted data
+                with pd.HDFStore(session_fixed_fullfname, 'w') as new_pd_store:
+                    for key in keys:
+                        if key == '/metadata':                            
+                            # Read the entire Fixed format dataset
+                            data = source_pd_store[key]
+                            
+                            log_file_content = data['log_file_content'].item()
+                            data.drop(columns=['log_file_content'], inplace=True)
+                            new_pd_store.put(key, data, format='table')
+                        else:
+                            L.logger.info(f"'{key}' is already in Table format, copying as is.")
+                            new_pd_store.put(key, source_pd_store[key], format='table')
+                                
+            # copy the camera data into the behavior file
+            with h5py.File(session_fixed_fullfname, 'a') as output_file:
+                if log_file_content is not None:
+                    output_file.create_dataset("log_file_content", data=log_file_content)
+                    L.logger.info("Log file content copied")
+                    
+                with h5py.File(fname, 'r') as source_file:
+                    if "facecam_frames" in source_file.keys():
+                        source_file.copy(source_file["facecam_frames"], output_file, name="facecam_frames")
+                        L.logger.info("Facecam copied")
+                    if "bodycam_frames" in source_file.keys():
+                        source_file.copy(source_file["bodycam_frames"], output_file, name="bodycam_frames")
+                        L.logger.info("Bodycam copied")
+                    if "unitycam_frames" in source_file.keys():
+                        source_file.copy(source_file["unitycam_frames"], output_file, name="unitycam_frames")
+                        L.logger.info("Unitycam copied")
+                
+        
+        if patch_mode != None:
+            L.logger.info(f"Conversion complete! New HDF5 file saved as: {session_fixed_fullfname}")
+
+            session_fullfname_rename = fname[:idx] + "_old" + fname[idx:]
+            os.rename(fname, session_fullfname_rename)
+            L.logger.info(f"Old file renamed to {session_fullfname_rename}")
+
+            session_fixed_fullfname_new = session_fixed_fullfname.replace("_fixed", "")
+            os.rename(session_fixed_fullfname, session_fixed_fullfname_new)
+            L.logger.info(f"Fixed file renamed to {session_fixed_fullfname_new}")
+            
     except Exception as e:
         L.logger.error(f"Error: {e} with {fname}")
         return 
@@ -469,7 +511,7 @@ if __name__ == "__main__":
     render_videos = kwargs.pop("render_videos")
     
     # animal_ids = [1,2,3,4,5,6,7,8,9]
-    animal_ids = [1,2,3,4]
+    animal_ids = [1,2,3,4,5,6,7,8,99]
     
     parent_folder = "/mnt/SpatialSequenceLearning/"
     # TODO
@@ -493,7 +535,7 @@ if __name__ == "__main__":
                 if "DS_Store" in session:
                     continue
                 session_dir = os.path.join(paradigm_dir, session)
-                # session_dir = "/mnt/SpatialSequenceLearning/RUN_rYL008/rYL008_P0800/2024-08-22_15-11_rYL008_P0800_LinearTrack_18min/"
+                session_dir = "/mnt/SpatialSequenceLearning/RUN_rYL008/rYL008_P0800/2024-08-27_15-54_rYL008_P0800_LinearTrack_30min/"
                 session_dir_new = session_dir.replace(".xlsx", "")
                 os.rename(session_dir, session_dir_new)
                 session_dir = session_dir_new
@@ -513,14 +555,15 @@ if __name__ == "__main__":
                     except Exception as e:
                         L.logger.error(f"Failed to process session: {e}")
                     continue
-                else:
-                    for fname in fnames:
-                        full_fname = os.path.join(session_dir, fname)
-                        if "_old" in full_fname or '_fixed' in full_fname: 
-                            # os.remove(full_fname)
-                            continue
-                        else:
-                            patch_metadata(full_fname)
+                # else:
+                #     for fname in fnames:
+                #         full_fname = os.path.join(session_dir, fname)
+                #         if "_old" not in full_fname:
+                #             os.remove(full_fname)
+                #             continue
+                #         else:
+                #             patch_metadata(full_fname)
+                #             break
             L.spacer()
             print("\n\n\n\n")
             
