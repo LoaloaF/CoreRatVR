@@ -92,68 +92,25 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
 
     # Frame
     L.spacer()
-    frame_ttl = ephys_data[['time', 'bit2']]
-    frame_rising_ttl, frame_falling_ttl = detect_edges(frame_ttl, "bit2")
-    combined_ttl = np.concatenate((frame_rising_ttl, frame_falling_ttl))
-    combined_ttl = np.sort(combined_ttl)
-    # clean the jitter
-    combined_ttl = clean_ttl_data(combined_ttl)
+    ball_last_packages_ids = unity_frames_data.ballvelocity_last_package.values
+    filtered_ball_data = ballvel_data[ballvel_data["ballvelocity_package_id"].isin(ball_last_packages_ids)]
+    frame_ttl = filtered_ball_data.ballvelocity_ephys_timestamp.values
+    
     frame_pc_timestamp = np.array(unity_frames_data["frame_pc_timestamp"])
-    
-    frame_ttl_norm = (combined_ttl[1:] - combined_ttl[1])*50
-    frame_pc_timestamp_norm = frame_pc_timestamp[1:] - frame_pc_timestamp[1]
-    
-    L.logger.info("Before Patching:")
-    L.logger.info(f"Frame TTL: {len(frame_ttl_norm)}")
-    L.logger.info(f"Frame PC: {len(frame_pc_timestamp_norm)}")
-    L.logger.info(f"Average diff: { np.mean(frame_ttl_norm - frame_pc_timestamp_norm[:len(frame_ttl_norm)])}")
-    
-    current_idx = 0
-    number_of_inserts = 0
-    number_of_deletes = 0
-    modify_idx_list = []
-    threshold = 6000
-    while (current_idx < len(frame_pc_timestamp_norm)):
-        if (current_idx % 5000 == 0):
-            L.logger.info(f"Current patching frame Index: {current_idx}")
-        if (len(frame_ttl_norm) == len(frame_pc_timestamp_norm)):
-            break
-        time_diff = frame_ttl_norm[current_idx] - frame_pc_timestamp_norm[current_idx]
-        if time_diff < threshold and time_diff > -threshold:
-            current_idx += 1
-        elif time_diff >= threshold:
-            insert_time = frame_pc_timestamp_norm[current_idx]/50 + combined_ttl[1]
-            time_diffs = (ephys_data['time'] - insert_time).abs()
-            closest_index = time_diffs.idxmin()
-            closest_time = ephys_data.loc[closest_index]["time"]
-            frame_ttl_norm = np.insert(frame_ttl_norm, current_idx, (closest_time- combined_ttl[1])*50)
-            number_of_inserts += 1
-            modify_idx_list.append(current_idx)
-        elif time_diff <= -threshold:
-            frame_ttl_norm = np.delete(frame_ttl_norm, current_idx)
-            number_of_deletes += 1
-            modify_idx_list.append(current_idx)
-
-    L.logger.info(f"Number of Inserts: {number_of_inserts}")
-    L.logger.info(f"Number of Deletes: {number_of_deletes}")
+    frame_pc_timestamp_norm = frame_pc_timestamp - frame_pc_timestamp[0]
+    frame_ttl_norm = (frame_ttl - frame_ttl[0])*50
    
-    L.logger.info("After Patching:")
-    L.logger.info(f"Frame TTL: {len(frame_ttl_norm)}")
-    L.logger.info(f"Frame PC: {len(frame_pc_timestamp_norm)}")
-   
-    if (len(frame_ttl_norm) != len(frame_pc_timestamp_norm)):
+    if (len(frame_pc_timestamp_norm) != len(frame_ttl_norm)):
         L.logger.warning("Frame TTL and PC Timestamp length mismatch")
     else:
-        L.logger.info(f"Average diff: {np.mean(frame_ttl_norm - frame_pc_timestamp_norm[:len(frame_ttl_norm)])}")
+        L.logger.info(f"Average diff: {np.mean(frame_ttl_norm - frame_pc_timestamp_norm)}")
         plt.figure()
-        plt.plot(frame_ttl_norm - frame_pc_timestamp_norm[:len(frame_ttl_norm)])
+        plt.plot(frame_ttl_norm - frame_pc_timestamp_norm)
         plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
         plt.show() 
         
-        unity_frames_data = unity_frames_data.iloc[1:]
-        unity_frames_data.reset_index(drop=True, inplace=True)  
-        unity_frames_data["frame_ephys_timestamp"] = frame_ttl_norm/50 + combined_ttl[1]
-        unitycam_packages["unitycam_image_ephys_timestamp"] = frame_ttl_norm/50 + combined_ttl[1]
+        unity_frames_data["frame_ephys_timestamp"] = frame_ttl
+        unitycam_packages["unitycam_image_ephys_timestamp"] = frame_ttl
         
         # Merge to get trial_start_ephys_timestamp
         unity_trials_data = pd.merge(
