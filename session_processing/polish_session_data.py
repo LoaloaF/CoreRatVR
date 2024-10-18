@@ -110,28 +110,37 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         plt.show() 
         
         unity_frames_data["frame_ephys_timestamp"] = frame_ttl
-        unitycam_packages["unitycam_image_ephys_timestamp"] = frame_ttl
         
-        # Merge to get trial_start_ephys_timestamp
-        unity_trials_data = pd.merge(
+        # append unitycam ephys
+        merged_data = pd.merge(
+            unitycam_packages,
+            unity_frames_data[['frame_id', 'frame_ephys_timestamp']],
+            left_on='unitycam_image_id',
+            right_on='frame_id',
+            how='left'
+        )
+        unitycam_packages["unitycam_image_ephys_timestamp"] =  merged_data['frame_ephys_timestamp']
+        
+        # append trial start ephys
+        merged_data = pd.merge(
             unity_trials_data,
             unity_frames_data[['frame_id', 'frame_ephys_timestamp']],
             left_on='trial_start_frame',
             right_on='frame_id',
             how='left'
-        ).rename(columns={'frame_ephys_timestamp': 'trial_start_ephys_timestamp'})
+        )
+        unity_trials_data["trial_start_ephys_timestamp"] = merged_data['frame_ephys_timestamp']
 
-        # Merge to get trial_end_ephys_timestamp
-        unity_trials_data = pd.merge(
+        # append trial end ephys
+        merged_data = pd.merge(
             unity_trials_data,
             unity_frames_data[['frame_id', 'frame_ephys_timestamp']],
             left_on='trial_end_frame',
             right_on='frame_id',
             how='left'
-        ).rename(columns={'frame_ephys_timestamp': 'trial_end_ephys_timestamp'})
+        )
+        unity_trials_data["trial_end_ephys_timestamp"] = merged_data['frame_ephys_timestamp']
 
-        # Drop the extra frame_id columns added by the merge
-        unity_trials_data = unity_trials_data.drop(columns=['frame_id_x', 'frame_id_y'])
         L.logger.info("Unity Frame/Cam/Trials TTL Timestamps added")
     
     # Facecam
