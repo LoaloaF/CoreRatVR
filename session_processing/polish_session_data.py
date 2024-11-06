@@ -198,7 +198,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
                 L.logger.info(f"Average diff: {np.mean(lick_rising_ttl_norm - lick_pc_timestamp_norm)}")
                 plt.figure()
                 plt.plot(lick_rising_ttl_norm - lick_pc_timestamp_norm)
-                plt.title('Lick TTL: - PC')
+                plt.title('Lick: TTL - PC')
                 plt.show() 
                 # comparision_plot(lick_rising_ttl_norm, lick_pc_timestamp_norm)
                 event_data.loc[event_data["event_name"]=="L", "event_ephys_timestamp"] = lick_rising_ttl_norm/50 + lick_rising_ttl[0]
@@ -224,7 +224,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
             else:
                 plt.figure()
                 plt.plot(punishment_rising_ttl_norm - punishment_pc_timestamp_norm)
-                plt.title('Punishment TTL: - PC')
+                plt.title('Punishment: TTL - PC')
                 plt.show()
                 # comparision_plot(punishment_rising_ttl_norm, punishment_pc_timestamp_norm)
                 event_data.loc[event_data["event_name"]=="P", "event_ephys_timestamp"] = punishment_rising_ttl_norm/50 + punishment_rising_ttl[0]
@@ -250,7 +250,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
             else:
                 plt.figure()
                 plt.plot(reward_rising_ttl_norm - reward_pc_timestamp_norm)
-                plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
+                plt.title('Reward: TTL - PC')
                 plt.show()
                 # comparision_plot(reward_rising_ttl_norm, reward_pc_timestamp_norm)
                 event_data.loc[event_data["event_name"]=="R", "event_ephys_timestamp"] = reward_rising_ttl_norm/50 + reward_rising_ttl[0]
