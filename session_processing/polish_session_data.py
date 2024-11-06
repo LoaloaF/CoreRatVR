@@ -86,7 +86,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         L.logger.info(f"Average diff: {np.mean(ball_rising_ttl_norm - ball_pc_timestamp_norm)}")
         plt.figure()
         plt.plot(ball_rising_ttl_norm - ball_pc_timestamp_norm)
-        plt.title('Difference between TTL and PC Timestamp: TTL - PC')
+        plt.title("Ball Vecocity: TTL - PC")
         ballvel_data["ballvelocity_ephys_timestamp"] = ball_rising_ttl_norm/50 + ball_rising_ttl[0]
         L.logger.info("Ball Velocity TTL Timestamps added")
 
@@ -106,7 +106,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         L.logger.info(f"Average diff: {np.mean(frame_ttl_norm - frame_pc_timestamp_norm)}")
         plt.figure()
         plt.plot(frame_ttl_norm - frame_pc_timestamp_norm)
-        plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
+        plt.title('Unity Frame: TTL - PC')
         plt.show() 
         
         unity_frames_data["frame_ephys_timestamp"] = frame_ttl
@@ -148,8 +148,8 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
     if facecam_packages is None:
         L.logger.warning("No Facecam Data")
     else:
-        facecam_ttl = ephys_data[['time', 'bit3']]
-        facecam_rising_ttl, facecam_falling_ttl = detect_edges(facecam_ttl, "bit3")
+        facecam_ttl = ephys_data[['time', 'bit2']]
+        facecam_rising_ttl, facecam_falling_ttl = detect_edges(facecam_ttl, "bit2")
         
         if (len(facecam_rising_ttl) == 0):
             L.logger.warning("No Facecam TTL")
@@ -167,7 +167,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
                 L.logger.info(f"Average diff: {np.mean(facecam_rising_ttl_norm - facecam_pc_timestamp_norm)}")
                 plt.figure()
                 plt.plot(facecam_rising_ttl_norm - facecam_pc_timestamp_norm)
-                plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
+                plt.title('Facecam: TTL - PC')
                 plt.show() 
                 facecam_packages["facecam_image_ephys_timestamp"] = facecam_rising_ttl_norm/50 + facecam_rising_ttl[0]
                 L.logger.info("Facecam TTL Timestamps added")
@@ -177,8 +177,8 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
     if event_data is None:
         L.logger.warning("No Event Data")
     else:
-        lick_ttl = ephys_data[['time', 'bit5']]
-        lick_rising_ttl, lick_falling_ttl = detect_edges(lick_ttl, "bit5")
+        lick_ttl = ephys_data[['time', 'bit7']]
+        lick_rising_ttl, lick_falling_ttl = detect_edges(lick_ttl, "bit7")
         
         if (len(lick_rising_ttl) == 0):
             L.logger.warning("No Lick TTL")
@@ -198,11 +198,37 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
                 L.logger.info(f"Average diff: {np.mean(lick_rising_ttl_norm - lick_pc_timestamp_norm)}")
                 plt.figure()
                 plt.plot(lick_rising_ttl_norm - lick_pc_timestamp_norm)
-                plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
+                plt.title('Lick TTL: - PC')
                 plt.show() 
-                comparision_plot(lick_rising_ttl_norm, lick_pc_timestamp_norm)
+                # comparision_plot(lick_rising_ttl_norm, lick_pc_timestamp_norm)
                 event_data.loc[event_data["event_name"]=="L", "event_ephys_timestamp"] = lick_rising_ttl_norm/50 + lick_rising_ttl[0]
                 L.logger.info("Lick TTL Timestamps added")
+        
+        L.spacer()
+        punishment_ttl = ephys_data[['time', 'bit1']]
+        punishment_rising_ttl, punishment_falling_ttl = detect_edges(punishment_ttl, "bit1")
+        
+        if (len(punishment_rising_ttl) == 0):
+            L.logger.warning("No Punishment TTL")
+        else:
+            punishment_pc_timestamp = np.array(event_data[event_data["event_name"]=="P"]["event_pc_timestamp"])
+            punishment_rising_ttl_norm = (punishment_rising_ttl - punishment_rising_ttl[0])*50
+            punishment_pc_timestamp_norm = punishment_pc_timestamp - punishment_pc_timestamp[0]
+
+            L.logger.info(f"Punishment TTL: {len(punishment_rising_ttl_norm)}")
+            L.logger.info(f"Punishment PC: {len(punishment_pc_timestamp_norm)}")
+            L.logger.info(f"Average diff: {np.mean(punishment_rising_ttl_norm - punishment_pc_timestamp_norm)}")
+            
+            if (len(punishment_rising_ttl_norm) != len(punishment_pc_timestamp_norm)):
+                L.logger.warning("Punishment TTL and PC Timestamp length mismatch")
+            else:
+                plt.figure()
+                plt.plot(punishment_rising_ttl_norm - punishment_pc_timestamp_norm)
+                plt.title('Punishment TTL: - PC')
+                plt.show()
+                # comparision_plot(punishment_rising_ttl_norm, punishment_pc_timestamp_norm)
+                event_data.loc[event_data["event_name"]=="P", "event_ephys_timestamp"] = punishment_rising_ttl_norm/50 + punishment_rising_ttl[0]
+                L.logger.info("Punishment TTL Timestamps added")
                 
         L.spacer()
         reward_ttl = ephys_data[['time', 'bit6']]
@@ -226,36 +252,36 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
                 plt.plot(reward_rising_ttl_norm - reward_pc_timestamp_norm)
                 plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
                 plt.show()
-                comparision_plot(reward_rising_ttl_norm, reward_pc_timestamp_norm)
+                # comparision_plot(reward_rising_ttl_norm, reward_pc_timestamp_norm)
                 event_data.loc[event_data["event_name"]=="R", "event_ephys_timestamp"] = reward_rising_ttl_norm/50 + reward_rising_ttl[0]
                 L.logger.info("Reward TTL Timestamps added")
 
-        L.spacer()
-        sound_ttl = ephys_data[['time', 'bit7']]
-        sound_rising_ttl, sound_falling_ttl = detect_edges(sound_ttl, "bit7")
+        # L.spacer()
+        # sound_ttl = ephys_data[['time', 'bit7']]
+        # sound_rising_ttl, sound_falling_ttl = detect_edges(sound_ttl, "bit7")
         
-        if (len(sound_rising_ttl) == 0):
-            L.logger.warning("No Sound TTL")
-        else:
-            sound_pc_timestamp = np.array(event_data[event_data["event_name"]=="S"]["event_pc_timestamp"])
-            sound_rising_ttl_norm = (sound_rising_ttl - sound_rising_ttl[0])*50
-            sound_pc_timestamp_norm = sound_pc_timestamp - sound_pc_timestamp[0]
+        # if (len(sound_rising_ttl) == 0):
+        #     L.logger.warning("No Sound TTL")
+        # else:
+        #     sound_pc_timestamp = np.array(event_data[event_data["event_name"]=="S"]["event_pc_timestamp"])
+        #     sound_rising_ttl_norm = (sound_rising_ttl - sound_rising_ttl[0])*50
+        #     sound_pc_timestamp_norm = sound_pc_timestamp - sound_pc_timestamp[0]
 
-            L.logger.info(f"Sound TTL: {len(sound_rising_ttl_norm)}")
-            L.logger.info(f"Sound PC: {len(sound_pc_timestamp_norm)}")
+        #     L.logger.info(f"Sound TTL: {len(sound_rising_ttl_norm)}")
+        #     L.logger.info(f"Sound PC: {len(sound_pc_timestamp_norm)}")
             
-            if (len(sound_rising_ttl_norm) != len(sound_pc_timestamp_norm)):
-                L.logger.warning("Sound TTL and PC Timestamp length mismatch")
-            else:
-                L.logger.info(f"Average diff: {np.mean(sound_rising_ttl_norm - sound_pc_timestamp_norm)}")
-                plt.figure()
-                plt.plot(sound_rising_ttl_norm - sound_pc_timestamp_norm)
-                plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
-                plt.show()
+        #     if (len(sound_rising_ttl_norm) != len(sound_pc_timestamp_norm)):
+        #         L.logger.warning("Sound TTL and PC Timestamp length mismatch")
+        #     else:
+        #         L.logger.info(f"Average diff: {np.mean(sound_rising_ttl_norm - sound_pc_timestamp_norm)}")
+        #         plt.figure()
+        #         plt.plot(sound_rising_ttl_norm - sound_pc_timestamp_norm)
+        #         plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
+        #         plt.show()
                 
-                event_data.loc[event_data["event_name"]=="S", "event_ephys_timestamp"] = sound_rising_ttl_norm/50 + sound_rising_ttl[0]
-                comparision_plot(sound_rising_ttl_norm, sound_pc_timestamp_norm)
-                L.logger.info("Sound TTL Timestamps added")
+        #         event_data.loc[event_data["event_name"]=="S", "event_ephys_timestamp"] = sound_rising_ttl_norm/50 + sound_rising_ttl[0]
+        #         # comparision_plot(sound_rising_ttl_norm, sound_pc_timestamp_norm)
+        #         L.logger.info("Sound TTL Timestamps added")
 
 def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data, 
                     event_data, facecam_packages, bodycam_packages,
@@ -268,14 +294,14 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data,
     facecam_tstamp_col = "facecam_image_pc_timestamp"
     bodycam_tstamp_col = "bodycam_image_pc_timestamp"
     unitycam_tstamp_col = "unitycam_image_pc_timestamp"
-    if use_ephys_timestamps:
-        trials_tstamp_col = trials_tstamp_col.replace('_pc_', '_ephys_')
-        frame_tstamp_col = frame_tstamp_col.replace('_pc_', '_ephys_')
-        ballvel_tstamp_col = ballvel_tstamp_col.replace('_pc_', '_ephys_')
-        event_tstamp_col = event_tstamp_col.replace('_pc_', '_ephys_')
-        facecam_tstamp_col = facecam_tstamp_col.replace('_pc_', '_ephys_')
-        bodycam_tstamp_col = bodycam_tstamp_col.replace('_pc_', '_ephys_')
-        unitycam_tstamp_col = unitycam_tstamp_col.replace('_pc_', '_ephys_')
+    # if use_ephys_timestamps:
+    #     trials_tstamp_col = trials_tstamp_col.replace('_pc_', '_ephys_')
+    #     frame_tstamp_col = frame_tstamp_col.replace('_pc_', '_ephys_')
+    #     ballvel_tstamp_col = ballvel_tstamp_col.replace('_pc_', '_ephys_')
+    #     event_tstamp_col = event_tstamp_col.replace('_pc_', '_ephys_')
+    #     facecam_tstamp_col = facecam_tstamp_col.replace('_pc_', '_ephys_')
+    #     bodycam_tstamp_col = bodycam_tstamp_col.replace('_pc_', '_ephys_')
+    #     unitycam_tstamp_col = unitycam_tstamp_col.replace('_pc_', '_ephys_')
     
     # if unity_trials_data is None, this will enter the catch block in main function
     # get the trial time boundaries and constuct an interval index from it

@@ -345,7 +345,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-10-25_15-40-35_active/")
+    argParser.add_argument("--session_dir", default="/mnt/SpatialSequenceLearning/RUN_rYL006/rYL006_P1000/2024-11-05_16-11-07_active/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments
