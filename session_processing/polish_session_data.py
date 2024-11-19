@@ -211,23 +211,23 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         if (len(punishment_rising_ttl) == 0):
             L.logger.warning("No Punishment TTL")
         else:
-            punishment_pc_timestamp = np.array(event_data[event_data["event_name"]=="P"]["event_pc_timestamp"])
+            punishment_pc_timestamp = np.array(event_data[event_data["event_name"]=="V"]["event_pc_timestamp"])
             punishment_rising_ttl_norm = (punishment_rising_ttl - punishment_rising_ttl[0])*50
             punishment_pc_timestamp_norm = punishment_pc_timestamp - punishment_pc_timestamp[0]
 
             L.logger.info(f"Punishment TTL: {len(punishment_rising_ttl_norm)}")
             L.logger.info(f"Punishment PC: {len(punishment_pc_timestamp_norm)}")
-            L.logger.info(f"Average diff: {np.mean(punishment_rising_ttl_norm - punishment_pc_timestamp_norm)}")
             
             if (len(punishment_rising_ttl_norm) != len(punishment_pc_timestamp_norm)):
                 L.logger.warning("Punishment TTL and PC Timestamp length mismatch")
             else:
+                L.logger.info(f"Average diff: {np.mean(punishment_rising_ttl_norm - punishment_pc_timestamp_norm)}")
                 plt.figure()
                 plt.plot(punishment_rising_ttl_norm - punishment_pc_timestamp_norm)
                 plt.title('Punishment: TTL - PC')
                 plt.show()
                 # comparision_plot(punishment_rising_ttl_norm, punishment_pc_timestamp_norm)
-                event_data.loc[event_data["event_name"]=="P", "event_ephys_timestamp"] = punishment_rising_ttl_norm/50 + punishment_rising_ttl[0]
+                event_data.loc[event_data["event_name"]=="V", "event_ephys_timestamp"] = punishment_rising_ttl_norm/50 + punishment_rising_ttl[0]
                 L.logger.info("Punishment TTL Timestamps added")
                 
         L.spacer()
@@ -243,11 +243,11 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
 
             L.logger.info(f"Reward TTL: {len(reward_rising_ttl_norm)}")
             L.logger.info(f"Reward PC: {len(reward_pc_timestamp_norm)}")
-            L.logger.info(f"Average diff: {np.mean(reward_rising_ttl_norm - reward_pc_timestamp_norm)}")
             
             if (len(reward_rising_ttl_norm) != len(reward_pc_timestamp_norm)):
                 L.logger.warning("Reward TTL and PC Timestamp length mismatch")
             else:
+                L.logger.info(f"Average diff: {np.mean(reward_rising_ttl_norm - reward_pc_timestamp_norm)}")
                 plt.figure()
                 plt.plot(reward_rising_ttl_norm - reward_pc_timestamp_norm)
                 plt.title('Reward: TTL - PC')
@@ -256,32 +256,32 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
                 event_data.loc[event_data["event_name"]=="R", "event_ephys_timestamp"] = reward_rising_ttl_norm/50 + reward_rising_ttl[0]
                 L.logger.info("Reward TTL Timestamps added")
 
-        # L.spacer()
-        # sound_ttl = ephys_data[['time', 'bit7']]
-        # sound_rising_ttl, sound_falling_ttl = detect_edges(sound_ttl, "bit7")
+        L.spacer()
+        sound_ttl = ephys_data[['time', 'bit4']]
+        sound_rising_ttl, sound_falling_ttl = detect_edges(sound_ttl, "bit4")
         
-        # if (len(sound_rising_ttl) == 0):
-        #     L.logger.warning("No Sound TTL")
-        # else:
-        #     sound_pc_timestamp = np.array(event_data[event_data["event_name"]=="S"]["event_pc_timestamp"])
-        #     sound_rising_ttl_norm = (sound_rising_ttl - sound_rising_ttl[0])*50
-        #     sound_pc_timestamp_norm = sound_pc_timestamp - sound_pc_timestamp[0]
+        if (len(sound_rising_ttl) == 0):
+            L.logger.warning("No Sound TTL")
+        else:
+            sound_pc_timestamp = np.array(event_data[event_data["event_name"]=="S"]["event_pc_timestamp"])
+            sound_rising_ttl_norm = (sound_rising_ttl - sound_rising_ttl[0])*50
+            sound_pc_timestamp_norm = sound_pc_timestamp - sound_pc_timestamp[0]
 
-        #     L.logger.info(f"Sound TTL: {len(sound_rising_ttl_norm)}")
-        #     L.logger.info(f"Sound PC: {len(sound_pc_timestamp_norm)}")
+            L.logger.info(f"Sound TTL: {len(sound_rising_ttl_norm)}")
+            L.logger.info(f"Sound PC: {len(sound_pc_timestamp_norm)}")
             
-        #     if (len(sound_rising_ttl_norm) != len(sound_pc_timestamp_norm)):
-        #         L.logger.warning("Sound TTL and PC Timestamp length mismatch")
-        #     else:
-        #         L.logger.info(f"Average diff: {np.mean(sound_rising_ttl_norm - sound_pc_timestamp_norm)}")
-        #         plt.figure()
-        #         plt.plot(sound_rising_ttl_norm - sound_pc_timestamp_norm)
-        #         plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
-        #         plt.show()
+            if (len(sound_rising_ttl_norm) != len(sound_pc_timestamp_norm)):
+                L.logger.warning("Sound TTL and PC Timestamp length mismatch")
+            else:
+                L.logger.info(f"Average diff: {np.mean(sound_rising_ttl_norm - sound_pc_timestamp_norm)}")
+                plt.figure()
+                plt.plot(sound_rising_ttl_norm - sound_pc_timestamp_norm)
+                plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
+                plt.show()
                 
-        #         event_data.loc[event_data["event_name"]=="S", "event_ephys_timestamp"] = sound_rising_ttl_norm/50 + sound_rising_ttl[0]
-        #         # comparision_plot(sound_rising_ttl_norm, sound_pc_timestamp_norm)
-        #         L.logger.info("Sound TTL Timestamps added")
+                event_data.loc[event_data["event_name"]=="S", "event_ephys_timestamp"] = sound_rising_ttl_norm/50 + sound_rising_ttl[0]
+                # comparision_plot(sound_rising_ttl_norm, sound_pc_timestamp_norm)
+                L.logger.info("Sound TTL Timestamps added")
 
 def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data, 
                     event_data, facecam_packages, bodycam_packages,

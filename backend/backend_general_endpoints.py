@@ -98,7 +98,7 @@ def attach_general_endpoints(app):
     def flash_portenta(request: Request, core: str):
         validate_state(request.app.state.state, valid_initiated=True)
         command = (f"{P.PLATFORMIO_BIN} run --target upload --environment "
-                   f"portenta_h7_{core} --project-dir "
+                   f"portenta_h7_{core} --project-dir  --upload-port {P.ARDUINO_PORT}"
                    f"{os.path.join(P.PROJECT_DIRECTORY, 'ArduinoRatVR')}")
 
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, 

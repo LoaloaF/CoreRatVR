@@ -193,9 +193,7 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
 def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                               unity_frames_data, ballvel_data, event_data,
                               facecam_packages, unitycam_packages):
-    # TODO
-    # read the ephys file bits field
-    # integrate with behavior data with extensive alignment chacking
+
     ephys_fname = [f for f in os.listdir(os.path.join(nas_dir, session_dir)) 
                 if f.endswith(".raw.h5") and 'ephys' in f]
     if len(ephys_fname) != 1:
@@ -345,13 +343,13 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/mnt/SpatialSequenceLearning/RUN_rYL006/rYL006_P1000/2024-11-05_16-11-07_active/")
+    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-11-07_16-06-40_active/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")
-    argParser.add_argument("--integrate_ephys", action="store_true")
+    argParser.add_argument("--integrate_ephys", default=True)
     argParser.add_argument("--copy_to_nas", action="store_true")
     argParser.add_argument("--nas_dir", default="/mnt/NTnas/nas_vrdata")
     argParser.add_argument("--write_to_db", action="store_true")
