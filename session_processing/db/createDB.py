@@ -60,7 +60,8 @@ def create_ratvr_db(db_name):
             maxium_trial_length SMALLINT,
             session_description TEXT,
             configuration TEXT,
-            metadata TEXT,
+            env_metadata TEXT,
+            fsm_metadata TEXT,
             FOREIGN KEY (session_id) REFERENCES session(session_id)
         );
     """)

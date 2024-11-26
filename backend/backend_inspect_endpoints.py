@@ -172,8 +172,15 @@ def attach_inspect_endpoints(app):
         print(unityframes)
         print(unityframes.columns)
 
+<<<<<<< HEAD
         vel = unityframes["z_velocity"].rolling(window=20).mean()
         vel_dsampled = pd.concat([vel, unityframes.frame_pc_timestamp], axis=1).iloc[::20].dropna()
+=======
+        vel = unityframes["z_velocity"]
+        vel_dsampled = pd.concat([vel, unityframes.frame_pc_timestamp], axis=1).dropna()
+        # vel = unityframes["z_velocity"].rolling(window=20).mean()
+        # vel_dsampled = pd.concat([vel, unityframes.frame_pc_timestamp], axis=1).iloc[::10].dropna()
+>>>>>>> 814916cc630f32829367c3bd690f103eaef38e46
         return vel_dsampled.to_json(orient="records")
     
     @app.get("/inspect/unityframes")

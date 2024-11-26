@@ -51,15 +51,15 @@ def load_session_metadata(session_dir, dbNames):
      
     env_metadata = {}
     fsm_metadata = {}
-    for k in dbNames['metadata']:
+    for k in dbNames['env_metadata']:
         if k in session_metadata:
-            env_metadata[k] = session_metadata[k]
+            env_metadata[k] = session_metadata.pop(k)
         else:
             env_metadata[k] = ""
     
     for k in dbNames['fsm_metadata']:
         if k in session_metadata:
-            fsm_metadata[k] = session_metadata[k]
+            fsm_metadata[k] = session_metadata.pop(k)
         else:
             fsm_metadata[k] = ""
             
