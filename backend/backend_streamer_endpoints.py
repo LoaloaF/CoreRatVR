@@ -24,8 +24,8 @@ from SHM.CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from SHM.VideoFrameSHMInterface import VideoFrameSHMInterface
 
 # using ../analysisVR/sessionWiseProcessing PATH extensions
-from session_loading import load_session_hdf5
-from session_loading import get_session_modality
+# from session_loading import load_session_hdf5
+# from session_loading import get_session_modality
 
 def attach_stream_endpoints(app):
     # singlton class - reference to instance created in lifespan
@@ -214,9 +214,9 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
         validate_state(app.state.state, valid_initiated_inspect=True)
 
         nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
-        from_nas = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
-        packages = get_session_modality(from_nas=from_nas, 
-                                        modality=f"{cam_name}_packages", 
+        session_dir_tuple = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
+        packages = get_session_modality(f"{cam_name}_packages", 
+                                        session_dir_tuple,
                                         pct_as_index=True,
                                         rename2oldkeys=True)
         sessionfile = load_session_hdf5(os.path.join(P.SESSION_DATA_DIRECTORY, P.SESSION_NAME))
@@ -268,9 +268,9 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
             await websocket.accept()
             
             nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
-            from_nas = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
-            data = get_session_modality(from_nas=from_nas, 
-                                        modality=data_name,
+            session_dir_tuple = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
+            data = get_session_modality(data_name,
+                                        session_dir_tuple,
                                         na2null=True,
                                         pct_as_index=True,
                                         rename2oldkeys=True,)

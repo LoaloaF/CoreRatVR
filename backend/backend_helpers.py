@@ -63,6 +63,7 @@ def check_base_dirs():
 def init_logger(session_save_dir):
     P = Parameters()
     L = Logger()
+    # close any loggers that might be open from preious usage (dir may no longer exist)
     if L.logger.handlers:
         L.reset_logger()
     log_dir = session_save_dir if P.LOG_TO_DATA_DIR else P.LOGGING_DIRECTORY

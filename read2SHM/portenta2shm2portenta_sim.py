@@ -14,13 +14,14 @@ from FlagSHMInterface import FlagSHMInterface
 
 from CustomLogger import CustomLogger as Logger
 
-V_ID = 0
+B_ID = 0
 L_ID = 0
 S_ID = 0
 F_ID = 0
 R_ID = 0
 P_ID = 0
 A_ID = 0
+V_ID = 0
 
 Vr = 0
 Vy = 0
@@ -34,15 +35,15 @@ def _gen_package(N, ID, V):
     return pack, N
 
 def gen_ballvel_package():
-    global V_ID
+    global B_ID
     global Vr
     global Vy
     global Vp
 
     N = "B"
-    V_ID += 1
-    ID = V_ID
-    Vr = int(Vr + 0.1*(np.random.randn()*20))     # move sideways (unity z)
+    B_ID += 1
+    ID = B_ID
+    Vr = int(Vr + 0.1*(np.random.randn()*40))     # move sideways (unity z)
     Vy = int(Vy + 0.1*(np.random.randn()*20))     # move forward (unity x)
     Vp = int(Vp + 0.1*(np.random.randn()*20))     # rotate (around unity y axis)
     V = f"{Vr}_{Vy}_{Vp}"
@@ -51,8 +52,8 @@ def gen_ballvel_package():
 def gen_L_package():
     global L_ID
     L_ID += 1
-    # return _gen_package("L", L_ID, -int((np.random.rand())*1000)) # length lick in ms into the past
-    return _gen_package("L", L_ID, 1) # length lick in ms into the past
+    return _gen_package("L", L_ID, -int((np.random.rand())*400)) # length lick in ms into the past
+    # return _gen_package("L", L_ID, -21) # length lick in ms into the past
 
 def gen_A_package():
     global A_ID
@@ -67,12 +68,17 @@ def gen_S_package(v):
 def gen_R_package():
     global R_ID
     R_ID += 1
-    return _gen_package("R", R_ID, 1)
+    return _gen_package("R", R_ID, 100)
 
 def gen_P_package():
     global P_ID
     P_ID += 1
-    return _gen_package("P", P_ID, 1) # length punishment in msF
+    return _gen_package("P", P_ID, 20) # length punishment in ms
+
+def gen_V_package():
+    global V_ID
+    V_ID += 1
+    return _gen_package("V", P_ID, 100) # length suction in ms
 
 def _handle_portentaoutput(ballvel_shm, portentaoutput_shm):
     num = np.random.rand()
@@ -95,12 +101,17 @@ def _handle_portentainput(portentaoutput_shm, portentainput_shm,):
         values = cmd[1:].split(",")
         if which_cmd == "A":
             pack, _ = gen_A_package()
+            # pack, _ = gen_V_package()
+        if which_cmd == "V":
+            pack, _ = gen_V_package()
+        if which_cmd == "M":
+            pack = ""
         if which_cmd == "P":
             pack, _ = gen_P_package()
         if which_cmd == "F": #ailure
-            pack, _ = gen_S_package(v=-1) #sound
+            pack, _ = gen_S_package(v=-150) #sound
         if which_cmd == "S": #uccess
-            pack, _ = gen_S_package(v=1) #sound
+            pack, _ = gen_S_package(v=150) #sound
             portentaoutput_shm.push(pack.encode())
             Logger().logger.debug(f"feedbackpack: {pack}")
             pack, _ = gen_R_package() #reward/valve open

@@ -6,7 +6,7 @@ import h5py
 import cv2
 import matplotlib.pyplot as plt
 
-from CustomLogger import CustomLogger as Logger
+# from CustomLogger import CustomLogger as Logger
 
 def detect_edges(signal, signal_name):
 
@@ -389,7 +389,7 @@ def hdf5_frames2mp4(session_dir, merged_fname):
                 fps = _calc_fps(packages, cam_name)
 
                 frame_keys = merged_file[f"{cam_name}_frames"].keys()
-                L.logger.info(f"Rendering {cam_name} (n={len(frame_keys):,})...")
+                # L.logger.info(f"Rendering {cam_name} (n={len(frame_keys):,})...")
                 for i, (frame_key, pack) in enumerate(zip(frame_keys, packages.iterrows())):
                     frame = merged_file[f"{cam_name}_frames"][frame_key][()]
                     frame = cv2.imdecode(np.frombuffer(frame.tobytes(), np.uint8), 
@@ -402,9 +402,9 @@ def hdf5_frames2mp4(session_dir, merged_fname):
                     
                     # insert black frame if package ID is discontinuous
                     if pack_id != prv_pack_id+1:
-                        L.logger.warning(f"Package ID discontinuous; gap was "
-                                         f"{pack_id - prv_pack_id}.  Inserting"
-                                         f" black frame.")
+                        # L.logger.warning(f"Package ID discontinuous; gap was "
+                        #                  f"{pack_id - prv_pack_id}.  Inserting"
+                        #                  f" black frame.")
                         writer.write(np.zeros_like(frame))
                     else:
                         writer.write(frame)
@@ -413,13 +413,21 @@ def hdf5_frames2mp4(session_dir, merged_fname):
                     # log progress
                     # if i % (len(frame_keys)//10) == 0:
                     #     print(f"{i/len(frame_keys)*100:.0f}% done...", end='\r')
-                L.logger.info(f"Sucessfully rendered {cam_name} video!")
+                # L.logger.info(f"Sucessfully rendered {cam_name} video!")
             # keys in hdf5 file may very well not exist
             except Exception as e:
-                L.logger.error(f"Failed to render {cam_name} video: {e}")
+                # L.logger.error(f"Failed to render {cam_name} video: {e}")
                 return
-    L = Logger()
-    L.logger.info(f"Rendering videos from hdf5 files in {session_dir}")
+    # L = Logger()
+    # L.logger.info(f"Rendering videos from hdf5 files in {session_dir}")
     render_video("facecam")
     render_video("bodycam")
     render_video("unitycam")
+    
+    
+if __name__ == '__main__':
+    session_dir ="/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/RUN_rYL006/rYL006_P1000/2024-10-25_15-41_rYL006_P1000_MotorLearningStop_14min"
+    session_dir ="/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/RUN_rYL006/rYL006_P0500/2024-11-12_17-14_rYL006_P0500_MotorLearning_0min"
+    merged_fname = "2024-10-25_15-41_rYL006_P1000_MotorLearningStop_14min.hdf5"
+    merged_fname = "2024-11-12_17-14_rYL006_P0500_MotorLearning_0min.hdf5"
+    hdf5_frames2mp4(session_dir, merged_fname)

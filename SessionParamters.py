@@ -50,8 +50,8 @@ class SessionParamters:
         self.animal_weight = None
         self.start_time = None
         
-        self.session_parameters_dict = None
-        self.environment_parameters_dict = None
+        self.session_parameters_dict = {}
+        self.environment_parameters_dict = {}
         
         self.stop_time = None
         self.duration = None

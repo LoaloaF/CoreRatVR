@@ -265,10 +265,25 @@ def attach_general_endpoints(app):
         validate_state(request.app.state.state, valid_paradigmRunning=True)
         return session_paramters.start_time
         
+    @app.get("/selected_paradigm")
+    def selected_paradigm():
+        if session_paramters.paradigm_name is None:
+            msg = "Paradigm has not been set yet. Start the session first."
+            raise HTTPException(status_code=400, detail=msg)
+        return session_paramters.paradigm_name
+    
+    @app.get("/selected_animal")
+    def selected_animal():
+        if session_paramters.animal is None:
+            msg = "Paradigm has not been set yet. Start the session first."
+            raise HTTPException(status_code=400, detail=msg)
+        return session_paramters.animal
+    
     @app.get("/paradigm_env")
     def paradigm_environment():
         if session_paramters.paradigm_name is None:
-            raise HTTPException(status_code=400, detail="Paradigm has not been set yet")
+            msg = "Paradigm has not been set yet. Start the session first."
+            raise HTTPException(status_code=400, detail=msg)
         return session_paramters.environment_parameters_dict
         
     @app.get("/paradigm_fsm")
@@ -280,7 +295,8 @@ def attach_general_endpoints(app):
             raise HTTPException(status_code=400, detail=msg)
         
         if session_paramters.paradigm_name is None:
-            raise HTTPException(status_code=400, detail="Paradigm has not been set yet")
+            msg = "Paradigm has not been set yet. Start the session first."
+            raise HTTPException(status_code=400, detail=msg)
         
         paradigm_id = session_paramters.paradigm_id
         with open(os.path.join(path, "fsm_states.json")) as f:
