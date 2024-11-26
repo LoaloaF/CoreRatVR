@@ -111,7 +111,8 @@ def _handle_data(session_dir):
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"bodycam_image_id", 
                          "PCT": f"bodycam_image_pc_timestamp",
-                         "INSERT1": "trial_id",}
+                         "INSERT1": "facecam_image_ephys_timestamp",
+                         "INSERT2": "trial_id",}
     bodycam_packages = load_camera_data(session_dir, 'bodycam.hdf5', 
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"unitycam_image_id", 
@@ -192,7 +193,8 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
 
 def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                               unity_frames_data, ballvel_data, event_data,
-                              facecam_packages, unitycam_packages):
+                              facecam_packages, bodycam_packages, 
+                              unitycam_packages):
 
     ephys_fname = [f for f in os.listdir(os.path.join(nas_dir, session_dir)) 
                 if f.endswith(".raw.h5") and 'ephys' in f]
@@ -204,7 +206,7 @@ def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
     # inplace insertation of ephys timestamps into all dataframes
 
     add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
-                         ballvel_data, event_data, facecam_packages, unitycam_packages)
+                         ballvel_data, event_data, facecam_packages, bodycam_packages, unitycam_packages)
     
 def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
     L.logger.info(f"Copying files to the NAS")
@@ -297,7 +299,8 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     if integrate_ephys:
         _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                                   unity_frames_data, ballvel_data, event_data,
-                                  facecam_packages, unitycam_packages)
+                                  facecam_packages, bodycam_packages, 
+                                  unitycam_packages)
         
     # inplace insert trial id into every dataframe with a timestamp
     insert_trial_id(unity_trials_data, unity_frames_data,
@@ -343,7 +346,7 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-11-22_15-59-43_active/")
+    argParser.add_argument("--session_dir", default="/mnt/SpatialSequenceLearning/RUN_rYL006/rYL006_P1000/2024-11-05_16-11_rYL006_P1000_MotorLearningStop_22min/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments
