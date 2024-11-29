@@ -56,6 +56,31 @@ def patch_ephys_time(ballvel_data, target_data, target_data_pc_name):
 
     return target_data_ephys_time
 
+def append_event_ephys(event_ttl, event_pc, ballvel_data, event_data, event_name):
+    L = Logger()
+    L.logger.info(f"TTL size: {len(event_ttl)}")
+    L.logger.info(f"PC size: {len(event_pc)}")
+    
+    if (len(event_pc) == 0):
+        L.logger.warning("No Event.")
+    elif (len(event_ttl) != len(event_pc)):
+        L.logger.warning("TTL and PC Timestamp length mismatch. Start patching with Ballvel data...")
+        event_data.loc[event_data["event_name"]==event_name, "event_ephys_timestamp"] = patch_ephys_time(ballvel_data, event_data[event_data["event_name"]==event_name], "event_pc_timestamp")
+        L.logger.info("Event TTL Timestamps patched")
+    else:
+        event_ttl_norm = (event_ttl - event_ttl[0])*50
+        event_pc_norom = event_pc - event_pc[0]
+        L.logger.info(f"Average diff: {np.mean(event_ttl_norm - event_pc_norom)}")
+        
+        plt.figure()
+        plt.plot(event_ttl_norm - event_pc_norom)
+        plt.title('Lick: TTL - PC')
+        plt.show() 
+        # comparision_plot(lick_rising_ttl_norm, lick_pc_timestamp_norm)
+        event_data.loc[event_data["event_name"]==event_name, "event_ephys_timestamp"] = (event_ttl_norm/50 + event_ttl[0])*50
+        L.logger.info("TTL Timestamps added")
+    
+    return event_data
 
 def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
                          ballvel_data, event_data, facecam_packages, 
@@ -87,6 +112,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         if (ball_ttl["bit0"].iloc[0] == 1):
             ball_rising_ttl = np.insert(ball_rising_ttl, 0, ball_ttl["time"].iloc[0])
         
+    
     ball_pc_timestamp = np.array(ballvel_data["ballvelocity_pc_timestamp"])
 
     ball_rising_ttl_norm = (ball_rising_ttl - ball_rising_ttl[0])*50
@@ -226,109 +252,39 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         lick_pc_timestamp = np.array(event_data[event_data["event_name"]=="L"]["event_pc_timestamp"])
         lick_pc_value = np.array(event_data[event_data["event_name"]=="L"]["event_value"])
         lick_pc_timestamp = lick_pc_timestamp + lick_pc_value
-        L.logger.info(f"Lick TTL: {len(lick_rising_ttl)}")
-        L.logger.info(f"Lick PC: {len(lick_pc_timestamp)}")
         
-        if (len(lick_pc_timestamp) == 0):
-            L.logger.warning("No Lick Event.")
-        elif (len(lick_rising_ttl) != len(lick_pc_timestamp)):
-            L.logger.warning("Lick TTL and PC Timestamp length mismatch. Start patching with Ballvel data...")
-            event_data.loc[event_data["event_name"]=="L", "event_ephys_timestamp"] = patch_ephys_time(ballvel_data, event_data[event_data["event_name"]=="L"], "event_pc_timestamp")
-            L.logger.info("Lick TTL Timestamps patched")
-        else:
-            lick_rising_ttl_norm = (lick_rising_ttl - lick_rising_ttl[0])*50
-            lick_pc_timestamp_norm = lick_pc_timestamp - lick_pc_timestamp[0]
-            L.logger.info(f"Average diff: {np.mean(lick_rising_ttl_norm - lick_pc_timestamp_norm)}")
-            
-            plt.figure()
-            plt.plot(lick_rising_ttl_norm - lick_pc_timestamp_norm)
-            plt.title('Lick: TTL - PC')
-            plt.show() 
-            # comparision_plot(lick_rising_ttl_norm, lick_pc_timestamp_norm)
-            event_data.loc[event_data["event_name"]=="L", "event_ephys_timestamp"] = (lick_rising_ttl_norm/50 + lick_rising_ttl[0])*50
-            L.logger.info("Lick TTL Timestamps added")
+        L.logger.info("Start appending ephys for Lick evennts...")        
+        event_data = append_event_ephys(lick_rising_ttl, lick_pc_timestamp, ballvel_data, event_data, "L")
         
         # Punishment
         L.spacer()
         punishment_ttl = ephys_data[['time', 'bit1']]
         punishment_rising_ttl, punishment_falling_ttl = detect_edges(punishment_ttl, "bit1")
         punishment_pc_timestamp = np.array(event_data[event_data["event_name"]=="V"]["event_pc_timestamp"])
-        L.logger.info(f"Punishment TTL: {len(punishment_rising_ttl)}")
-        L.logger.info(f"Punishment PC: {len(punishment_pc_timestamp)}")
         
-        if (len(punishment_pc_timestamp) == 0):
-            L.logger.warning("No Punishment Event.")
-        elif len(punishment_rising_ttl) != len(punishment_pc_timestamp):
-            L.logger.warning("Punishment TTL and PC Timestamp length mismatch. Start patching with Ballvel data...")
-            event_data.loc[event_data["event_name"]=="V", "event_ephys_timestamp"] = patch_ephys_time(ballvel_data, event_data[event_data["event_name"]=="V"], "event_pc_timestamp")
-            L.logger.info("Punishment TTL Timestamps patched")
-        else:
-            punishment_rising_ttl_norm = (punishment_rising_ttl - punishment_rising_ttl[0])*50
-            punishment_pc_timestamp_norm = punishment_pc_timestamp - punishment_pc_timestamp[0]
-            L.logger.info(f"Average diff: {np.mean(punishment_rising_ttl_norm - punishment_pc_timestamp_norm)}")
-            
-            plt.figure()
-            plt.plot(punishment_rising_ttl_norm - punishment_pc_timestamp_norm)
-            plt.title('Punishment: TTL - PC')
-            plt.show()
-            # comparision_plot(punishment_rising_ttl_norm, punishment_pc_timestamp_norm)
-            event_data.loc[event_data["event_name"]=="V", "event_ephys_timestamp"] = (punishment_rising_ttl_norm/50 + punishment_rising_ttl[0])*50
-            L.logger.info("Punishment TTL Timestamps added")
+        L.logger.info("Start appending ephys for Punishment events...")
+        event_data = append_event_ephys(punishment_rising_ttl, punishment_pc_timestamp, ballvel_data, event_data, "V")
         
         # Reward
         L.spacer()
         reward_ttl = ephys_data[['time', 'bit6']]
         reward_rising_ttl, reward_falling_ttl = detect_edges(reward_ttl, "bit6")
         reward_pc_timestamp = np.array(event_data[event_data["event_name"]=="R"]["event_pc_timestamp"])
-        
-        L.logger.info(f"Reward TTL: {len(reward_rising_ttl)}")
-        L.logger.info(f"Reward PC: {len(reward_pc_timestamp)}")
-            
-        if (len(reward_pc_timestamp) == 0):
-            L.logger.warning("No Reward Event.")
-        elif len(reward_rising_ttl) != len(reward_pc_timestamp):
-            L.logger.warning("Reward TTL and PC Timestamp length mismatch. Start patching with Ballvel data...")
-            event_data.loc[event_data["event_name"]=="R", "event_ephys_timestamp"] = patch_ephys_time(ballvel_data, event_data[event_data["event_name"]=="R"], "event_pc_timestamp")
-            L.logger.info("Reward TTL Timestamps patched")
-        else:
-            reward_rising_ttl_norm = (reward_rising_ttl - reward_rising_ttl[0])*50
-            reward_pc_timestamp_norm = reward_pc_timestamp - reward_pc_timestamp[0]
-            L.logger.info(f"Average diff: {np.mean(reward_rising_ttl_norm - reward_pc_timestamp_norm)}")
-            
-            plt.figure()
-            plt.plot(reward_rising_ttl_norm - reward_pc_timestamp_norm)
-            plt.title('Reward: TTL - PC')
-            plt.show()
-            # comparision_plot(reward_rising_ttl_norm, reward_pc_timestamp_norm)
-            event_data.loc[event_data["event_name"]=="R", "event_ephys_timestamp"] = (reward_rising_ttl_norm/50 + reward_rising_ttl[0])*50
-            L.logger.info("Reward TTL Timestamps added")
 
+        L.logger.info("Start appending ephys for Reward events...")
+        event_data = append_event_ephys(reward_rising_ttl, reward_pc_timestamp, ballvel_data, event_data, "R")
+        
         # Sound
         L.spacer()
         sound_ttl = ephys_data[['time', 'bit4']]
         sound_rising_ttl, sound_falling_ttl = detect_edges(sound_ttl, "bit4")
         sound_pc_timestamp = np.array(event_data[event_data["event_name"]=="S"]["event_pc_timestamp"])
-        L.logger.info(f"Sound TTL: {len(sound_rising_ttl)}")
-        L.logger.info(f"Sound PC: {len(sound_pc_timestamp)}")
+
+        L.logger.info("Start appending ephys for Sound events...")
+        event_data = append_event_ephys(sound_rising_ttl, sound_pc_timestamp, ballvel_data, event_data, "S")
         
-        if (len(sound_pc_timestamp) == 0):
-            L.logger.warning("No Sound Event.")
-        elif len(sound_rising_ttl) != len(sound_pc_timestamp):
-            L.logger.warning("Sound TTL and PC Timestamp length mismatch. Start patching with Ballvel data...")
-            event_data.loc[event_data["event_name"]=="S", "event_ephys_timestamp"] = patch_ephys_time(ballvel_data, event_data[event_data["event_name"]=="S"], "event_pc_timestamp")
-            L.logger.info("Sound TTL Timestamps patched")
-        else:
-            sound_rising_ttl_norm = (sound_rising_ttl - sound_rising_ttl[0])*50
-            sound_pc_timestamp_norm = sound_pc_timestamp - sound_pc_timestamp[0]
-            L.logger.info(f"Average diff: {np.mean(sound_rising_ttl_norm - sound_pc_timestamp_norm)}")
-            
-            plt.figure()
-            plt.plot(sound_rising_ttl_norm - sound_pc_timestamp_norm)
-            plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
-            plt.show()
-            # comparision_plot(sound_rising_ttl_norm, sound_pc_timestamp_norm)
-            event_data.loc[event_data["event_name"]=="S", "event_ephys_timestamp"] = (sound_rising_ttl_norm/50 + sound_rising_ttl[0])*50
-            L.logger.info("Sound TTL Timestamps added")
+    L.logger.info("Sucessfully added ephys timestamps to dataframes.")
+
 
 def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data, 
                     event_data, facecam_packages, bodycam_packages,
