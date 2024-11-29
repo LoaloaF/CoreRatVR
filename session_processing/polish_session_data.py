@@ -6,7 +6,7 @@ import h5py
 import cv2
 import matplotlib.pyplot as plt
 
-# from CustomLogger import CustomLogger as Logger
+from CustomLogger import CustomLogger as Logger
 
 def detect_edges(signal, signal_name):
 
@@ -83,8 +83,9 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
     ball_ttl = ephys_data[['time', 'bit0']]
     ball_rising_ttl, ball_falling_ttl = detect_edges(ball_ttl, "bit0")
 
-    if (ball_ttl["bit0"].iloc[0] == 1):
-        ball_rising_ttl = np.insert(ball_rising_ttl, 0, ball_ttl["time"].iloc[0])
+    if (len(ball_falling_ttl) == len(ballvel_data)):
+        if (ball_ttl["bit0"].iloc[0] == 1):
+            ball_rising_ttl = np.insert(ball_rising_ttl, 0, ball_ttl["time"].iloc[0])
         
     ball_pc_timestamp = np.array(ballvel_data["ballvelocity_pc_timestamp"])
 
