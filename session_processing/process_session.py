@@ -194,7 +194,7 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
 def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                               unity_frames_data, ballvel_data, event_data,
                               facecam_packages, bodycam_packages, 
-                              unitycam_packages):
+                              unitycam_packages, logging_level):
 
     ephys_fname = [f for f in os.listdir(os.path.join(nas_dir, session_dir)) 
                 if f.endswith(".raw.h5") and 'ephys' in f]
@@ -206,7 +206,8 @@ def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
     # inplace insertation of ephys timestamps into all dataframes
 
     add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
-                         ballvel_data, event_data, facecam_packages, bodycam_packages, unitycam_packages)
+                         ballvel_data, event_data, facecam_packages, 
+                         bodycam_packages, unitycam_packages, logging_level)
     
 def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
     L.logger.info(f"Copying files to the NAS")
@@ -256,7 +257,7 @@ def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
 
 def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys, 
                     copy_to_nas, write_to_db, database_location, database_name,
-                    render_videos):
+                    render_videos, logging_level):
     L = Logger()
     L.logger.info(f"Processing session {session_dir}")
     
@@ -300,7 +301,7 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
         _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                                   unity_frames_data, ballvel_data, event_data,
                                   facecam_packages, bodycam_packages, 
-                                  unitycam_packages)
+                                  unitycam_packages, logging_level)
         
     # inplace insert trial id into every dataframe with a timestamp
     insert_trial_id(unity_trials_data, unity_frames_data,
@@ -345,14 +346,14 @@ if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-11-27_16-04-25_active/")
+    argParser.add_argument("--logging_level", default="DEBUG")
+    argParser.add_argument("--session_dir", default="/mnt/SpatialSequenceLearning/RUN_rYL006/rYL006_P1100/2024-11-15_15-48_rYL006_P1100_LinearTrackStop_35min/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")
-    argParser.add_argument("--integrate_ephys", action="store_true")
+    argParser.add_argument("--integrate_ephys", default=True)
     argParser.add_argument("--copy_to_nas", action="store_true")
     argParser.add_argument("--nas_dir", default="/mnt/NTnas/nas_vrdata")
     argParser.add_argument("--write_to_db", action="store_true")
@@ -361,8 +362,8 @@ if __name__ == "__main__":
     kwargs = vars(argParser.parse_args())
     
     L = Logger()
-    L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
-                  kwargs.pop("logging_level"))
+    L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"),
+                  kwargs["logging_level"])
     L.spacer()
     L.logger.info("Subprocess started")
     L.logger.info(L.fmtmsg(kwargs))
