@@ -85,6 +85,7 @@ def append_event_ephys(event_ttl, event_pc, ballvel_data, event_data,
     elif (len(event_ttl) != len(event_pc)):
         L.logger.warning("TTL and PC Timestamp package length mismatch. Start patching with Ballvel data...")
         event_data.loc[event_data["event_name"]==event_name, "event_ephys_timestamp"] = patch_ephys_time(ballvel_data, event_data[event_data["event_name"]==event_name], "event_pc_timestamp")
+        event_data.loc[event_data["event_name"]==event_name, "event_ephys_patched"] = 1
         L.logger.info("Ephys Timestamps patched")
     else:
         event_ttl_norm = (event_ttl - event_ttl[0])*50
@@ -98,6 +99,7 @@ def append_event_ephys(event_ttl, event_pc, ballvel_data, event_data,
             plt.show() 
         # comparision_plot(lick_rising_ttl_norm, lick_pc_timestamp_norm)
         event_data.loc[event_data["event_name"]==event_name, "event_ephys_timestamp"] = (event_ttl_norm/50 + event_ttl[0])*50
+        event_data.loc[event_data["event_name"]==event_name, "event_ephys_patched"] = 0
         L.logger.info("Ephys Timestamps added")
     
     return event_data
@@ -113,6 +115,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
     except:
         with h5py.File(ephys_fullfname, 'r') as file:
             ephys_bits = file['bits'][:]
+
 
     msg = np.array([(a[0],a[1]) for a in ephys_bits])
 
@@ -149,12 +152,14 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
             debug_ephys_timestamps(ball_rising_ttl_norm, ball_pc_timestamp_norm, "Ball Velocity", np.arange(400, 1000, 10))
  
         ballvel_data["ballvelocity_ephys_timestamp"] = (ball_rising_ttl_norm/50 + ball_rising_ttl[0])*50
+        ballvel_data["ballvelocity_ephys_patched"] = 0
         L.logger.info("Ball Velocity Ephys Timestamps added")
 
     # Frame
     L.spacer()
     last_ball_packages_ids = unity_frames_data.ballvelocity_last_package.values
-    last_ball_packages_data = ballvel_data[ballvel_data["ballvelocity_package_id"].isin(last_ball_packages_ids)]
+    
+    last_ball_packages_data = pd.DataFrame(last_ball_packages_ids, columns=['ballvelocity_package_id']).merge(ballvel_data, on='ballvelocity_package_id', how='left')    
     last_ball_ephys = last_ball_packages_data.ballvelocity_ephys_timestamp.values
     last_ball_pc = last_ball_packages_data.ballvelocity_pc_timestamp.values
     frame_pc = np.array(unity_frames_data["frame_pc_timestamp"])
@@ -171,6 +176,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
             debug_ephys_timestamps(frame_ephys_norm, frame_pc_norm, "Unity Frame", np.arange(12000, 20000, 50))
         
         unity_frames_data["frame_ephys_timestamp"] = frame_ephys
+        unity_frames_data["frame_ephys_patched"] = 0
         
         # append unitycam ephys
         merged_data = pd.merge(
@@ -181,6 +187,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
             how='left'
         )
         unitycam_packages["unitycam_image_ephys_timestamp"] =  merged_data['frame_ephys_timestamp']
+        unitycam_packages["unitycam_image_ephys_patched"] = 0
         
         # append trial start ephys
         merged_data = pd.merge(
@@ -191,6 +198,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
             how='left'
         )
         unity_trials_data["trial_start_ephys_timestamp"] = merged_data['frame_ephys_timestamp']
+        unity_trials_data["trial_start_ephys_patched"] = 0
 
         # append trial end ephys
         merged_data = pd.merge(
@@ -201,6 +209,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
             how='left'
         )
         unity_trials_data["trial_end_ephys_timestamp"] = merged_data['frame_ephys_timestamp']
+        unity_trials_data["trial_end_ephys_patched"] = 0
 
         ballvel_pc_time = ballvel_data["ballvelocity_pc_timestamp"].values
         ballvel_ephys_time = ballvel_data["ballvelocity_ephys_timestamp"].values
@@ -229,6 +238,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         elif (len(facecam_rising_ttl) != len(facecam_pc)):
             L.logger.warning("Facecam TTL and PC Timestamp package length mismatch. Start patching with Ballvel data...")
             facecam_packages["facecam_image_ephys_timestamp"] = patch_ephys_time(ballvel_data, facecam_packages, "facecam_image_pc_timestamp")
+            facecam_packages["facecam_image_ephys_patched"] = 1
             L.logger.info("Facecam Ephys Timestamps patched")
         else:
             facecam_rising_ttl_norm = (facecam_rising_ttl - facecam_rising_ttl[0])*50
@@ -239,6 +249,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
                 debug_ephys_timestamps(facecam_rising_ttl_norm, facecam_pc_norm, "Facecam", np.arange(40000, 50000, 50))
 
             facecam_packages["facecam_image_ephys_timestamp"] = (facecam_rising_ttl_norm/50 + facecam_rising_ttl[0])*50
+            facecam_packages["facecam_image_ephys_patched"] = 0
             L.logger.info("Facecam Ephys Timestamps added")
     
     # Bodycam
@@ -267,6 +278,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
             debug_ephys_timestamps(bodycam_ephys_norm, bodycam_pc_norm, "Bodycam", np.arange(20000, 80000, 50))
         
         bodycam_packages["bodycam_image_ephys_timestamp"] = bodycam_ephys_time
+        bodycam_packages["bodycam_image_ephys_patched"] = 1
         L.logger.info("Bodycam Ephys Timestamps patched")
                      
     L.spacer()

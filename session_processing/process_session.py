@@ -141,7 +141,7 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
     log_file_content = metadata.pop("log_file_content", None)
     
     with pd.HDFStore(full_fname, 'w') as store:
-        L.logger.info(f"Merging metadata {metadata}...")
+        # L.logger.info(f"Merging metadata {metadata}...")
         store.put('metadata', pd.DataFrame([metadata], index=[0]), format='table')
     
         L.logger.info(f"Merging unity data...")
@@ -295,15 +295,17 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     unitycam_packages) = data
     L.spacer()
     L.logger.info(f"{metadata['session_name']}\nData loaded without Exceptions! ")
-    L.spacer()
+
     
     if integrate_ephys:
+        L.spacer()
         _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                                   unity_frames_data, ballvel_data, event_data,
                                   facecam_packages, bodycam_packages, 
                                   unitycam_packages, logging_level)
         
     # inplace insert trial id into every dataframe with a timestamp
+    L.spacer()
     insert_trial_id(unity_trials_data, unity_frames_data,
                     ballvel_data, event_data, facecam_packages, bodycam_packages,
                     unitycam_packages, use_ephys_timestamps=integrate_ephys)
@@ -314,46 +316,48 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
             return
     
     # merge all data into a single hdf5 file and store in session_dir
+    L.spacer()
     merged_fname = f"{metadata['session_name']}.hdf5"
     _save_merged_hdf5_data(session_dir, merged_fname, metadata, unity_trials_data, 
                            unity_frames_data, paradigmVariable_data, 
                            facecam_packages, bodycam_packages, 
                            unitycam_packages, ballvel_data, event_data)
-    L.spacer()
     
     if render_videos:
+        L.spacer()
         hdf5_frames2mp4(session_dir, merged_fname)
-    L.spacer()
+
     
     # change the session dir name to the session_name
     # session_dir = _handle_rename_nas_session_dirs(session_dir, nas_dir, 
     #                                               metadata["session_name"])
     
     if copy_to_nas and os.path.exists(nas_dir):
+        L.spacer()
         _handle_move2nas(session_dir, nas_dir, merged_fname, metadata['animal_name'], 
                          metadata['paradigm_name'])
-    L.spacer()
+
 
     # read the moved data on the NAS, not local (faster in the future)
     if write_to_db:
+        L.spacer()
         session2db(nas_dir, merged_fname, database_location, database_name)
     
     L.logger.info(f"Session processing finished sucessfully")
-    #TODO run on all the available data with fast network connection to NAS, 
-    #TODO test with a session that has ephys data
+
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
-    argParser.add_argument("--logging_level", default="DEBUG")
-    argParser.add_argument("--session_dir", default="/mnt/SpatialSequenceLearning/RUN_rYL006/rYL006_P1100/2024-11-15_15-48_rYL006_P1100_LinearTrackStop_35min/")
+    argParser.add_argument("--logging_level", default="INFO")
+    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-11-14_14-57-18_active/")
     # argParser.add_argument("--logging_level")
     # argParser.add_argument("--session_dir")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")
-    argParser.add_argument("--integrate_ephys", default=True)
+    argParser.add_argument("--integrate_ephys", action="store_true")
     argParser.add_argument("--copy_to_nas", action="store_true")
     argParser.add_argument("--nas_dir", default="/mnt/NTnas/nas_vrdata")
     argParser.add_argument("--write_to_db", action="store_true")
