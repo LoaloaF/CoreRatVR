@@ -75,7 +75,7 @@ def debug_ephys_timestamps(ephys_norm, pc_norm, modality_name, bin_range):
     plt.show() 
 
 def append_event_ephys(event_ttl, event_pc, ballvel_data, event_data, 
-                       event_name, logging_level):
+                       event_name, logging_level, start_sample):
     L = Logger()
     L.logger.info(f"TTL package length: {len(event_ttl)}")
     L.logger.info(f"PC package length: {len(event_pc)}")
@@ -98,7 +98,7 @@ def append_event_ephys(event_ttl, event_pc, ballvel_data, event_data,
             plt.title(f'Event {event_name}: Ephys - PC')
             plt.show() 
         # comparision_plot(lick_rising_ttl_norm, lick_pc_timestamp_norm)
-        event_data.loc[event_data["event_name"]==event_name, "event_ephys_timestamp"] = (event_ttl_norm/50 + event_ttl[0])*50
+        event_data.loc[event_data["event_name"]==event_name, "event_ephys_timestamp"] = (event_ttl_norm/50 + event_ttl[0]  - start_sample)*50
         event_data.loc[event_data["event_name"]==event_name, "event_ephys_patched"] = 0
         L.logger.info("Ephys Timestamps added")
     
@@ -112,6 +112,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
     try:
         with h5py.File(ephys_fullfname, 'r') as file:
             ephys_bits = file['bits']["0000"][:]
+            start_sample = file['data_store/data0000/groups/all_channels/frame_nos'][0]
     except:
         with h5py.File(ephys_fullfname, 'r') as file:
             ephys_bits = file['bits'][:]
@@ -151,7 +152,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         if logging_level == "DEBUG":
             debug_ephys_timestamps(ball_rising_ttl_norm, ball_pc_timestamp_norm, "Ball Velocity", np.arange(400, 1000, 10))
  
-        ballvel_data["ballvelocity_ephys_timestamp"] = (ball_rising_ttl_norm/50 + ball_rising_ttl[0])*50
+        ballvel_data["ballvelocity_ephys_timestamp"] = (ball_rising_ttl_norm/50 + ball_rising_ttl[0] - start_sample)*50  
         ballvel_data["ballvelocity_ephys_patched"] = 0
         L.logger.info("Ball Velocity Ephys Timestamps added")
 
@@ -175,7 +176,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         if logging_level == "DEBUG":
             debug_ephys_timestamps(frame_ephys_norm, frame_pc_norm, "Unity Frame", np.arange(12000, 20000, 50))
         
-        unity_frames_data["frame_ephys_timestamp"] = frame_ephys
+        unity_frames_data["frame_ephys_timestamp"] = np.round(frame_ephys/50) * 50
         unity_frames_data["frame_ephys_patched"] = 0
         
         # append unitycam ephys
@@ -248,7 +249,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
             if logging_level == "DEBUG":
                 debug_ephys_timestamps(facecam_rising_ttl_norm, facecam_pc_norm, "Facecam", np.arange(40000, 50000, 50))
 
-            facecam_packages["facecam_image_ephys_timestamp"] = (facecam_rising_ttl_norm/50 + facecam_rising_ttl[0])*50
+            facecam_packages["facecam_image_ephys_timestamp"] = (facecam_rising_ttl_norm/50 + facecam_rising_ttl[0] - start_sample)*50
             facecam_packages["facecam_image_ephys_patched"] = 0
             L.logger.info("Facecam Ephys Timestamps added")
     
@@ -293,7 +294,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         
         L.logger.info("Start appending ephys for Lick events...")        
         event_data = append_event_ephys(lick_rising_ttl, lick_pc, ballvel_data, 
-                                        event_data, "L", logging_level)
+                                        event_data, "L", logging_level, start_sample)
         
         # Punishment
         L.spacer()
@@ -304,7 +305,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         L.logger.info("Start appending ephys for Punishment events...")
         event_data = append_event_ephys(punishment_rising_ttl, punishment_pc, 
                                         ballvel_data, event_data, "V",
-                                        logging_level)
+                                        logging_level, start_sample)
         
         # Reward
         L.spacer()
@@ -315,7 +316,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         L.logger.info("Start appending ephys for Reward events...")
         event_data = append_event_ephys(reward_rising_ttl, reward_pc, 
                                         ballvel_data, event_data, "R",
-                                        logging_level)
+                                        logging_level, start_sample)
         
         # Sound
         L.spacer()
@@ -326,7 +327,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
         L.logger.info("Start appending ephys for Sound events...")
         event_data = append_event_ephys(sound_rising_ttl, sound_pc, 
                                         ballvel_data, event_data, "S",
-                                        logging_level)
+                                        logging_level, start_sample)
         
     L.logger.info("Sucessfully added ephys timestamps to dataframes.")
 
