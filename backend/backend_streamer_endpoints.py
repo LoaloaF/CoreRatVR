@@ -305,7 +305,7 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
                                    f"Got {len(interval_data)} rows.")
                     if not interval_data.empty:
                         start = int(interval_data.values[0])
-                        stop = int(interval_data.values[-1])
+                        stop = int(interval_data.values[-1])+1
                         requested_interval = session_modality_from_nas(session_fullfname, data_name,
                                                         start=start, stop=stop,)
                         requested_interval = data_modality_rename2oldkeys(requested_interval, data_name)
