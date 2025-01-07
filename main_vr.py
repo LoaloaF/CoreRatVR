@@ -3,7 +3,6 @@ import sys
 sys.path.insert(1, os.path.join(sys.path[0], 'backend'))
 sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
 sys.path.insert(1, os.path.join(sys.path[0], '../analysisVR/'))
-sys.path.insert(1, os.path.join(sys.path[0], '../analysisVR/data_loading'))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

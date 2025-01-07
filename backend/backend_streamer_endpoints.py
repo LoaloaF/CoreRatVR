@@ -7,7 +7,7 @@ from starlette.types import Scope
 from starlette.websockets import WebSocketDisconnect
 
 import base64
-
+import numpy as np
 import glob
 import asyncio
 import time
@@ -23,9 +23,14 @@ from backend.backend_helpers import shm_struct_fname
 from SHM.CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from SHM.VideoFrameSHMInterface import VideoFrameSHMInterface
 
-# using ../analysisVR/sessionWiseProcessing PATH extensions
-# from session_loading import load_session_hdf5
-# from session_loading import get_session_modality
+from analytics_processing.modality_loading import session_modality_from_nas
+from analytics_processing.modality_transformations import data_modality_na2null
+
+from analytics_processing.modality_loading import load_session_hdf5
+from analytics_processing.modality_loading import session_modality_from_nas
+from analytics_processing.modality_transformations import data_modality_na2null
+from analytics_processing.modality_transformations import data_modality_rename2oldkeys
+from analytics_processing.modality_transformations import data_modality_pct_as_index
 
 def attach_stream_endpoints(app):
     # singlton class - reference to instance created in lifespan
@@ -40,7 +45,9 @@ def attach_stream_endpoints(app):
         maxpops = 6
         data_name = "unity_frame"
         shm_name = P.SHM_NAME_UNITY_OUTPUT
+        time_column = 'frame_pc_timestamp'
         await _stream_packages_loop(inspect, websocket, app, data_name, shm_name, 
+                                    time_column=time_column,
                                     check_interval=check_interval, maxpops=maxpops)
         
     @app.websocket("/stream/ballvelocity")
@@ -51,8 +58,10 @@ def attach_stream_endpoints(app):
         check_interval = 0.01
         maxpops = 30
         data_name = "ballvelocity"
+        time_column = 'ballvelocity_pc_timestamp'
         shm_name = P.SHM_NAME_BALLVELOCITY
         await _stream_packages_loop(inspect, websocket, app, data_name, shm_name, 
+                                    time_column=time_column,
                                     check_interval=check_interval, maxpops=maxpops)
 
     @app.websocket("/stream/portentaoutput")
@@ -63,8 +72,10 @@ def attach_stream_endpoints(app):
         check_interval = 0.02
         maxpops = 20
         data_name = "event"
+        time_column = 'event_pc_timestamp'
         shm_name = P.SHM_NAME_PORTENTA_OUTPUT
         await _stream_packages_loop(inspect, websocket, app, data_name, shm_name, 
+                                    time_column=time_column,
                                     check_interval=check_interval, maxpops=maxpops)
         
     @app.websocket("/stream/bodycam")
@@ -214,11 +225,11 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
         validate_state(app.state.state, valid_initiated_inspect=True)
 
         nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
-        session_dir_tuple = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
-        packages = get_session_modality(f"{cam_name}_packages", 
-                                        session_dir_tuple,
-                                        pct_as_index=True,
-                                        rename2oldkeys=True)
+        session_fullfname = os.path.join(nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME)
+        
+        packages = session_modality_from_nas(session_fullfname, f"{cam_name}_packages")
+        packages = data_modality_pct_as_index(packages)
+        packages = data_modality_rename2oldkeys(packages, f"{cam_name}_packages")
         sessionfile = load_session_hdf5(os.path.join(P.SESSION_DATA_DIRECTORY, P.SESSION_NAME))
     await websocket.accept()
 
@@ -253,7 +264,7 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
             sessionfile.close()
 
 async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name, 
-                                check_interval=0.01, maxpops=3):
+                                time_column, check_interval=0.01, maxpops=3):
     L = Logger()
     P = Parameters()
     try: 
@@ -268,13 +279,16 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
             await websocket.accept()
             
             nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
-            session_dir_tuple = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
-            data = get_session_modality(data_name,
-                                        session_dir_tuple,
-                                        na2null=True,
-                                        pct_as_index=True,
-                                        rename2oldkeys=True,)
-        
+            session_fullfname = os.path.join(nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME)
+            
+            pc_time = session_modality_from_nas(session_fullfname, data_name, 
+                                                columns=[time_column])
+            # values of the series are i loc values
+            idx = data_modality_pct_as_index(pc_time).index
+            pc_time = pd.Series(np.arange(idx.shape[0]), index=idx)
+            L.logger.debug(f"Indexing {data_name} from\n{pc_time}")
+            
+
         packages = []
         t0 = 0
         while True:
@@ -284,10 +298,20 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
                 start_t, stop_t = (await websocket.receive_text()).split(",")
                 requested_start_PCT = pd.to_datetime(int(start_t), unit='us')
                 requested_stop_PCT = pd.to_datetime(int(stop_t), unit='us')
-                L.logger.debug(f"Requested PCT for {data_name}: "
-                               f"{requested_start_PCT} to {requested_stop_PCT}")
                 try:
-                    requested_interval = data.loc[requested_start_PCT:requested_stop_PCT]
+                    interval_data = pc_time.loc[requested_start_PCT:requested_stop_PCT]
+                    L.logger.debug(f"Read H5 for {data_name} from "
+                                   f"{requested_start_PCT} to {requested_stop_PCT}. "
+                                   f"Got {len(interval_data)} rows.")
+                    if not interval_data.empty:
+                        start = int(interval_data.values[0])
+                        stop = int(interval_data.values[-1])
+                        requested_interval = session_modality_from_nas(session_fullfname, data_name,
+                                                        start=start, stop=stop,)
+                        requested_interval = data_modality_rename2oldkeys(requested_interval, data_name)
+                        requested_interval = data_modality_na2null(requested_interval)
+                    else:
+                        requested_interval = pd.DataFrame()
                 except Exception as e:
                     L.logger.error(e)
                     continue
