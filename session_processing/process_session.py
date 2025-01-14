@@ -357,7 +357,7 @@ if __name__ == "__main__":
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")
-    argParser.add_argument("--integrate_ephys", default=True)
+    argParser.add_argument("--integrate_ephys", action="store_true")
     argParser.add_argument("--copy_to_nas", action="store_true")
     argParser.add_argument("--nas_dir", default="/mnt/NTnas/nas_vrdata")
     argParser.add_argument("--write_to_db", action="store_true")
