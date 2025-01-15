@@ -232,7 +232,7 @@ def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
         
         # copy only these selected files to NAS (merged file, log files, bodycam video)
         fnames = [fname for fname in os.listdir(session_dir) 
-                if fname.endswith(".log") or fname in (merged_fname, "bodycam.mp4")]
+                if fname.endswith(".log") or fname in (merged_fname, "bodycam.mp4", "ephys_output.raw.h5")]
         for fn in fnames:
             src = os.path.join(session_dir, fn)
             if os.path.exists(src):
