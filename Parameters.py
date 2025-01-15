@@ -227,5 +227,6 @@ class Parameters:
             p = "/", "mnt", "SpatialSequenceLearning"
         elif platform.uname().system == "Darwin":
             p = "/", "Volumes", "large", "BMI", "VirtualReality", "SpatialSequenceLearning"
+            # p = "/", "Users", "loaloa", "local_data", "nas_imitation"
         return os.path.join(*p)
         

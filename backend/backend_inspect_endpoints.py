@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import json
 from fastapi import  Request
+from fastapi import HTTPException
 
 from Parameters import Parameters
 from SessionParamters import SessionParamters
@@ -11,8 +12,10 @@ from CustomLogger import CustomLogger as Logger
 from backend_helpers import init_logger
 from backend_helpers import validate_state
 
-from session_loading import get_session_modality
-from session_processing import patch_session_data
+from analytics_processing.modality_loading import session_modality_from_nas
+from analytics_processing.modality_transformations import data_modality_na2null
+from analytics_processing.modality_transformations import data_modality_rename2oldkeys
+from analytics_processing.modality_transformations import data_modality_pct_as_index
 
 def attach_inspect_endpoints(app):
     # singlton class - reference to instance created in lifespan
@@ -67,6 +70,11 @@ def attach_inspect_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=False, 
                        valid_initiated_inspect=False)
         L = Logger()
+        # close any loggers that might be open from `Acquire` usage
+        if L.logger.handlers:
+            L.reset_logger()
+        init_logger(session_save_dir=None)  # log to log dir
+        
         L.logger.info(f"Initiating session inspection for {session_name}")
         P = Parameters()
         source, session_name = session_name.split(";", 1)
@@ -80,14 +88,24 @@ def attach_inspect_endpoints(app):
             
             # attempt to load parameter defaults from session, old sessions might not have this
             # try:
-            metadata = pd.read_hdf(os.path.join(session_dir, session_name),
-                                    key="metadata")
-            session_paramters.load_session_parameters(metadata)
-            session_params = json.loads(metadata.loc[:,"configuration"].iloc[0])
-            # keep the defalts for thoese params
-            [session_params.pop(k) for k in ["LOGGING_LEVEL", "PROJECT_DIRECTORY", 
-                                             "NAS_DATA_DIRECTORY"] if k in session_params]
-            P.update_from_json(session_params)
+            if True:
+                # metadata = pd.read_hdf(os.path.join(session_dir, session_name),
+                #                         key="metadata")
+                # session_paramters.load_session_parameters(metadata)
+                # session_params = json.loads(metadata[:,"configuration"].iloc[0])
+                # keep the defalts for thoese params
+                # [session_params.pop(k) for k in ["LOGGING_LEVEL", "PROJECT_DIRECTORY", 
+                #                                 "NAS_DATA_DIRECTORY"] if k in session_params]
+                # P.update_from_json(session_params)
+                
+                # new version
+                nas_base_dir, paradigm_subdir = session_dir.split("RUN_")
+                session_fullfname = os.path.join(nas_base_dir, "RUN_"+paradigm_subdir, session_name)
+                metad = session_modality_from_nas(session_fullfname, 'metadata')
+                session_paramters.load_session_parameters(metad)
+                P.update_from_json(metad["configuration"])
+                
+                
             # except Exception as e:
             #     print("Error loading parameter defauls from session: ", e)
         
@@ -101,7 +119,6 @@ def attach_inspect_endpoints(app):
         P.INSPECT_FROM_DB = source == "db"
         P.LOG_TO_DATA_DIR = False
         
-        init_logger(session_save_dir=None)  # log to log dir
         request.app.state.state["initiatedInspect"] = True
 
         L = Logger()
@@ -129,42 +146,74 @@ def attach_inspect_endpoints(app):
         validate_state(request.app.state.state, valid_initiated_inspect=True)
         
         nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
-        from_nas = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
-        trials = get_session_modality(from_nas=from_nas, modality="unity_trial",
-                                      complement_data=True)
-        return trials.to_json(orient="records")
+        session_fullfname = os.path.join(nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME)
+
+        trialdata = session_modality_from_nas(session_fullfname, "unity_trial")
+        trialdata = data_modality_rename2oldkeys(trialdata, 'unity_trial')
+        trialvariable = session_modality_from_nas(session_fullfname, "paradigm_variable")
+        trialvariable = data_modality_rename2oldkeys(trialvariable, 'paradigm_variable')
+        trialdata = data_modality_na2null(pd.merge(trialdata, trialvariable, on="ID"))
+        print(trialdata)
+        
+        if trialdata is None:
+            raise HTTPException(status_code=404, detail="Could not load unity trials")
+        return trialdata.to_json(orient="records")
 
     @app.get("/inspect/events")
     def inspect_events(request: Request):
         validate_state(request.app.state.state, valid_initiated_inspect=True)
         
         nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
-        from_nas = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
-        events = get_session_modality(from_nas=from_nas, modality="event",
-                                      pct_as_index=True, rename2oldkeys=True,
-                                      na2null=True)
-        print(events)
+        session_fullfname = os.path.join(nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME)
+        events = session_modality_from_nas(session_fullfname, "event")
+        events = data_modality_pct_as_index(events)
+        events = data_modality_rename2oldkeys(events, 'event')
+        events = data_modality_na2null(events)
+        # print(events)
+        
+        if events is None:
+            raise HTTPException(status_code=404, detail="Could not load events")
         return events.to_json(orient="records")
     
     @app.get("/inspect/forwardvelocity")
     def inspect_forwardvelocity(request: Request):
         validate_state(request.app.state.state, valid_initiated_inspect=True)
         
-        nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
-        from_nas = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
-        unityframes = get_session_modality(from_nas=from_nas, modality="unity_frame",
-                                           na2null=True, complement_data=True)
-
-        vel = unityframes["z_velocity"].rolling(window=20).mean()
-        vel_dsampled = pd.concat([vel, unityframes.frame_pc_timestamp], axis=1).iloc[::10].dropna()
-        return vel_dsampled.to_json(orient="records")
+        # nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
+        # session_fullfname = os.path.join(nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME)
+        
+        # unityframes = session_modality_from_nas(session_fullfname, "unity_frame")
+        # unityframes = data_modality_rename2oldkeys(unityframes, 'unity_frame')
+        # unityframes = data_modality_na2null(unityframes)
+        # print(unityframes)
+        
+        # nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
+        # session_dir_tuple = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
+        
+        # complement_data = False
+        # if session_paramters.paradigm_id == 800:
+        #     complement_data = True
+        # # unityframes = get_session_modality("unity_frame", session_dir_tuple,
+        # #                                    na2null=True, complement_data=complement_data)
+        # if unityframes is None:
+        #     raise HTTPException(status_code=404, detail="Could not load unity frames")
+        
+        # vel = unityframes["z_velocity"].rolling(window=20).mean()
+        # vel_dsampled = pd.concat([vel, unityframes.frame_pc_timestamp], axis=1).iloc[::20].dropna()
+        return ""
     
     @app.get("/inspect/unityframes")
     def inspect_forwardvelocity(request: Request):
         validate_state(request.app.state.state, valid_initiated_inspect=True)
-
+        
         nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
-        from_nas = (nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME[:-5])
-        unityframes = get_session_modality(from_nas=from_nas, modality="unity_frame",
-                                pct_as_index=True, rename2oldkeys=True, na2null=True)
+        session_fullfname = os.path.join(nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME)
+        
+        unityframes = session_modality_from_nas(session_fullfname, "unity_frame")
+        unityframes = data_modality_rename2oldkeys(unityframes, 'unity_frame')
+        unityframes = data_modality_na2null(unityframes)
+        print(unityframes)
+
+        if unityframes is None:
+            raise HTTPException(status_code=404, detail="Could not load unity frames")
         return unityframes.to_json(orient="records")

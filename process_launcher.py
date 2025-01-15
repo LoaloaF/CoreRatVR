@@ -201,6 +201,7 @@ def open_process_session_proc(session_dir, render_videos, integrate_ephys,
     args = _make_proc_args(shm_args=())
     args.extend([
         "--logging_name", script.replace(".py", ""),
+        "--logging_level", P.LOGGING_LEVEL,
         "--session_dir", session_dir,
         "--nas_dir", P.NAS_DATA_DIRECTORY,
         "--render_videos",

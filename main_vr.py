@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.insert(1, os.path.join(sys.path[0], 'backend'))
 sys.path.insert(1, os.path.join(sys.path[0], 'SHM'))
-sys.path.insert(1, os.path.join(sys.path[0], '../analysisVR/sessionWiseProcessing'))
+sys.path.insert(1, os.path.join(sys.path[0], '../analysisVR/'))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -82,7 +82,7 @@ def main():
     attach_stream_endpoints(app)
     attach_inspect_endpoints(app)
     attach_UI_endpoint(app)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
 
 if __name__ == "__main__":
     main()

@@ -44,17 +44,79 @@ def clean_ttl_data(data, threshold=10):
             filtered_data.append(data[i])
     return np.array(filtered_data)
 
-def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
-                         ballvel_data, event_data, facecam_packages, unitycam_packages):
+def patch_ephys_time(ballvel_data, target_data, target_data_pc_name):
+    ballvel_pc_time = ballvel_data["ballvelocity_pc_timestamp"].values
+    ballvel_ephys_time = ballvel_data["ballvelocity_ephys_timestamp"].values
+
+    target_data_ephys_time = np.empty(len(target_data), dtype=ballvel_ephys_time.dtype)
+
+    for i, target_pc_time in enumerate(target_data[target_data_pc_name].values):
+        closest_index = np.argmin(np.abs(ballvel_pc_time - target_pc_time))        
+        closest_time = ballvel_ephys_time[closest_index]
+        time_add_offset = closest_time + target_pc_time - ballvel_pc_time[closest_index]
+        target_data_ephys_time[i] = round(time_add_offset / 50) * 50
+
+    return target_data_ephys_time
+
+def debug_ephys_timestamps(ephys_norm, pc_norm, modality_name, bin_range):
+    plt.figure()
+    plt.plot(ephys_norm - pc_norm)
+    plt.title(f'{modality_name}: Ephys - PC')
+    plt.show() 
     
+    plt.figure()
+    plt.hist(np.diff(ephys_norm), bins=bin_range, alpha=0.3, label='TTL')
+    plt.hist(np.diff(pc_norm), bins=bin_range, alpha=0.3, label='PC')
+    plt.legend()
+    plt.xlabel('IS Time Difference (μs)')
+    plt.ylabel('Package Count')
+    plt.title(f"{modality_name}: Histogram of IS Time Difference")
+    plt.tight_layout()
+    plt.show() 
+
+def append_event_ephys(event_ttl, event_pc, ballvel_data, event_data, 
+                       event_name, logging_level, start_sample):
+    L = Logger()
+    L.logger.info(f"TTL package length: {len(event_ttl)}")
+    L.logger.info(f"PC package length: {len(event_pc)}")
+    
+    if (len(event_pc) == 0):
+        L.logger.warning("No Event.")
+    elif (len(event_ttl) != len(event_pc)):
+        L.logger.warning("TTL and PC Timestamp package length mismatch. Start patching with Ballvel data...")
+        event_data.loc[event_data["event_name"]==event_name, "event_ephys_timestamp"] = patch_ephys_time(ballvel_data, event_data[event_data["event_name"]==event_name], "event_pc_timestamp")
+        event_data.loc[event_data["event_name"]==event_name, "event_ephys_patched"] = 1
+        L.logger.info("Ephys Timestamps patched")
+    else:
+        event_ttl_norm = (event_ttl - event_ttl[0])*50
+        event_pc_norom = event_pc - event_pc[0]
+        L.logger.info(f"Average diff: {np.mean(event_ttl_norm - event_pc_norom)}")
+        
+        if logging_level == "DEBUG":
+            plt.figure()
+            plt.plot(event_ttl_norm - event_pc_norom)
+            plt.title(f'Event {event_name}: Ephys - PC')
+            plt.show() 
+        # comparision_plot(lick_rising_ttl_norm, lick_pc_timestamp_norm)
+        event_data.loc[event_data["event_name"]==event_name, "event_ephys_timestamp"] = (event_ttl_norm/50 + event_ttl[0]  - start_sample)*50
+        event_data.loc[event_data["event_name"]==event_name, "event_ephys_patched"] = 0
+        L.logger.info("Ephys Timestamps added")
+    
+    return event_data
+
+def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
+                         ballvel_data, event_data, facecam_packages, 
+                         bodycam_packages, unitycam_packages, logging_level):
     L = Logger()
      
     try:
         with h5py.File(ephys_fullfname, 'r') as file:
             ephys_bits = file['bits']["0000"][:]
+            start_sample = file['data_store/data0000/groups/all_channels/frame_nos'][0]
     except:
         with h5py.File(ephys_fullfname, 'r') as file:
             ephys_bits = file['bits'][:]
+
 
     msg = np.array([(a[0],a[1]) for a in ephys_bits])
 
@@ -69,227 +131,206 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
     ball_ttl = ephys_data[['time', 'bit0']]
     ball_rising_ttl, ball_falling_ttl = detect_edges(ball_ttl, "bit0")
 
-    if (ball_ttl["bit0"].iloc[0] == 1):
-        ball_rising_ttl = np.insert(ball_rising_ttl, 0, ball_ttl["time"].iloc[0])
+    if (len(ball_falling_ttl) == len(ballvel_data)):
+        if (ball_ttl["bit0"].iloc[0] == 1):
+            ball_rising_ttl = np.insert(ball_rising_ttl, 0, ball_ttl["time"].iloc[0])
         
+    
     ball_pc_timestamp = np.array(ballvel_data["ballvelocity_pc_timestamp"])
 
     ball_rising_ttl_norm = (ball_rising_ttl - ball_rising_ttl[0])*50
     ball_pc_timestamp_norm = ball_pc_timestamp - ball_pc_timestamp[0]
 
-    L.logger.info(f"Ball TTL: {len(ball_rising_ttl_norm)}")
-    L.logger.info(f"Ball PC: {len(ball_pc_timestamp_norm)}")
+    L.logger.info(f"Ball TTL package length: {len(ball_rising_ttl_norm)}")
+    L.logger.info(f"Ball PC package length: {len(ball_pc_timestamp_norm)}")
     
     if (len(ball_rising_ttl_norm) != len(ball_pc_timestamp_norm)):
-        L.logger.warning("Ball TTL and PC Timestamp length mismatch")
+        L.logger.warning("Ball TTL and PC Timestamp package length mismatch. Add ephys timestamp failed.")
+        return
     else:
         L.logger.info(f"Average diff: {np.mean(ball_rising_ttl_norm - ball_pc_timestamp_norm)}")
-        plt.figure()
-        plt.plot(ball_rising_ttl_norm - ball_pc_timestamp_norm)
-        plt.title('Difference between TTL and PC Timestamp: TTL - PC')
-        ballvel_data["ballvelocity_ephys_timestamp"] = ball_rising_ttl_norm/50 + ball_rising_ttl[0]
-        L.logger.info("Ball Velocity TTL Timestamps added")
+        if logging_level == "DEBUG":
+            debug_ephys_timestamps(ball_rising_ttl_norm, ball_pc_timestamp_norm, "Ball Velocity", np.arange(400, 1000, 10))
+ 
+        ballvel_data["ballvelocity_ephys_timestamp"] = (ball_rising_ttl_norm/50 + ball_rising_ttl[0] - start_sample)*50  
+        ballvel_data["ballvelocity_ephys_patched"] = 0
+        L.logger.info("Ball Velocity Ephys Timestamps added")
 
     # Frame
     L.spacer()
-    frame_ttl = ephys_data[['time', 'bit2']]
-    frame_rising_ttl, frame_falling_ttl = detect_edges(frame_ttl, "bit2")
-    combined_ttl = np.concatenate((frame_rising_ttl, frame_falling_ttl))
-    combined_ttl = np.sort(combined_ttl)
-    # clean the jitter
-    combined_ttl = clean_ttl_data(combined_ttl)
-    frame_pc_timestamp = np.array(unity_frames_data["frame_pc_timestamp"])
+    last_ball_packages_ids = unity_frames_data.ballvelocity_last_package.values
     
-    frame_ttl_norm = (combined_ttl[1:] - combined_ttl[1])*50
-    frame_pc_timestamp_norm = frame_pc_timestamp[1:] - frame_pc_timestamp[1]
+    last_ball_packages_data = pd.DataFrame(last_ball_packages_ids, columns=['ballvelocity_package_id']).merge(ballvel_data, on='ballvelocity_package_id', how='left')    
+    last_ball_ephys = last_ball_packages_data.ballvelocity_ephys_timestamp.values
+    last_ball_pc = last_ball_packages_data.ballvelocity_pc_timestamp.values
+    frame_pc = np.array(unity_frames_data["frame_pc_timestamp"])
+    frame_ephys = last_ball_ephys + frame_pc - last_ball_pc
     
-    L.logger.info("Before Patching:")
-    L.logger.info(f"Frame TTL: {len(frame_ttl_norm)}")
-    L.logger.info(f"Frame PC: {len(frame_pc_timestamp_norm)}")
-    L.logger.info(f"Average diff: { np.mean(frame_ttl_norm - frame_pc_timestamp_norm[:len(frame_ttl_norm)])}")
-    
-    current_idx = 0
-    number_of_inserts = 0
-    number_of_deletes = 0
-    modify_idx_list = []
-    threshold = 6000
-    while (current_idx < len(frame_pc_timestamp_norm)):
-        if (current_idx % 5000 == 0):
-            L.logger.info(f"Current patching frame Index: {current_idx}")
-        if (len(frame_ttl_norm) == len(frame_pc_timestamp_norm)):
-            break
-        time_diff = frame_ttl_norm[current_idx] - frame_pc_timestamp_norm[current_idx]
-        if time_diff < threshold and time_diff > -threshold:
-            current_idx += 1
-        elif time_diff >= threshold:
-            insert_time = frame_pc_timestamp_norm[current_idx]/50 + combined_ttl[1]
-            time_diffs = (ephys_data['time'] - insert_time).abs()
-            closest_index = time_diffs.idxmin()
-            closest_time = ephys_data.loc[closest_index]["time"]
-            frame_ttl_norm = np.insert(frame_ttl_norm, current_idx, (closest_time- combined_ttl[1])*50)
-            number_of_inserts += 1
-            modify_idx_list.append(current_idx)
-        elif time_diff <= -threshold:
-            frame_ttl_norm = np.delete(frame_ttl_norm, current_idx)
-            number_of_deletes += 1
-            modify_idx_list.append(current_idx)
-
-    L.logger.info(f"Number of Inserts: {number_of_inserts}")
-    L.logger.info(f"Number of Deletes: {number_of_deletes}")
+    frame_pc_norm = frame_pc - frame_pc[0]
+    frame_ephys_norm = frame_ephys - frame_ephys[0]
    
-    L.logger.info("After Patching:")
-    L.logger.info(f"Frame TTL: {len(frame_ttl_norm)}")
-    L.logger.info(f"Frame PC: {len(frame_pc_timestamp_norm)}")
-   
-    if (len(frame_ttl_norm) != len(frame_pc_timestamp_norm)):
-        L.logger.warning("Frame TTL and PC Timestamp length mismatch")
+    if (len(frame_pc_norm) != len(frame_ephys_norm)):
+        L.logger.warning("Frame Ephys and PC Timestamp package length mismatch")
     else:
-        L.logger.info(f"Average diff: {np.mean(frame_ttl_norm - frame_pc_timestamp_norm[:len(frame_ttl_norm)])}")
-        plt.figure()
-        plt.plot(frame_ttl_norm - frame_pc_timestamp_norm[:len(frame_ttl_norm)])
-        plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
-        plt.show() 
+        L.logger.info(f"Average diff: {np.mean(frame_ephys_norm - frame_pc_norm)}")
+        if logging_level == "DEBUG":
+            debug_ephys_timestamps(frame_ephys_norm, frame_pc_norm, "Unity Frame", np.arange(12000, 20000, 50))
         
-        unity_frames_data = unity_frames_data.iloc[1:]
-        unity_frames_data.reset_index(drop=True, inplace=True)  
-        unity_frames_data["frame_ephys_timestamp"] = frame_ttl_norm/50 + combined_ttl[1]
-        unitycam_packages["unitycam_image_ephys_timestamp"] = frame_ttl_norm/50 + combined_ttl[1]
+        unity_frames_data["frame_ephys_timestamp"] = np.round(frame_ephys/50) * 50
+        unity_frames_data["frame_ephys_patched"] = 0
         
-        # Merge to get trial_start_ephys_timestamp
-        unity_trials_data = pd.merge(
+        # append unitycam ephys
+        merged_data = pd.merge(
+            unitycam_packages,
+            unity_frames_data[['frame_id', 'frame_ephys_timestamp']],
+            left_on='unitycam_image_id',
+            right_on='frame_id',
+            how='left'
+        )
+        unitycam_packages["unitycam_image_ephys_timestamp"] =  merged_data['frame_ephys_timestamp']
+        unitycam_packages["unitycam_image_ephys_patched"] = 0
+        
+        # append trial start ephys
+        merged_data = pd.merge(
             unity_trials_data,
             unity_frames_data[['frame_id', 'frame_ephys_timestamp']],
             left_on='trial_start_frame',
             right_on='frame_id',
             how='left'
-        ).rename(columns={'frame_ephys_timestamp': 'trial_start_ephys_timestamp'})
+        )
+        unity_trials_data["trial_start_ephys_timestamp"] = merged_data['frame_ephys_timestamp']
+        unity_trials_data["trial_start_ephys_patched"] = 0
 
-        # Merge to get trial_end_ephys_timestamp
-        unity_trials_data = pd.merge(
+        # append trial end ephys
+        merged_data = pd.merge(
             unity_trials_data,
             unity_frames_data[['frame_id', 'frame_ephys_timestamp']],
             left_on='trial_end_frame',
             right_on='frame_id',
             how='left'
-        ).rename(columns={'frame_ephys_timestamp': 'trial_end_ephys_timestamp'})
+        )
+        unity_trials_data["trial_end_ephys_timestamp"] = merged_data['frame_ephys_timestamp']
+        unity_trials_data["trial_end_ephys_patched"] = 0
 
-        # Drop the extra frame_id columns added by the merge
-        unity_trials_data = unity_trials_data.drop(columns=['frame_id_x', 'frame_id_y'])
-        L.logger.info("Unity Frame/Cam/Trials TTL Timestamps added")
+        ballvel_pc_time = ballvel_data["ballvelocity_pc_timestamp"].values
+        ballvel_ephys_time = ballvel_data["ballvelocity_ephys_timestamp"].values
+
+        # patch the first trial start and end ephys timestamps
+        closest_index_trial_1_start = np.argmin(np.abs(ballvel_pc_time - unity_trials_data["trial_start_pc_timestamp"].values[0]))
+        unity_trials_data.at[0, "trial_start_ephys_timestamp"] = ballvel_ephys_time[closest_index_trial_1_start]
+        closest_index_trial_1_end= np.argmin(np.abs(ballvel_pc_time - unity_trials_data["trial_end_pc_timestamp"].values[0]))
+        unity_trials_data.at[0, "trial_end_ephys_timestamp"] = ballvel_ephys_time[closest_index_trial_1_end]        
+        
+        L.logger.info("Unity Frame/Cam/Trials Ephys Timestamps added")
     
     # Facecam
     L.spacer()
     if facecam_packages is None:
         L.logger.warning("No Facecam Data")
     else:
-        facecam_ttl = ephys_data[['time', 'bit3']]
-        facecam_rising_ttl, facecam_falling_ttl = detect_edges(facecam_ttl, "bit3")
-        
-        if (len(facecam_rising_ttl) == 0):
-            L.logger.warning("No Facecam TTL")
-        else:
-            facecam_pc_timestamp = np.array(facecam_packages["facecam_image_pc_timestamp"])
-            facecam_rising_ttl_norm = (facecam_rising_ttl - facecam_rising_ttl[0])*50
-            facecam_pc_timestamp_norm = facecam_pc_timestamp - facecam_pc_timestamp[0]
-
-            L.logger.info(f"Facecam TTL: {len(facecam_rising_ttl_norm)}")
-            L.logger.info(f"Facecam PC: {len(facecam_pc_timestamp_norm)}")
+        facecam_ttl = ephys_data[['time', 'bit2']]
+        facecam_rising_ttl, facecam_falling_ttl = detect_edges(facecam_ttl, "bit2")
+        facecam_pc = np.array(facecam_packages["facecam_image_pc_timestamp"])
+        L.logger.info(f"Facecam TTL package length: {len(facecam_rising_ttl)}")
+        L.logger.info(f"Facecam PC package length : {len(facecam_pc)}")
             
-            if (len(facecam_rising_ttl_norm) != len(facecam_pc_timestamp_norm)):
-                L.logger.warning("Facecam TTL and PC Timestamp length mismatch")
-            else:
-                L.logger.info(f"Average diff: {np.mean(facecam_rising_ttl_norm - facecam_pc_timestamp_norm)}")
-                plt.figure()
-                plt.plot(facecam_rising_ttl_norm - facecam_pc_timestamp_norm)
-                plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
-                plt.show() 
-                facecam_packages["facecam_image_ephys_timestamp"] = facecam_rising_ttl_norm/50 + facecam_rising_ttl[0]
-                L.logger.info("Facecam TTL Timestamps added")
-                    
-                
+        if (len(facecam_pc) == 0):
+            L.logger.warning("No Facecam TTL")
+        elif (len(facecam_rising_ttl) != len(facecam_pc)):
+            L.logger.warning("Facecam TTL and PC Timestamp package length mismatch. Start patching with Ballvel data...")
+            facecam_packages["facecam_image_ephys_timestamp"] = patch_ephys_time(ballvel_data, facecam_packages, "facecam_image_pc_timestamp")
+            facecam_packages["facecam_image_ephys_patched"] = 1
+            L.logger.info("Facecam Ephys Timestamps patched")
+        else:
+            facecam_rising_ttl_norm = (facecam_rising_ttl - facecam_rising_ttl[0])*50
+            facecam_pc_norm = facecam_pc - facecam_pc[0]
+            L.logger.info(f"Average diff: {np.mean(facecam_rising_ttl_norm - facecam_pc_norm)}")
+            
+            if logging_level == "DEBUG":
+                debug_ephys_timestamps(facecam_rising_ttl_norm, facecam_pc_norm, "Facecam", np.arange(40000, 50000, 50))
+
+            facecam_packages["facecam_image_ephys_timestamp"] = (facecam_rising_ttl_norm/50 + facecam_rising_ttl[0] - start_sample)*50
+            facecam_packages["facecam_image_ephys_patched"] = 0
+            L.logger.info("Facecam Ephys Timestamps added")
+    
+    # Bodycam
+    L.spacer()
+    if bodycam_packages is None:
+        L.logger.warning("No Bodycam Data")
+    elif facecam_packages is None:
+        L.logger.warning("No Facecam Data to reference for Bodycam")
+    else:
+        facecam_pc_time = facecam_packages["facecam_image_pc_timestamp"].values
+        facecam_ephys_time = facecam_packages["facecam_image_ephys_timestamp"].values
+
+        bodycam_ephys_time = np.empty(len(bodycam_packages), dtype=facecam_ephys_time.dtype)
+
+        for i, bodycam_pc_time in enumerate(bodycam_packages["bodycam_image_pc_timestamp"].values):
+            closest_index = np.argmin(np.abs(facecam_pc_time - bodycam_pc_time))
+            closest_time = facecam_ephys_time[closest_index]
+            time_add_offset = closest_time + bodycam_pc_time - facecam_pc_time[closest_index]
+            bodycam_ephys_time[i] = round(time_add_offset / 50) * 50
+        
+        bodycam_ephys_norm = (bodycam_ephys_time - bodycam_ephys_time[0])
+        bodycam_pc_norm = bodycam_packages["bodycam_image_pc_timestamp"].values - bodycam_packages["bodycam_image_pc_timestamp"].values[0]
+        L.logger.info(f"Average diff: {np.mean(bodycam_ephys_norm - bodycam_pc_norm)}")
+        
+        if logging_level == "DEBUG":
+            debug_ephys_timestamps(bodycam_ephys_norm, bodycam_pc_norm, "Bodycam", np.arange(20000, 80000, 50))
+        
+        bodycam_packages["bodycam_image_ephys_timestamp"] = bodycam_ephys_time
+        bodycam_packages["bodycam_image_ephys_patched"] = 1
+        L.logger.info("Bodycam Ephys Timestamps patched")
+                     
     L.spacer()
     if event_data is None:
         L.logger.warning("No Event Data")
     else:
-        lick_ttl = ephys_data[['time', 'bit5']]
-        lick_rising_ttl, lick_falling_ttl = detect_edges(lick_ttl, "bit5")
+        lick_ttl = ephys_data[['time', 'bit7']]
+        lick_rising_ttl, lick_falling_ttl = detect_edges(lick_ttl, "bit7")
+        lick_pc = np.array(event_data[event_data["event_name"]=="L"]["event_pc_timestamp"])
+        lick_pc_value = np.array(event_data[event_data["event_name"]=="L"]["event_value"])
+        lick_pc = lick_pc+ lick_pc_value
         
-        if (len(lick_rising_ttl) == 0):
-            L.logger.warning("No Lick TTL")
-        else:
-            lick_pc_timestamp = np.array(event_data[event_data["event_name"]=="L"]["event_pc_timestamp"])
-            lick_pc_value = np.array(event_data[event_data["event_name"]=="L"]["event_value"])
-            lick_pc_timestamp = lick_pc_timestamp + lick_pc_value
-            lick_rising_ttl_norm = (lick_rising_ttl - lick_rising_ttl[0])*50
-            lick_pc_timestamp_norm = lick_pc_timestamp - lick_pc_timestamp[0]
-
-            L.logger.info(f"Lick TTL: {len(lick_rising_ttl_norm)}", )
-            L.logger.info(f"Lick PC: {len(lick_pc_timestamp_norm)}")
-            
-            if (len(lick_rising_ttl_norm) != len(lick_pc_timestamp_norm)):
-                L.logger.warning("Lick TTL and PC Timestamp length mismatch")
-            else:
-                L.logger.info(f"Average diff: {np.mean(lick_rising_ttl_norm - lick_pc_timestamp_norm)}")
-                plt.figure()
-                plt.plot(lick_rising_ttl_norm - lick_pc_timestamp_norm)
-                plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
-                plt.show() 
-                comparision_plot(lick_rising_ttl_norm, lick_pc_timestamp_norm)
-                event_data.loc[event_data["event_name"]=="L", "event_ephys_timestamp"] = lick_rising_ttl_norm/50 + lick_rising_ttl[0]
-                L.logger.info("Lick TTL Timestamps added")
-                
+        L.logger.info("Start appending ephys for Lick events...")        
+        event_data = append_event_ephys(lick_rising_ttl, lick_pc, ballvel_data, 
+                                        event_data, "L", logging_level, start_sample)
+        
+        # Punishment
+        L.spacer()
+        punishment_ttl = ephys_data[['time', 'bit1']]
+        punishment_rising_ttl, punishment_falling_ttl = detect_edges(punishment_ttl, "bit1")
+        punishment_pc = np.array(event_data[event_data["event_name"]=="V"]["event_pc_timestamp"])
+        
+        L.logger.info("Start appending ephys for Punishment events...")
+        event_data = append_event_ephys(punishment_rising_ttl, punishment_pc, 
+                                        ballvel_data, event_data, "V",
+                                        logging_level, start_sample)
+        
+        # Reward
         L.spacer()
         reward_ttl = ephys_data[['time', 'bit6']]
         reward_rising_ttl, reward_falling_ttl = detect_edges(reward_ttl, "bit6")
+        reward_pc = np.array(event_data[event_data["event_name"]=="R"]["event_pc_timestamp"])
+
+        L.logger.info("Start appending ephys for Reward events...")
+        event_data = append_event_ephys(reward_rising_ttl, reward_pc, 
+                                        ballvel_data, event_data, "R",
+                                        logging_level, start_sample)
         
-        if (len(reward_rising_ttl) == 0):
-            L.logger.warning("No Reward TTL")
-        else:
-            reward_pc_timestamp = np.array(event_data[event_data["event_name"]=="R"]["event_pc_timestamp"])
-            reward_rising_ttl_norm = (reward_rising_ttl - reward_rising_ttl[0])*50
-            reward_pc_timestamp_norm = reward_pc_timestamp - reward_pc_timestamp[0]
-
-            L.logger.info(f"Reward TTL: {len(reward_rising_ttl_norm)}")
-            L.logger.info(f"Reward PC: {len(reward_pc_timestamp_norm)}")
-            L.logger.info(f"Average diff: {np.mean(reward_rising_ttl_norm - reward_pc_timestamp_norm)}")
-            
-            if (len(reward_rising_ttl_norm) != len(reward_pc_timestamp_norm)):
-                L.logger.warning("Reward TTL and PC Timestamp length mismatch")
-            else:
-                plt.figure()
-                plt.plot(reward_rising_ttl_norm - reward_pc_timestamp_norm)
-                plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
-                plt.show()
-                comparision_plot(reward_rising_ttl_norm, reward_pc_timestamp_norm)
-                event_data.loc[event_data["event_name"]=="R", "event_ephys_timestamp"] = reward_rising_ttl_norm/50 + reward_rising_ttl[0]
-                L.logger.info("Reward TTL Timestamps added")
-
+        # Sound
         L.spacer()
-        sound_ttl = ephys_data[['time', 'bit7']]
-        sound_rising_ttl, sound_falling_ttl = detect_edges(sound_ttl, "bit7")
-        
-        if (len(sound_rising_ttl) == 0):
-            L.logger.warning("No Sound TTL")
-        else:
-            sound_pc_timestamp = np.array(event_data[event_data["event_name"]=="S"]["event_pc_timestamp"])
-            sound_rising_ttl_norm = (sound_rising_ttl - sound_rising_ttl[0])*50
-            sound_pc_timestamp_norm = sound_pc_timestamp - sound_pc_timestamp[0]
+        sound_ttl = ephys_data[['time', 'bit4']]
+        sound_rising_ttl, sound_falling_ttl = detect_edges(sound_ttl, "bit4")
+        sound_pc = np.array(event_data[event_data["event_name"]=="S"]["event_pc_timestamp"])
 
-            L.logger.info(f"Sound TTL: {len(sound_rising_ttl_norm)}")
-            L.logger.info(f"Sound PC: {len(sound_pc_timestamp_norm)}")
-            
-            if (len(sound_rising_ttl_norm) != len(sound_pc_timestamp_norm)):
-                L.logger.warning("Sound TTL and PC Timestamp length mismatch")
-            else:
-                L.logger.info(f"Average diff: {np.mean(sound_rising_ttl_norm - sound_pc_timestamp_norm)}")
-                plt.figure()
-                plt.plot(sound_rising_ttl_norm - sound_pc_timestamp_norm)
-                plt.title('Difference between TTL and PC Timestamp after patching: TTL - PC')
-                plt.show()
-                
-                event_data.loc[event_data["event_name"]=="S", "event_ephys_timestamp"] = sound_rising_ttl_norm/50 + sound_rising_ttl[0]
-                comparision_plot(sound_rising_ttl_norm, sound_pc_timestamp_norm)
-                L.logger.info("Sound TTL Timestamps added")
+        L.logger.info("Start appending ephys for Sound events...")
+        event_data = append_event_ephys(sound_rising_ttl, sound_pc, 
+                                        ballvel_data, event_data, "S",
+                                        logging_level, start_sample)
+        
+    L.logger.info("Sucessfully added ephys timestamps to dataframes.")
+
 
 def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data, 
                     event_data, facecam_packages, bodycam_packages,
@@ -389,7 +430,7 @@ def hdf5_frames2mp4(session_dir, merged_fname):
                 fps = _calc_fps(packages, cam_name)
 
                 frame_keys = merged_file[f"{cam_name}_frames"].keys()
-                L.logger.info(f"Rendering {cam_name} (n={len(frame_keys):,})...")
+                # L.logger.info(f"Rendering {cam_name} (n={len(frame_keys):,})...")
                 for i, (frame_key, pack) in enumerate(zip(frame_keys, packages.iterrows())):
                     frame = merged_file[f"{cam_name}_frames"][frame_key][()]
                     frame = cv2.imdecode(np.frombuffer(frame.tobytes(), np.uint8), 
@@ -402,9 +443,9 @@ def hdf5_frames2mp4(session_dir, merged_fname):
                     
                     # insert black frame if package ID is discontinuous
                     if pack_id != prv_pack_id+1:
-                        L.logger.warning(f"Package ID discontinuous; gap was "
-                                         f"{pack_id - prv_pack_id}.  Inserting"
-                                         f" black frame.")
+                        # L.logger.warning(f"Package ID discontinuous; gap was "
+                        #                  f"{pack_id - prv_pack_id}.  Inserting"
+                        #                  f" black frame.")
                         writer.write(np.zeros_like(frame))
                     else:
                         writer.write(frame)
@@ -413,13 +454,21 @@ def hdf5_frames2mp4(session_dir, merged_fname):
                     # log progress
                     # if i % (len(frame_keys)//10) == 0:
                     #     print(f"{i/len(frame_keys)*100:.0f}% done...", end='\r')
-                L.logger.info(f"Sucessfully rendered {cam_name} video!")
+                # L.logger.info(f"Sucessfully rendered {cam_name} video!")
             # keys in hdf5 file may very well not exist
             except Exception as e:
-                L.logger.error(f"Failed to render {cam_name} video: {e}")
+                # L.logger.error(f"Failed to render {cam_name} video: {e}")
                 return
-    L = Logger()
-    L.logger.info(f"Rendering videos from hdf5 files in {session_dir}")
+    # L = Logger()
+    # L.logger.info(f"Rendering videos from hdf5 files in {session_dir}")
     render_video("facecam")
     render_video("bodycam")
     render_video("unitycam")
+    
+    
+if __name__ == '__main__':
+    session_dir ="/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/RUN_rYL006/rYL006_P1000/2024-10-25_15-41_rYL006_P1000_MotorLearningStop_14min"
+    session_dir ="/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/RUN_rYL006/rYL006_P0500/2024-11-12_17-14_rYL006_P0500_MotorLearning_0min"
+    merged_fname = "2024-10-25_15-41_rYL006_P1000_MotorLearningStop_14min.hdf5"
+    merged_fname = "2024-11-12_17-14_rYL006_P0500_MotorLearning_0min.hdf5"
+    hdf5_frames2mp4(session_dir, merged_fname)

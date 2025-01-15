@@ -4,7 +4,7 @@ import sys
 import os
 # when executed as a process add parent SHM dir to path again
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
-sys.path.insert(1, os.path.join(sys.path[0], 'db_mysql'))
+# sys.path.insert(1, os.path.join(sys.path[0], 'db_mysql'))
 
 import argparse
 # from send2trash import send2trash
@@ -12,7 +12,7 @@ import pandas as pd
 import h5py
 from CustomLogger import CustomLogger as Logger
 
-from session2db import session2db
+# from session2db import session2db
 from check_session_files import check_file_existence
 from check_session_files import check_log_files
 from load_session_data import load_session_metadata
@@ -112,7 +112,8 @@ def _handle_data(session_dir):
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"bodycam_image_id", 
                          "PCT": f"bodycam_image_pc_timestamp",
-                         "INSERT1": "trial_id",}
+                         "INSERT1": "facecam_image_ephys_timestamp",
+                         "INSERT2": "trial_id",}
     bodycam_packages = load_camera_data(session_dir, 'bodycam.hdf5', 
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"unitycam_image_id", 
@@ -141,7 +142,7 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
     log_file_content = metadata.pop("log_file_content", None)
     
     with pd.HDFStore(full_fname, 'w') as store:
-        L.logger.info(f"Merging metadata {metadata}...")
+        # L.logger.info(f"Merging metadata {metadata}...")
         store.put('metadata', pd.DataFrame([metadata], index=[0]), format='table')
     
         L.logger.info(f"Merging unity data...")
@@ -193,10 +194,9 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
 
 def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                               unity_frames_data, ballvel_data, event_data,
-                              facecam_packages, unitycam_packages):
-    # TODO
-    # read the ephys file bits field
-    # integrate with behavior data with extensive alignment chacking
+                              facecam_packages, bodycam_packages, 
+                              unitycam_packages, logging_level):
+
     ephys_fname = [f for f in os.listdir(os.path.join(nas_dir, session_dir)) 
                 if f.endswith(".raw.h5") and 'ephys' in f]
     if len(ephys_fname) != 1:
@@ -207,7 +207,8 @@ def _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
     # inplace insertation of ephys timestamps into all dataframes
 
     add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
-                         ballvel_data, event_data, facecam_packages, unitycam_packages)
+                         ballvel_data, event_data, facecam_packages, 
+                         bodycam_packages, unitycam_packages, logging_level)
     
 def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
     L.logger.info(f"Copying files to the NAS")
@@ -232,7 +233,7 @@ def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
         
         # copy only these selected files to NAS (merged file, log files, bodycam video)
         fnames = [fname for fname in os.listdir(session_dir) 
-                if fname.endswith(".log") or fname in (merged_fname, "bodycam.mp4")]
+                if fname.endswith(".log") or fname in (merged_fname, "bodycam.mp4", "ephys_output.raw.h5")]
         for fn in fnames:
             src = os.path.join(session_dir, fn)
             if os.path.exists(src):
@@ -256,8 +257,8 @@ def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
 #     return session_dir
 
 def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys, 
-                    copy_to_nas, write_to_db, database_name,
-                    render_videos):
+                    copy_to_nas, write_to_db, database_location, database_name,
+                    render_videos, logging_level):
     L = Logger()
     L.logger.info(f"Processing session {session_dir}")
     
@@ -295,14 +296,17 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     unitycam_packages) = data
     L.spacer()
     L.logger.info(f"{metadata['session_name']}\nData loaded without Exceptions! ")
-    L.spacer()
+
     
     if integrate_ephys:
+        L.spacer()
         _handle_ephys_integration(nas_dir, session_dir, unity_trials_data,
                                   unity_frames_data, ballvel_data, event_data,
-                                  facecam_packages, unitycam_packages)
+                                  facecam_packages, bodycam_packages, 
+                                  unitycam_packages, logging_level)
         
     # inplace insert trial id into every dataframe with a timestamp
+    L.spacer()
     insert_trial_id(unity_trials_data, unity_frames_data,
                     ballvel_data, event_data, facecam_packages, bodycam_packages,
                     unitycam_packages, use_ephys_timestamps=integrate_ephys)
@@ -313,40 +317,44 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
             return
     
     # merge all data into a single hdf5 file and store in session_dir
+    L.spacer()
     merged_fname = f"{metadata['session_name']}.hdf5"
     _save_merged_hdf5_data(session_dir, merged_fname, metadata, unity_trials_data, 
                            unity_frames_data, paradigmVariable_data, 
                            facecam_packages, bodycam_packages, 
                            unitycam_packages, ballvel_data, event_data)
-    L.spacer()
     
     if render_videos:
+        L.spacer()
         hdf5_frames2mp4(session_dir, merged_fname)
-    L.spacer()
+
     
     # change the session dir name to the session_name
     # session_dir = _handle_rename_nas_session_dirs(session_dir, nas_dir, 
     #                                               metadata["session_name"])
     
     if copy_to_nas and os.path.exists(nas_dir):
+        L.spacer()
         _handle_move2nas(session_dir, nas_dir, merged_fname, metadata['animal_name'], 
                          metadata['paradigm_name'])
-    L.spacer()
+
 
     # read the moved data on the NAS, not local (faster in the future)
-    if write_to_db:
-        session2db(nas_dir, merged_fname, database_name)
+    # if write_to_db:
+    #     L.spacer()
+    #     session2db(nas_dir, merged_fname, database_location, database_name)
     
     L.logger.info(f"Session processing finished sucessfully")
-    #TODO run on all the available data with fast network connection to NAS, 
-    #TODO test with a session that has ephys data
+
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Validate and add a finished session to DB")
     argParser.add_argument("--logging_dir")
     argParser.add_argument("--logging_name")
     argParser.add_argument("--logging_level", default="INFO")
-    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-08-20_16-57-15_active/")
+    argParser.add_argument("--session_dir", default="/home/vrmaster/Projects/VirtualReality/data/2024-11-14_16-27-45_active_sound_missing/")
+    # argParser.add_argument("--logging_level")
+    # argParser.add_argument("--session_dir")
     # optional arguments
     argParser.add_argument("--prompt_user_decision", action="store_true")
     argParser.add_argument("--render_videos", action="store_true")
@@ -358,8 +366,8 @@ if __name__ == "__main__":
     kwargs = vars(argParser.parse_args())
     
     L = Logger()
-    L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
-                  kwargs.pop("logging_level"))
+    L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"),
+                  kwargs["logging_level"])
     L.spacer()
     L.logger.info("Subprocess started")
     L.logger.info(L.fmtmsg(kwargs))
