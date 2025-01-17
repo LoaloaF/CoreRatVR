@@ -112,11 +112,11 @@ class SessionParamters:
         meatadata_df = meatadata_df.set_index("Session parameters").iloc[:, 0:1]
         
         # extract environment dictionary from the 1st and 2nd sheets
-        self.extract_env_dict(env_df, env_params_df)
+        self._extract_env_dict(env_df, env_params_df)
         # extract session dictionary from the 3rd sheet
-        self.extract_session_dict(meatadata_df)
+        self._extract_session_dict(meatadata_df)
 
-    def extract_env_dict(self, env_df, env_params_df):
+    def _extract_env_dict(self, env_df, env_params_df):
         # print(environment_df, env_params_df)
         y_indices_pillar, x_indices_pillar = np.where(env_df.notna())
         pillars = {i: {"id":int(env_df.iloc[y,x]), "x":int(x), "y":int(y)}
@@ -148,7 +148,7 @@ class SessionParamters:
         self.L.logger.debug("Environment parameters:")
         self.L.logger.debug(self.L.fmtmsg(self.environment_parameters_dict))
         
-    def extract_session_dict(self, session_df):
+    def _extract_session_dict(self, session_df):
         session_params_dict = session_df.to_dict()
         session_paramsdict = session_params_dict["Values"]
         session_paramsdict = {k: v if not (isinstance(v, str) and "," in v) else v.split(",") 
@@ -194,91 +194,17 @@ class SessionParamters:
         fullffname = os.path.join(P.SESSION_DATA_DIRECTORY, "session_parameters.json")
         with open(fullffname, 'w') as f:
             json.dump(params, f, indent=2)
-            
-    # def load_session_parameters(self, metadata):
-    #     self.paradigm_name = metadata.get("paradigm_name")
-    #     if self.paradigm_name is not None and self.paradigm_name.shape[0]: 
-    #         self.paradigm_name = self.paradigm_name.item()
-    #         self.paradigm_id = int(self.paradigm_name[1:5])
-        
-    #     self.animal = metadata.get("animal_name")
-    #     if self.animal is not None and self.animal.shape[0]: 
-    #         self.animal = self.animal.item()
-        
-    #     self.animal_weight = metadata.get("animal_weight")
-    #     if self.animal_weight is not None and self.animal_weight.shape[0]: 
-    #         self.animal_weight = self.animal_weight.item()
-        
-    #     self.start_time = metadata.get("start_time")
-    #     if self.start_time is not None and self.start_time.shape[0]: 
-    #         self.start_time = self.start_time.item()
-        
-    #     self.stop_time = metadata.get("stop_time")
-    #     if self.stop_time is not None and self.stop_time.shape[0]: 
-    #         self.stop_time = self.stop_time.item()
-        
-    #     self.duration = metadata.get("duration")
-    #     if self.duration is not None and self.duration.shape[0]: 
-    #         self.duration = self.duration.item()
-        
-    #     self.notes = metadata.get("notes")
-    #     if self.notes is not None and self.notes.shape[0]: 
-    #         self.notes = self.notes.item()
-        
-    #     if metadata.get("metadata") is not None:
-    #         metadata = json.loads(metadata.metadata.item())
-    #         self.session_parameters_dict = {}
-            
-    #         self.environment_parameters_dict = {
-    #             "pillars": metadata.get("pillars"),
-    #             "pillar_details": metadata.get("pillar_details"),
-    #             "envX_size": metadata.get("envX_size"),
-    #             "envY_size": metadata.get("envY_size"),
-    #             "base_length": metadata.get("base_length"),
-    #             "wallzone_size": metadata.get("wallzone_size"),
-    #             "wallzone_collider_size": metadata.get("wallzone_collider_size"),
-    #         }
-            
-    #         self.paradigms_states = metadata.get("paradigms_states")
-    #         self.paradigms_transitions = metadata.get("paradigms_transitions")
-    #         self.paradigms_decisions = metadata.get("paradigms_decisions")
-    #         self.paradigms_actions = metadata.get("paradigms_actions")
-            
-    def load_session_parameters(self, metadata):
-        # self.trial_id = metadata['trial_id']
-        # self.session_name = metadata['session_name']
-        self.paradigm_name = metadata['paradigm_name']
-        self.paradigm_id = metadata['paradigm_id']
-        self.animal = metadata['animal_name']
-        # self.animal_id = metadata['animal_id']
-        self.animal_weight = metadata.get('animal_weight')
-        self.start_time = metadata['start_time']
-        # can be NA
-        # self.stop_time = metadata['stop_time']
-        self.stop_time = metadata.get("stop_time")
-        
-        self.duration = metadata['duration_minutes']
-        self.notes = metadata.get("stop_time")
-        # self.rewardPostSoundDelay = metadata['rewardPostSoundDelay']
-        # self.rewardAmount = metadata['rewardAmount']
-        # self.successSequenceLength = metadata['successSequenceLength']
-        # self.trialPackageVariables = metadata['trialPackageVariables']
-        # self.trialPackageVariablesDefault = metadata['trialPackageVariablesDefault']
-        # self.configuration = metadata['configuration']
-        # self.GAP = metadata['GAP']
-        # self.session_id = metadata['session_id']
-        # self.duration = metadata['duration']
-        # self.punishmentLength = metadata['punishmentLength']
-        # self.punishmentInactivationLength = metadata['punishmentInactivationLength']
-        # self.onWallZoneEntry = metadata['onWallZoneEntry']
-        # self.onInterTrialInterval = metadata['onInterTrialInterval']
-        # self.interTrialIntervalLength = metadata['interTrialIntervalLength']
-        # self.abortInterTrialIntervalLength = metadata['abortInterTrialIntervalLength']
-        # self.maxiumTrialLength = metadata['maxiumTrialLength']
-        # self.sessionFREEVAR2 = metadata['sessionFREEVAR2']
-        # self.sessionDescription = metadata['sessionDescription']
-        # self.sessionFREEVAR4 = metadata['sessionFREEVAR4']
 
+    def load_session_parameters(self, metadata):
+        self.paradigm_name = metadata.get('paradigm_name')
+        self.paradigm_id = metadata.get('paradigm_id')
+        self.animal = metadata.get('animal_name')
+        self.animal_weight = metadata.get('animal_weight')
+        self.start_time = metadata.get('start_time')
+        self.stop_time = metadata.get("stop_time")
+        self.duration = metadata.get('duration_minutes')
+        self.notes = metadata.get("stop_time")
+        
         # Parse environment parameters from JSON string
         env_metadata = metadata['env_metadata']
         self.environment_parameters_dict = {

@@ -235,6 +235,14 @@ def attach_general_endpoints(app):
     @app.get("/animals")
     def animals():
         return P.ANIMALS
+    
+    @app.get("/check_nas")
+    def check_nas():
+        Logger().logger.debug("Checking if NAS mapped...")
+        nas_mapped = os.path.exists(P.NAS_DATA_DIRECTORY)
+        if not nas_mapped:
+            nas_mapped = "Warning: NAS not mapped yet."
+        return nas_mapped
 
     @app.get("/trial_variable_names")
     def trial_variable_names():
