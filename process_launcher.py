@@ -142,9 +142,34 @@ def open_log_ephys_proc():
         "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.LOG_PORTENTA_PROC_PRIORITY),
         "--session_data_dir", P.SESSION_DATA_DIRECTORY,
+        "--which_implant_path", os.path.join(P.NAS_DATA_DIRECTORY, 
+                                             f"RUN_{P.MAXWELL_CONFIG_OF_ANIMAL.replace("_","")}", 
+                                             "implantation"),
+        "--gain", str(P.MAXWELL_GAIN),
+        "--use_legacy_format", str(P.MAXWELL_SAVE_LEGACY_FORMAT),
     ])
     # this runs on a differnt python version (system python)
-    return _launch('/home/vrmaster/MaxLab/python/bin/python3.10', stream_script, *args)
+    return _launch(P.MAXWELL_PYTHON_PATH, stream_script, *args)
+
+def open_scope_proc():
+    P = Parameters()
+    
+    args = _make_proc_args(shm_args=[])
+    args.extend([
+        "--logging_name", 'scope',
+        "--process_prio", str(-1),
+    ])
+    return _launch("bash", P.MAXWELL_SCOPE_BIN, *args)
+
+def open_mxserver_proc():
+    P = Parameters()
+    
+    args = _make_proc_args(shm_args=[])
+    args.extend([
+        "--logging_name", 'mxserver',
+        "--process_prio", str(-1),
+    ])
+    return _launch("bash", P.MAXWELL_SERVER_BIN, *args)
 
 def open_stream_portenta_proc():
     P = Parameters()
@@ -271,7 +296,7 @@ def _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput"),
 
 def _launch(exec, script, *args):
     L = Logger()
-    L.logger.info(f"Launching subprocess {os.path.basename(script)}") 
+    L.logger.info(f"Launching subprocess {os.path.basename(script)}")
     msg = L.fmtmsg((f"Subprocess {os.path.basename(script)} arguments:", *args))
     L.logger.debug(msg)
 

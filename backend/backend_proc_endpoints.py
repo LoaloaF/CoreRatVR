@@ -174,5 +174,19 @@ def attach_proc_endpoints(app):
         else:
             request.app.state.state["procs"]["unity"] = proc.pid
             
-            
+    @app.post("/procs/launch_mxserver")
+    def launch_mxserver(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_TERM_FLAG: True},
+                       valid_proc_running={"mxserver": False})
+        proc = pl.open_mxserver_proc()
+        request.app.state.state["procs"]["mxserver"] = proc.pid
+    
+    @app.post("/procs/launch_scope")
+    def launch_scope(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_TERM_FLAG: True},
+                       valid_proc_running={"mxserver": False})
+        proc = pl.open_scope_proc()
+        request.app.state.state["procs"]["scope"] = proc.pid
     return app

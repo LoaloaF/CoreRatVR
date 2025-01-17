@@ -36,6 +36,8 @@ async def lifespan(app: FastAPI):
             "log_unitycam": 0,
             "log_ephys": 0,
             "unity": 0,
+            "mxserver": 0,
+            "scope": 0,
             "process_session": 0,
         },
         "shm": {

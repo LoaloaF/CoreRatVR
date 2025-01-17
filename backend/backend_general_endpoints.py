@@ -228,14 +228,13 @@ def attach_general_endpoints(app):
     @app.get("/paradigms")
     def paradigms():
         dirname = os.path.join(P.PROJECT_DIRECTORY, "UnityRatVR", "Paradigms")
-        paradigms = [f for f in os.listdir(dirname) if f.endswith(".xlsx")]
-        return paradigms
+        paradigms = [f for f in os.listdir(dirname) if f.endswith(".xlsx")
+                     if f not in P.EXCLUDE_PARADIGMS]
+        return sorted(paradigms)
 
     @app.get("/animals")
     def animals():
-        static_animals = ["rYL_001","rYL_002","rYL_003","rYL_004","rYL_006","rYL_008","rYL_005","rYL_007","rYL_009","AI_001","dummyAnimal"]
-
-        return static_animals
+        return P.ANIMALS
 
     @app.get("/trial_variable_names")
     def trial_variable_names():

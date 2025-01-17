@@ -13,7 +13,7 @@ from FlagSHMInterface import FlagSHMInterface
 import maxlab as mx
 
 
-def _log(termflag_shm, paradigm_running_shm, session_data_dir, fname):
+def _log(termflag_shm, paradigm_running_shm, session_data_dir, fname, use_legacy_format):
     L = Logger()
     L.logger.info("Saving ephys data to hdf5...")
 
@@ -44,7 +44,10 @@ def _log(termflag_shm, paradigm_running_shm, session_data_dir, fname):
                     is_recording = False
         
         # if the flag is raised, and we are noot already recording, start recording
-        elif not is_recording:        
+        elif not is_recording:
+            if use_legacy_format:
+                s.set_legacy_format(True)
+                
             s.open_directory(session_data_dir)
             s.start_file(fname)
             s.group_delete_all()
@@ -54,14 +57,38 @@ def _log(termflag_shm, paradigm_running_shm, session_data_dir, fname):
     
             s.start_recording(recording_wells)
 
-
+def _reset_MEA1K(gain, enable_stimulation_power=False):
+    L = Logger()
+    L.logger.info(f"Initialize MEA1K and set gain of {gain}")
+    mx.util.initialize()
+    if enable_stimulation_power:
+        mx.send(mx.chip.Core().enable_stimulation_power(True))
+    mx.send(mx.chip.Amplifier().set_gain(gain))
+    
 def run_log_ephys(termflag_shm_struc_fname, paradigmflag_shm_struc_fname,
-                  session_data_dir):
+                  session_data_dir, which_implant_path, gain, use_legacy_format):
     L = Logger()
     # shm access
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     paradigm_running_shm = FlagSHMInterface(paradigmflag_shm_struc_fname)
-
+    
+    implant_name = [f.replace("implanted_", "") for f in os.listdir(which_implant_path) 
+                    if f.startswith("implanted_")]
+    if not implant_name:
+        L.logger.error(f"No implant found at {which_implant_path} - not "
+                       "changing configuration.")
+    else:
+        implant_name = implant_name[0]
+        config_fullfname = os.path.join(which_implant_path, "..", "..", 'implant_devices', 
+                                        implant_name, 'bonding', 
+                                        f"bonding_mapping_{implant_name}.cfg")
+        L.logger.info(f"Placeholder for config setting {config_fullfname}")
+        # _reset_MEA1K(gain, enable_stimulation_power=False)
+        # array = mx.chip.Array()
+        # array.load_config(config_fullfname)
+        # L.logger.info(f"Successfully loaded configuration from {config_fullfname}")
+        
+        
     while not paradigm_running_shm.is_set():
         # arduino pauses 1000ms, at some point in this inveral (between 0 and 500ms)
         # the logger wakes up - but there are no packages coming from the arudino 
@@ -72,7 +99,8 @@ def run_log_ephys(termflag_shm_struc_fname, paradigmflag_shm_struc_fname,
     current_time = int(time.time()*1e6)
     L.logger.info(f"Paradigm flag raised at {current_time}. Starting to log ephys data now...")
 
-    _log(termflag_shm, paradigm_running_shm, session_data_dir, fname="ephys_output")
+    _log(termflag_shm, paradigm_running_shm, session_data_dir, fname="ephys_output", 
+         use_legacy_format=use_legacy_format)
 
 if __name__ == "__main__":
     descr = ("Save electrophysiology data from measerver.")
@@ -84,6 +112,9 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_level")
     argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--session_data_dir")
+    argParser.add_argument("--which_implant_path")
+    argParser.add_argument("--gain")
+    argParser.add_argument("--use_legacy_format")
 
     kwargs = vars(argParser.parse_args())
     L = Logger()

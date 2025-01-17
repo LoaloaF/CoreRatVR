@@ -92,21 +92,6 @@ class Parameters:
         self.LOG_CAMERA_PROC_PRIORITY = -1
         self.LOG_UNITY_PROC_PRIORITY = -1
 
-        # laptop camera parameters for testing
-        # self.FRONT_WEBCAM_IDX = 0
-        # self.FRONT_WEBCAM_NAME = "LogitechMainWebcam2"
-        # self.FRONT_WEBCAM_X_RES = 640
-        # self.FRONT_WEBCAM_Y_RES = 480
-        # self.FRONT_WEBCAM_NCHANNELS = 3
-        # self.FRONT_WEBCAM_FPS = 30
-
-        # self.BUILTIN_WEBCAM_IDX = 2
-        # self.BUILTIN_WEBCAM_NAME = "XPS13Webcam2"
-        # self.BUILTIN_WEBCAM_X_RES = 640
-        # self.BUILTIN_WEBCAM_Y_RES = 480
-        # self.BUILTIN_WEBCAM_NCHANNELS = 3
-        # self.BUILTIN_WEBCAM_FPS = 30
-
         info = get_all_system_info()
         
         self.UNITY_BUILD_DIRECTORY = os.path.join(self.PROJECT_DIRECTORY, info["UNITY_BUILD_DIRECTORY"])
@@ -138,6 +123,38 @@ class Parameters:
         # self.CAMERAS_BY_IDX = info["CAMERAS_BY_IDX"]
         self.ARDUINO_PORT = info["ARDUINO_PORT"]
         self.ARDUINO_BAUD_RATE = 2000000
+        
+        
+        # experiment parameters, incl ephys
+        # self.ANIMALS = ["rYL_001","rYL_002","rYL_003","rYL_004","rYL_006",
+        #                 "rYL_008","rYL_005","rYL_007","rYL_009","AI_001",
+        #                 "dummyAnimal"]
+        self.ANIMALS = ["rYL_006", "rYL_009", "rYL_011", "rYL_012",
+                        "dummyAnimal"]
+        # P0000_AutoLickReward.xlsx
+        # P0100_SpoutAssoc.xlsx
+        # P0900_MotorLickLearning.xlsx
+        # P1000_MotorLearningStop.xlsx
+        # P1100_LinearTrackStop.xlsx
+        self.EXCLUDE_PARADIGMS = [
+            "P----_NewFormatTemplate.xlsx",
+            "P0200_GoalDirectedMovement.xlsx",
+            "P0300_InfiniteHexArena.xlsx",
+            "P0400_4PillarDirected.xlsx",
+            "P0500_MotorLearning.xlsx",
+            "P0600_mlGym.xlsx",
+            "P0700_YMaze.xlsx",
+            "P0800_LinearTrack.xlsx",
+            "P0800_LinearTrack_long.xlsx",
+            "P0800_LinearTrack_new.xlsx",
+            "P0800_LinearTrack_old.xlsx",
+        ]
+        self.MAXWELL_SAVE_LEGACY_FORMAT = False
+        self.MAXWELL_CONFIG_OF_ANIMAL = "rYL_006"
+        self.MAXWELL_GAIN = 512
+        self.MAXWELL_PYTHON_PATH = "/home/vrmaster/MaxLab/python/bin/python3.10"
+        self.MAXWELL_SERVER_BIN = "/home/vrmaster/MaxLab/bin/mxwserver.sh"
+        self.MAXWELL_SCOPE_BIN = "/home/vrmaster/MaxLab/bin/scope.sh"
         
     def get_parameter_groups(self):
         return {
@@ -180,6 +197,11 @@ class Parameters:
             "Hardware": (
                 "PROCESSOR", "PHYSICAL_CORES", "TOTAL_CORES", "RAM_AVAILABLE",
                 "GPU_NAME", "GPU_MEM_AVAIL", "ARDUINO_PORT"),
+            "Experiment": (
+                "ANIMALS", "EXCLUDE_PARADIGMS", "MAXWELL_SAVE_LEGACY_FORMAT",
+                "MAXWELL_CONFIG_OF_ANIMAL", "MAXWELL_GAIN", 
+                "MAXWELL_PYTHON_PATH", "MAXWELL_SERVER_BIN",
+                "MAXWELL_SCOPE_BIN"),
         }
 
     def get_locked_parameters(self) -> dict[str, Any]:
@@ -201,7 +223,6 @@ class Parameters:
             json.dump(self.get_attributes(), f)
             
     def update_from_json(self, params):
-        # TODO check for keys that are not in the current parameters
         for key, value in params.items():
             if key not in self.get_attributes().keys():
                 print('Deprecated parameter key will be ignored:', key)
