@@ -189,7 +189,7 @@ class SessionParamters:
                            "pillar_details")
         msg = {key:val if key not in long_value_keys else "[...many details...]" 
                for key, val in params.items()}
-        self.L.logger.info(self.L.fmtmsg(msg))
+        self.L.logger.debug(self.L.fmtmsg(msg))
         
         fullffname = os.path.join(P.SESSION_DATA_DIRECTORY, "session_parameters.json")
         with open(fullffname, 'w') as f:
