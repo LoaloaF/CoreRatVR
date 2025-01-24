@@ -143,7 +143,7 @@ def open_log_ephys_proc():
         "--process_prio", str(P.LOG_PORTENTA_PROC_PRIORITY),
         "--session_data_dir", P.SESSION_DATA_DIRECTORY,
         "--which_implant_path", os.path.join(P.NAS_DATA_DIRECTORY, 
-                                             f"RUN_{P.MAXWELL_CONFIG_OF_ANIMAL.replace("_","")}", 
+                                             f"RUN_{P.MAXWELL_CONFIG_OF_ANIMAL.replace('_','')}", 
                                              "implantation"),
         "--gain", str(P.MAXWELL_GAIN),
         "--use_legacy_format", str(P.MAXWELL_SAVE_LEGACY_FORMAT),
@@ -159,7 +159,16 @@ def open_scope_proc():
         "--logging_name", 'scope',
         "--process_prio", str(-1),
     ])
-    return _launch("bash", P.MAXWELL_SCOPE_BIN, *args)
+    
+    # hacky TODO: fix this, make log file opneing own funciton, then call from _launch()
+    log_dir_i = [i for i in range(len(args)) if args[i] == "--logging_dir"][0]+1
+    log_name_i = [i for i in range(len(args)) if args[i] == "--logging_name"][0]+1
+    log_file = open(os.path.join(args[log_dir_i], args[log_name_i]+".log"), "w")
+    Logger().logger.info(f"Logging to {log_file.name}")
+    Logger().spacer()
+    atexit.register(_close_log_file, log_file)
+    
+    return subprocess.Popen((P.MAXWELL_SCOPE_BIN, ), stderr=log_file, stdout=log_file)
 
 def open_mxserver_proc():
     P = Parameters()
@@ -169,7 +178,16 @@ def open_mxserver_proc():
         "--logging_name", 'mxserver',
         "--process_prio", str(-1),
     ])
-    return _launch("bash", P.MAXWELL_SERVER_BIN, *args)
+    
+    # hacky TODO: fix this, make log file opneing own funciton, then call from _launch()
+    log_dir_i = [i for i in range(len(args)) if args[i] == "--logging_dir"][0]+1
+    log_name_i = [i for i in range(len(args)) if args[i] == "--logging_name"][0]+1
+    log_file = open(os.path.join(args[log_dir_i], args[log_name_i]+".log"), "w")
+    Logger().logger.info(f"Logging to {log_file.name}")
+    Logger().spacer()
+    atexit.register(_close_log_file, log_file)
+    
+    return subprocess.Popen((P.MAXWELL_SERVER_BIN, ), stderr=log_file, stdout=None)
 
 def open_stream_portenta_proc():
     P = Parameters()
