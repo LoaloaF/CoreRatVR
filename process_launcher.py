@@ -146,7 +146,7 @@ def open_log_ephys_proc():
                                              f"RUN_{P.MAXWELL_CONFIG_OF_ANIMAL.replace('_','')}", 
                                              "implantation"),
         "--gain", str(P.MAXWELL_GAIN),
-        "--use_legacy_format", str(P.MAXWELL_SAVE_LEGACY_FORMAT),
+        "--use_legacy_format", str(int(P.MAXWELL_SAVE_LEGACY_FORMAT)),
     ])
     # this runs on a differnt python version (system python)
     return _launch(P.MAXWELL_PYTHON_PATH, stream_script, *args)

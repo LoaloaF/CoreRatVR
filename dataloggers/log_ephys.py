@@ -47,7 +47,9 @@ def _log(termflag_shm, paradigm_running_shm, session_data_dir, fname, use_legacy
         elif not is_recording:
             if use_legacy_format:
                 s.set_legacy_format(True)
-                
+            else:
+                s.set_legacy_format(False)
+
             s.open_directory(session_data_dir)
             s.start_file(fname)
             s.group_delete_all()
@@ -114,13 +116,16 @@ if __name__ == "__main__":
     argParser.add_argument("--session_data_dir")
     argParser.add_argument("--which_implant_path")
     argParser.add_argument("--gain")
-    argParser.add_argument("--use_legacy_format")
+    argParser.add_argument("--use_legacy_format", type=int)
 
     kwargs = vars(argParser.parse_args())
+    kwargs['use_legacy_format'] = bool(kwargs['use_legacy_format'])
     L = Logger()
     L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
                   kwargs.pop("logging_level"))
-    L.logger.info("Subprocess started")
+    L.logger.debug(L.fmtmsg(kwargs))
+    L.logger.debug(kwargs['use_legacy_format'])
+    L.logger.debug(type(kwargs['use_legacy_format']))
     
     prio = kwargs.pop("process_prio")
     if sys.platform.startswith('linux'):
