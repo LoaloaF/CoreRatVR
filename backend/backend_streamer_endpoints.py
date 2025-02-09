@@ -26,7 +26,6 @@ from SHM.VideoFrameSHMInterface import VideoFrameSHMInterface
 from analytics_processing.modality_loading import session_modality_from_nas
 from analytics_processing.modality_transformations import data_modality_na2null
 
-from analytics_processing.modality_loading import load_session_hdf5
 from analytics_processing.modality_loading import session_modality_from_nas
 from analytics_processing.modality_transformations import data_modality_na2null
 from analytics_processing.modality_transformations import data_modality_rename2oldkeys
@@ -230,7 +229,7 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
         packages = session_modality_from_nas(session_fullfname, f"{cam_name}_packages")
         packages = data_modality_pct_as_index(packages)
         packages = data_modality_rename2oldkeys(packages, f"{cam_name}_packages")
-        sessionfile = load_session_hdf5(os.path.join(P.SESSION_DATA_DIRECTORY, P.SESSION_NAME))
+        sessionfile = h5py.File(os.path.join(P.SESSION_DATA_DIRECTORY, P.SESSION_NAME),'r')
     await websocket.accept()
 
     frame_package = {}
