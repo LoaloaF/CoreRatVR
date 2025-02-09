@@ -116,6 +116,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
     except:
         with h5py.File(ephys_fullfname, 'r') as file:
             ephys_bits = file['bits'][:]
+            start_sample = 0
 
 
     msg = np.array([(a[0],a[1]) for a in ephys_bits])
