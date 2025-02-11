@@ -6,9 +6,9 @@ import h5py
 import json
 
 from CustomLogger import CustomLogger as Logger
-from patch_session_data import patch_paradigmVariable_data
+# from patch_session_data import patch_paradigmVariable_data
 from patch_session_data import patch_metadata
-from patch_session_data import patch_trial_packages
+# from patch_session_data import patch_trial_packages
 
 def load_session_metadata(session_dir, dbNames):
     L = Logger()
@@ -94,17 +94,18 @@ def load_unity_frames_data(session_dir, toDBnames_mapping):
     return unity_frame_data
 
 def load_unity_trials_data(session_dir, metadata, toDBnames_mapping):
-    unity_trials_data_package = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'trialPackages')
-    
-    # TODO depr/ delte this once not needed anymore
-    unity_frame_data = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'unityframes')
-    if unity_frame_data is None:
-        raise Exception("Failed to read unityframes data.")
-    unity_trials_data = patch_trial_packages(unity_trials_data_package, unity_frame_data, metadata)
+    # probably only needed for old P0200 data? Gone 11/2/2025
+    # unity_trials_data_package = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'trialPackages')
+    # unity_frame_data = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'unityframes')
+    # if unity_frame_data is None:
+    #     raise Exception("Failed to read unityframes data.")
+    # unity_trials_data = patch_trial_packages(unity_trials_data_package, unity_frame_data, metadata)
 
-
+    unity_trials_data = _read_hdf5_data(session_dir, 'unity_output.hdf5', 'trialPackages')
+    if unity_trials_data is None:
+        Logger().logger.warning("Failed to read unity_trials data.")
+        return None, None
     paradigmVariable_data = _handle_paradigm_specific_variables(unity_trials_data, 
-                                                                toDBnames_mapping, 
                                                                 metadata)
     unity_trials_data = _rename_columns('unity_trial', unity_trials_data, toDBnames_mapping)
     return unity_trials_data, paradigmVariable_data
@@ -179,26 +180,23 @@ def _rename_columns(data_type, data, toDBnames_mapping):
     data.rename(columns=toDBnames_mapping, inplace=True)
     return data
 
-def _handle_paradigm_specific_variables(unity_trials_data, frames_toDBnames_mapping, 
-                                        metadata):
+def _handle_paradigm_specific_variables(unity_trials_data, metadata):
     L = Logger()
-    # drop_cols = [k for k in unity_trials_data.columns 
-    #              if not (k.startswith("INSERT") or k == "ID")]
     drop_cols = ['SFID', 'SPCT', 'EFID', 'EPCT', 'TD', 'O']
     paradigmVariable_trials_data = unity_trials_data.drop(columns=drop_cols)
     paradigmVariable_trials_data.rename(columns={'ID': 'trial_id'}, inplace=True)
     
     # rename the columns to match DB format, using metadata if available
-    try:
-        trialVariables = json.loads(metadata.get('metadata')).get('trialPackageVariables')
-        trialVariables_full_names = json.loads(metadata.get('metadata')).get('trialPackageVariablesFullNames')
+    trialVariables = metadata.get('trialPackageVariables')
+    trialVariables_full_names = metadata.get('trialPackageVariablesFullNames')
+    if trialVariables is None or trialVariables_full_names is None:
+        L.logger.warning(L.fmtmsg("Failed to find the paradigm-specific "
+                                  "variables in metadata/excel. "))
+        # don't rename anything
+    else:
         paradigmVariable_toDBnames_mapping = dict(zip(trialVariables, trialVariables_full_names))
         paradigmVariable_trials_data.rename(columns=paradigmVariable_toDBnames_mapping, 
-                                             inplace=True)
-        return paradigmVariable_trials_data
-    except:
-        L.logger.warning(L.fmtmsg(("Failed to find the paradigm-specific variables in metadata/excel. ",
-                                   "Using hardcoded mapping instead.")))
-        return patch_paradigmVariable_data(paradigmVariable_trials_data)
-
-#add trialPackageVariablesFulllNames to excel sheet schema
+                                            inplace=True)
+        L.logger.debug(L.fmtmsg(["Renamed paradigm-specific variables: ", 
+                                 paradigmVariable_toDBnames_mapping]))
+    return paradigmVariable_trials_data

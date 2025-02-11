@@ -123,6 +123,7 @@ if __name__ == "__main__":
     L = Logger()
     L.init_logger(kwargs.pop('logging_name'), kwargs.pop("logging_dir"), 
                   kwargs.pop("logging_level"))
+    L.logger.info("Subprocess started")
     L.logger.debug(L.fmtmsg(kwargs))
     L.logger.debug(kwargs['use_legacy_format'])
     L.logger.debug(type(kwargs['use_legacy_format']))

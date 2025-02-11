@@ -145,8 +145,10 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         store.put('metadata', pd.DataFrame([metadata], index=[0]), format='table')
     
         L.logger.info(f"Merging unity data...")
-        store.put('unity_trial', unity_trials_data, format='table')
-        store.put('unity_frame', unity_frames_data, format='table')
+        if unity_trials_data is not None:
+            store.put('unity_trial', unity_trials_data, format='table')
+        if unity_frames_data is not None:
+            store.put('unity_frame', unity_frames_data, format='table')
         if paradigmVariable_data is not None:
             store.put('paradigm_variable', paradigmVariable_data, format='table')
 
@@ -230,6 +232,12 @@ def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
         os.mkdir(full_nas_dir)
         L.logger.info(f"Created directory {full_nas_dir}")
         
+        # log files dir
+        full_nas_dir_log = os.path.join(full_nas_dir, "logs")
+        if not os.path.exists(full_nas_dir_log):
+            os.mkdir(full_nas_dir_log)
+            L.logger.info(f"Created directory {full_nas_dir_log}")
+        
         # copy only these selected files to NAS (merged file, log files, bodycam video)
         fnames = [fname for fname in os.listdir(session_dir) 
                 if fname.endswith(".log") or fname in (merged_fname, "bodycam.mp4", "ephys_output.raw.h5")]
@@ -239,7 +247,7 @@ def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
                 if fn == merged_fname:
                     L.logger.info(f"Copying {fn} ({os.path.getsize(src)/(1024**3):.1}GB)"
                                 f" to NAS...")
-                dst = os.path.join(full_nas_dir, fn)
+                dst = os.path.join(full_nas_dir_log if fn.endswith(".log") else full_nas_dir, fn)
                 shutil.copyfile(src, dst)
     except Exception as e:
         L.logger.error(f"Failed to copy files to NAS: {e}")
@@ -306,10 +314,12 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
         
     # inplace insert trial id into every dataframe with a timestamp
     L.spacer()
-    insert_trial_id(unity_trials_data, unity_frames_data,
-                    ballvel_data, event_data, facecam_packages, bodycam_packages,
-                    unitycam_packages, use_ephys_timestamps=integrate_ephys)
-    
+    if unity_trials_data is not None:
+        L.logger.info(f"Inserting trial_id to all modalities...")
+        insert_trial_id(unity_trials_data, unity_frames_data,
+                        ballvel_data, event_data, facecam_packages, bodycam_packages,
+                        unitycam_packages, use_ephys_timestamps=integrate_ephys)
+        
     if prompt_user_decision:
         answer = input("\nProceed with merging and renaming session dir? [y/n]: ")
         if answer.lower() != 'y':
