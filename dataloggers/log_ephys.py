@@ -4,6 +4,8 @@ import os
 sys.path.insert(1, os.path.join(sys.path[0], '..')) # project dir
 sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 
+import pandas as pd
+
 import argparse
 from time import sleep
 import time
@@ -66,29 +68,42 @@ def _reset_MEA1K(gain, enable_stimulation_power=False):
     if enable_stimulation_power:
         mx.send(mx.chip.Core().enable_stimulation_power(True))
     mx.send(mx.chip.Amplifier().set_gain(gain))
+
+def _animal_name2implant_device(nas_dir, animal_name):
+    fullfname = os.path.join(nas_dir, 'devices', 'implant_to_animal_map.csv')
+    mapping = pd.read_csv(fullfname, index_col=0, header=0)
+    Logger().logger.debug(f"Animal->Implant map:\n{mapping}")
+    if animal_name in mapping.index:
+        return mapping.loc[animal_name].item()
+    else:
+        raise ValueError(f"No implant name found for `{animal_name}` Add to the "
+                         f"mapping manually: {fullfname}")
     
 def run_log_ephys(termflag_shm_struc_fname, paradigmflag_shm_struc_fname,
-                  session_data_dir, which_implant_path, gain, use_legacy_format):
+                  session_data_dir, nas_dir, maxwell_config_of_animal, gain, use_legacy_format):
     L = Logger()
     # shm access
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     paradigm_running_shm = FlagSHMInterface(paradigmflag_shm_struc_fname)
     
-    implant_name = [f.replace("implanted_", "") for f in os.listdir(which_implant_path) 
-                    if f.startswith("implanted_")]
-    if not implant_name:
-        L.logger.error(f"No implant found at {which_implant_path} - not "
-                       "changing configuration.")
-    else:
-        implant_name = implant_name[0]
-        config_fullfname = os.path.join(which_implant_path, "..", "..", 'implant_devices', 
-                                        implant_name, 'bonding', 
-                                        f"bonding_mapping_{implant_name}.cfg")
-        L.logger.info(f"Placeholder for config setting {config_fullfname}")
+    # implant_name = [f.replace("implanted_", "") for f in os.listdir(which_implant_path) 
+    #                 if f.startswith("implanted_")]
+    # if not implant_name:
+    #     L.logger.error(f"No implant found at {which_implant_path} - not "
+    #                    "changing configuration.")
+    # else:
+    #     implant_name = implant_name[0]
+    #                                     implant_name, 'bonding', 
+    #                                     f"bonding_mapping_{implant_name}.cfg")
+    #     L.logger.info(f"Placeholder for config setting {config_fullfname}")
         # _reset_MEA1K(gain, enable_stimulation_power=False)
         # array = mx.chip.Array()
         # array.load_config(config_fullfname)
         # L.logger.info(f"Successfully loaded configuration from {config_fullfname}")
+    config_fullfname = os.path.join(nas_dir, 'mea1k_configs', 'all_parallel', 'el_001.cfg')
+    if not os.path.exists(config_fullfname):
+        raise FileNotFoundError(f"MEA1K configuration file not found at {config_fullfname}")
+    _reset_MEA1K(gain, enable_stimulation_power=False) 
         
         
     while not paradigm_running_shm.is_set():
@@ -114,7 +129,8 @@ if __name__ == "__main__":
     argParser.add_argument("--logging_level")
     argParser.add_argument("--process_prio", type=int)
     argParser.add_argument("--session_data_dir")
-    argParser.add_argument("--which_implant_path")
+    argParser.add_argument("--nas_dir")
+    argParser.add_argument("--maxwell_config_of_animal")
     argParser.add_argument("--gain")
     argParser.add_argument("--use_legacy_format", type=int)
 

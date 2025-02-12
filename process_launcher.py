@@ -134,6 +134,7 @@ def open_log_portenta_proc():
 def open_log_ephys_proc():
     P = Parameters()
     script = "log_ephys.py"
+    mx_python = os.path.join(P.MAXWELL_BASE_PATH, 'python', 'bin', 'python3.10')
     path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
     stream_script = os.path.join(*path)
     
@@ -142,14 +143,13 @@ def open_log_ephys_proc():
         "--logging_name", script.replace(".py", ""),
         "--process_prio", str(P.LOG_PORTENTA_PROC_PRIORITY),
         "--session_data_dir", P.SESSION_DATA_DIRECTORY,
-        "--which_implant_path", os.path.join(P.NAS_DATA_DIRECTORY, 
-                                             f"RUN_{P.MAXWELL_CONFIG_OF_ANIMAL.replace('_','')}", 
-                                             "implantation"),
+        "--maxwell_config_of_animal", P.MAXWELL_CONFIG_OF_ANIMAL,
+        "--nas_dir", P.NAS_DATA_DIRECTORY,
         "--gain", str(P.MAXWELL_GAIN),
         "--use_legacy_format", str(int(P.MAXWELL_SAVE_LEGACY_FORMAT)),
     ])
     # this runs on a differnt python version (system python)
-    return _launch(P.MAXWELL_PYTHON_PATH, stream_script, *args)
+    return _launch(mx_python, stream_script, *args)
 
 def open_scope_proc():
     P = Parameters()
@@ -159,16 +159,17 @@ def open_scope_proc():
         "--logging_name", 'scope',
         "--process_prio", str(-1),
     ])
+    log_file = _setup_logging_from_args(args)
     
-    # hacky TODO: fix this, make log file opneing own funciton, then call from _launch()
-    log_dir_i = [i for i in range(len(args)) if args[i] == "--logging_dir"][0]+1
-    log_name_i = [i for i in range(len(args)) if args[i] == "--logging_name"][0]+1
-    log_file = open(os.path.join(args[log_dir_i], args[log_name_i]+".log"), "w")
-    Logger().logger.info(f"Logging to {log_file.name}")
-    Logger().spacer()
-    atexit.register(_close_log_file, log_file)
+    # Set environment variables
+    env = os.environ.copy()
+    env["MESA_GL_VERSION_OVERRIDE"] = "3.3"
+    env["QT_QPA_PLATFORM_PLUGIN_PATH"] = os.path.join(P.MAXWELL_BASE_PATH, "plugins")
+    env["LD_LIBRARY_PATH"] = os.path.join(P.MAXWELL_BASE_PATH, "lib") + ":" + env.get("LD_LIBRARY_PATH", "")
+    env["PATH"] = os.path.join(P.MAXWELL_BASE_PATH, "python", "bin") + ":" + env.get("PATH", "")
     
-    return subprocess.Popen((P.MAXWELL_SCOPE_BIN, ), stderr=log_file, stdout=log_file)
+    # Execute the scope binary
+    return subprocess.Popen((P.MAXWELL_SCOPE_BIN, ), stderr=log_file, stdout=log_file, env=env)
 
 def open_mxserver_proc():
     P = Parameters()
@@ -178,16 +179,16 @@ def open_mxserver_proc():
         "--logging_name", 'mxserver',
         "--process_prio", str(-1),
     ])
+    log_file = _setup_logging_from_args(args)
     
-    # hacky TODO: fix this, make log file opneing own funciton, then call from _launch()
-    log_dir_i = [i for i in range(len(args)) if args[i] == "--logging_dir"][0]+1
-    log_name_i = [i for i in range(len(args)) if args[i] == "--logging_name"][0]+1
-    log_file = open(os.path.join(args[log_dir_i], args[log_name_i]+".log"), "w")
-    Logger().logger.info(f"Logging to {log_file.name}")
-    Logger().spacer()
-    atexit.register(_close_log_file, log_file)
+    # Set environment variables
+    env = os.environ.copy()
+    env["QT_QPA_PLATFORM_PLUGIN_PATH"] = os.path.join(P.MAXWELL_BASE_PATH, "plugins")
+    env["HDF5_PLUGIN_PATH"] = os.path.join(P.MAXWELL_BASE_PATH, "so")
+    env["LD_LIBRARY_PATH"] = os.path.join(P.MAXWELL_BASE_PATH, "lib") + ":" + env.get("LD_LIBRARY_PATH", "")
     
-    return subprocess.Popen((P.MAXWELL_SERVER_BIN, ), stderr=log_file, stdout=None)
+    # Execute the mxwserver binary
+    return subprocess.Popen((P.MAXWELL_SERVER_BIN, ), stderr=log_file, stdout=log_file, env=env)
 
 def open_stream_portenta_proc():
     P = Parameters()
@@ -308,16 +309,8 @@ def _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput"),
     return args
 
 
-
-
-
-
-def _launch(exec, script, *args):
+def _setup_logging_from_args(args):
     L = Logger()
-    L.logger.info(f"Launching subprocess {os.path.basename(script)}")
-    msg = L.fmtmsg((f"Subprocess {os.path.basename(script)} arguments:", *args))
-    L.logger.debug(msg)
-
     log_dir_i = [i for i in range(len(args)) if args[i] == "--logging_dir"][0]+1
     log_name_i = [i for i in range(len(args)) if args[i] == "--logging_name"][0]+1
     
@@ -325,8 +318,17 @@ def _launch(exec, script, *args):
     L.logger.info(f"Logging to {log_file.name}")
     L.spacer()
     atexit.register(_close_log_file, log_file)
-    proc = subprocess.Popen((exec, script, *args), stderr=log_file, stdout=log_file)
+    return log_file
 
+
+def _launch(exec, script, *args):
+    L = Logger()
+    L.logger.info(f"Launching python subprocess {os.path.basename(script)}")
+    msg = L.fmtmsg((f"Subprocess {os.path.basename(script)} arguments:", *args))
+    L.logger.debug(msg)
+
+    log_file = _setup_logging_from_args(args)
+    proc = subprocess.Popen((exec, script, *args), stderr=log_file, stdout=log_file)
     L.logger.info(f"With PID {proc.pid}") 
         
     return proc

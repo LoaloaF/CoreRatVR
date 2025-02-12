@@ -8,6 +8,8 @@ from backend_helpers import validate_state
 
 import process_launcher as pl
 
+from CustomLogger import CustomLogger as Logger
+
 
 def attach_proc_endpoints(app):
     # singlton class - reference to instance created in lifespan
@@ -186,7 +188,8 @@ def attach_proc_endpoints(app):
     def launch_scope(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True},
-                       valid_proc_running={"mxserver": False})
+                       valid_proc_running={"scope": False})
         proc = pl.open_scope_proc()
+        Logger().logger.info(f"Scope process started with PID {proc.pid}")
         request.app.state.state["procs"]["scope"] = proc.pid
     return app

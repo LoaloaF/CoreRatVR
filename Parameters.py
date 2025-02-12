@@ -149,11 +149,11 @@ class Parameters:
             "P0800_LinearTrack_old.xlsx",
         ]
         self.MAXWELL_SAVE_LEGACY_FORMAT = False
-        self.MAXWELL_CONFIG_OF_ANIMAL = "rYL_006"
+        self.MAXWELL_CONFIG_OF_ANIMAL = "rYL_011"
         self.MAXWELL_GAIN = 512
-        self.MAXWELL_PYTHON_PATH = "/home/vrmaster/MaxLab/python/bin/python3.10"
-        self.MAXWELL_SERVER_BIN = "/home/vrmaster/MaxLab/bin/mxwserver.sh"
-        self.MAXWELL_SCOPE_BIN = "/home/vrmaster/MaxLab/bin/scope.sh"
+        self.MAXWELL_BASE_PATH = "/home/vrmaster/MaxLab/"
+        self.MAXWELL_SERVER_BIN = "/home/vrmaster/MaxLab/bin/mxwserver"
+        self.MAXWELL_SCOPE_BIN = "/home/vrmaster/MaxLab/bin/scope"
         
     def get_parameter_groups(self):
         return {

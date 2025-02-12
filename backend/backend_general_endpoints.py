@@ -163,6 +163,14 @@ def attach_general_endpoints(app):
         termflag_shm_interface.close_shm()
         request.app.state.state["termflag_shm_interface"] = None
         
+        # close scope and mxwserver manually if open
+        if procs_state["scope"] != 0:
+            L.logger.info(f"Closing scope process {procs_state['scope']}...")
+            os.kill(procs_state["scope"], 9)
+        if procs_state["mxserver"] != 0:
+            L.logger.info(f"Closing mea server process {procs_state['mxserver']}...")
+            os.kill(procs_state["mxserver"], 9)
+        
         request.app.state.state['procs'].update({proc_name: 0 for proc_name in procs_state.keys()})
 
         # delete all shared memory
@@ -240,7 +248,7 @@ def attach_general_endpoints(app):
     def check_nas():
         Logger().logger.debug("Checking if NAS mapped...")
         nas_mapped = os.path.exists(P.NAS_DATA_DIRECTORY)
-        if not nas_mapped:
+        if not nas_mapped or os.listdir(P.NAS_DATA_DIRECTORY) == []:
             nas_mapped = "Warning: NAS not mapped yet."
         return nas_mapped
 
