@@ -20,6 +20,7 @@ from FlagSHMInterface import FlagSHMInterface
 
 def _save_frame_packages(package_buf, full_fname):
     # write package buffer to hdf_file
+    L = Logger()
     df = pd.DataFrame(package_buf)
     L.logger.debug(f"saving to hdf5:\n{df.to_string()}")
     try:
@@ -27,6 +28,8 @@ def _save_frame_packages(package_buf, full_fname):
                   append=True, format="table")
     except ValueError as e:
         L.logger.error(f"Error saving to hdf5:\n{e}\n\n{df.to_string()}")
+    except Exception as e:
+        L.logger.error(f"Error saving to hdf5:\n{e}")
 
 def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, 
          frames_h5_file, videowriter=None, ):
@@ -42,9 +45,9 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname,
     while True:
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
+            frames_h5_file.close()
             if package_buf:
                 _save_frame_packages(package_buf, full_fname)
-            frames_h5_file.close()
             break
         
         current_time = int(time.time()*1e6)  
@@ -95,8 +98,11 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname,
         prv_id = frame_package["ID"]
         nchecks = 1
         if len(package_buf) >= buf_size:
+            # clse and reopen h5 file so pandas based writing of packages works
+            frames_h5_file.close()
             _save_frame_packages(package_buf, full_fname)
             package_buf.clear()
+            frames_h5_file = h5py.File(full_fname, "a")
 
 def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname, 
                    paradigmflag_shm_struc_fname, logging_name, session_data_dir, 

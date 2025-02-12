@@ -129,9 +129,8 @@ class Parameters:
         # self.ANIMALS = ["rYL_001","rYL_002","rYL_003","rYL_004","rYL_006",
         #                 "rYL_008","rYL_005","rYL_007","rYL_009","AI_001",
         #                 "dummyAnimal"]
-        self.ANIMALS = ["rYL_006", "rYL_009", "rYL_011", "rYL_012",
-                        "dummyAnimal"]
-        # P0000_AutoLickReward.xlsx
+        self.ANIMALS = ["rYL_006", "rYL_009", "rYL_010", "rYL_011", "rYL_012", "rYL_013", "rYL_015", 
+                                "dummyAnimal"]        # P0000_AutoLickReward.xlsx
         # P0100_SpoutAssoc.xlsx
         # P0900_MotorLickLearning.xlsx
         # P1000_MotorLearningStop.xlsx
