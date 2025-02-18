@@ -42,6 +42,7 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname,
     buf_size = 32
     portenta_start_stop_flag = False
     portenta_start_stop_pct = 0
+    prv_time = 0
     while True:
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
@@ -77,16 +78,18 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname,
         if (dif := (frame_package["ID"]-prv_id)) != 1:
             L.logger.warning(f"Package ID discontinuous; gap was {dif}")
 
-        L.logger.debug(f"after {nchecks} SHM checks got frame {frame.shape} {frame_package}")
+        L.logger.debug(f"after {nchecks} SHM checks got frame {frame.shape} "
+                       f"{frame_package}. Time from last frame {frame_package['PCT']-prv_time} us")
         frame_package.pop("N")
         package_buf.append(frame_package)
-        
+        prv_time = frame_package["PCT"]
+               
         if frame_shm._shm_name == "unitycam":
             frame = np.flip(frame, 0)
             frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
         
         # videowriter.write(frame)
-        
+            
         # single frame saving
         jpeg_data = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
         name = f"frames/frame_{frame_package['ID']:06d}"

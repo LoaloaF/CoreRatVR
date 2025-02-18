@@ -19,7 +19,11 @@ def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm):
 
     with Vimba() as vimba:
         vimbacam = vimba.camera(0)
-        vimbacam.open()
+        try:
+            vimbacam.open()
+        except Exception as e:
+            L.logger.error(f"Failed to open camera: {e}")
+            return
         vimbacam.arm('SingleFrame')
 
         try:

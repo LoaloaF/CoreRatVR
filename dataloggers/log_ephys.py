@@ -102,6 +102,7 @@ def run_log_ephys(termflag_shm_struc_fname, paradigmflag_shm_struc_fname,
         # L.logger.info(f"Successfully loaded configuration from {config_fullfname}")
     config_fullfname = os.path.join(nas_dir, 'mea1k_configs', 'all_parallel', 'el_001.cfg')
     if not os.path.exists(config_fullfname):
+        L.logger.error(f"Failed to load MEA1K config")
         raise FileNotFoundError(f"MEA1K configuration file not found at {config_fullfname}")
     _reset_MEA1K(gain, enable_stimulation_power=False) 
         
