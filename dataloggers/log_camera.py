@@ -63,7 +63,7 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname,
         
         # wait until new frame is available
         if (frame_package := frame_shm.get_package(dict)).get('ID') in (prv_id, None):
-            sleep(0.001)
+            sleep(0.0001)
             nchecks += 1
             continue
         

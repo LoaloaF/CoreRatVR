@@ -110,7 +110,9 @@ def run_log_ephys(termflag_shm_struc_fname, paradigmflag_shm_struc_fname,
     _reset_MEA1K(gain, enable_stimulation_power=False)
     array.load_config(implant_config_fullfname)
     L.logger.info(f"Successfully loaded configuration {implant_config_fullfname}")
+    array.download()
     mx.offset()
+    
     # config_fullfname = os.path.join(nas_dir, 'mea1k_configs', 'all_parallel', 'el_001.cfg')
     # if not os.path.exists(config_fullfname):
     #     L.logger.error(f"Failed to load MEA1K config")
@@ -143,7 +145,7 @@ if __name__ == "__main__":
     argParser.add_argument("--session_data_dir")
     argParser.add_argument("--nas_dir")
     argParser.add_argument("--maxwell_config_of_animal")
-    argParser.add_argument("--gain")
+    argParser.add_argument("--gain", type=int)
     argParser.add_argument("--use_legacy_format", type=int)
 
     kwargs = vars(argParser.parse_args())

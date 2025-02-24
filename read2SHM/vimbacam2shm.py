@@ -12,10 +12,10 @@ from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 from CustomLogger import CustomLogger as Logger
 
+
 def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm):
     L = Logger()
     L.logger.info("Reading camera stream & writing to SHM...")
-    paradigm_running_state = paradigmflag_shm.is_set()
 
     with Vimba() as vimba:
         vimbacam = vimba.camera(0)
@@ -24,10 +24,35 @@ def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm):
         except Exception as e:
             L.logger.error(f"Failed to open camera: {e}")
             return
-        vimbacam.arm('SingleFrame')
+        
+
+        def frame_acqu_callback(frame):
+            nonlocal frame_i
+            nonlocal prv_t
+            
+            L.logger.debug(f"Frame callback triggered")
+            image = frame.buffer_data_numpy()
+
+            t = int(time.time()*1e6)
+            pack = "<{" + f"N:I,ID:{frame_i},PCT:{t}" + "}>\r\n"
+            L.logger.debug(f"Gap was: \033[1;33m{(t-prv_t)/1000}ms \033[0m")
+            
+            image = image[:frame_shm.y_res, :frame_shm.x_res]
+            image = image.reshape(image.shape[0], image.shape[1], 1)
+            image = image.transpose(1, 0, 2) # cv2: y-x-rgb, everywhere: x-y-rgb
+
+            frame_shm.add_frame(image, pack.encode('utf-8'))
+            frame_i += 1
+            prv_t = t
+            
+        frame_i = 0
+        prv_t = 0
+        vimbacam.arm('Continuous', callback=frame_acqu_callback, 
+                     frame_buffer_size=3)
+        vimbacam.start_frame_acquisition()
+        paradigm_running_state = paradigmflag_shm.is_set()
 
         try:
-            frame_i = 0
             while True:
                 if termflag_shm.is_set():
                     L.logger.info("Termination flag raised")
@@ -36,6 +61,7 @@ def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm):
                 # switching event 
                 if paradigmflag_shm.is_set() != paradigm_running_state:
                     new_state = paradigmflag_shm.is_set()
+                    # close to cleanly reopen after pausing
                     vimbacam.disarm()
                     vimbacam.close()
                     # when flipped to True, wait 200ms longer than Arudino ensuring 
@@ -45,23 +71,14 @@ def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm):
                     time.sleep(pause_length/1000.)
                 
                     vimbacam.open()
-                    vimbacam.arm('SingleFrame')
+                    vimbacam.arm('Continuous', callback=frame_acqu_callback, 
+                                frame_buffer_size=200)
+                    vimbacam.start_frame_acquisition()
                     paradigm_running_state = new_state
                     
-                frame = vimbacam.acquire_frame()
-                image = frame.buffer_data_numpy()
-
-                pack = "<{" + f"N:I,ID:{frame_i},PCT:{int(time.time()*1e6)}" + "}>\r\n"
-                L.logger.debug(f"New frame: {pack}")
-                
-                image = image[:frame_shm.y_res, :frame_shm.x_res]
-                image = image.reshape(image.shape[0], image.shape[1], 1)
-                image = image.transpose(1, 0, 2) # cv2: y-x-rgb, everywhere: x-y-rgb
-
-                frame_shm.add_frame(image, pack.encode('utf-8'))
-                frame_i += 1
-
+                time.sleep(0.1)
         finally:
+            vimbacam.stop_frame_acquisition()
             vimbacam.disarm()
             vimbacam.close()
 
@@ -107,3 +124,8 @@ if __name__ == "__main__":
         sys.exit(1)
             
     run_vimbacam2shm(**kwargs)
+    
+    
+    
+    
+    

@@ -15,7 +15,7 @@ import h5py
 import shutil
 import os
 
-file_path = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/raw_raw_data/2025-01-22_17-59-02_active_ooStorageCorrupted/ephys_output.raw.h5"
+file_path = "/home/vrmaster/Projects/VirtualReality/data/2025-01-26_13-41-09_active_outOfStorage_unprocessed/ephys_output.raw.h5"
 
 temp_path = file_path + ".temp"
 
@@ -25,17 +25,24 @@ def is_h5_valid(path):
         with h5py.File(path, "r"):
             return True
     except Exception as e:
+        print(e)
         return False
 
+# check if the file is valid
+if is_h5_valid(file_path):
+    print("The file is already valid.")
+exit()
+
 # Make a backup before modifying
-# shutil.copy(file_path, temp_path)
+shutil.copy(file_path, temp_path)
 
 # Get file size
 file_size = os.path.getsize(temp_path)
 
 print(f"Original file size: {file_size} bytes")
 
-for i in range(1, min(1_000_000, file_size)):  # Try up to 100,000 bytes
+
+for i in range(1, min(100_000_000, file_size)):  # Try up to 100,000 bytes
     new_size = file_size - i
     os.truncate(temp_path, new_size)  # Remove i bytes
     
