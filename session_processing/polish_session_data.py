@@ -431,7 +431,7 @@ def hdf5_frames2mp4(session_dir, merged_fname):
                 fps = _calc_fps(packages, cam_name)
 
                 frame_keys = merged_file[f"{cam_name}_frames"].keys()
-                L.logger.info(f"Rendering {cam_name} (n={len(frame_keys):,})...")
+                L.logger.info(f"Rendering {cam_name} (n={len(frame_keys):,} at {fps} FPS)...")
                 for i, (frame_key, pack) in enumerate(zip(frame_keys, packages.iterrows())):
                     frame = merged_file[f"{cam_name}_frames"][frame_key][()]
                     frame = cv2.imdecode(np.frombuffer(frame.tobytes(), np.uint8), 

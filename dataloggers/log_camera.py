@@ -1,10 +1,5 @@
 import sys
 import os
-
-# when executed as a process add parent SHM dir to path again
-sys.path.insert(1, os.path.join(sys.path[0], '..')) # project dir
-sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
-
 import argparse
 from time import sleep
 import time
@@ -13,26 +8,34 @@ import cv2 as cv
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from queue import Queue
+from threading import Thread
+
+# when executed as a process add parent SHM dir to path again
+sys.path.insert(1, os.path.join(sys.path[0], '..')) # project dir
+sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 
 from CustomLogger import CustomLogger as Logger
 from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 
-def _save_frame_packages(package_buf, full_fname):
-    # write package buffer to hdf_file
-    L = Logger()
-    df = pd.DataFrame(package_buf)
-    L.logger.debug(f"saving to hdf5:\n{df.to_string()}")
-    try:
-        df.to_hdf(full_fname, key='frame_packages', mode='a', 
-                  append=True, format="table")
-    except ValueError as e:
-        L.logger.error(f"Error saving to hdf5:\n{e}\n\n{df.to_string()}")
-    except Exception as e:
-        L.logger.error(f"Error saving to hdf5:\n{e}")
 
-def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, 
-         frames_h5_file, videowriter=None, ):
+
+def _save_frame_packages(queue, full_fname):
+    L = Logger()
+    while True:
+        package_buf = queue.get()
+        if package_buf is None:
+            break
+        df = pd.DataFrame(package_buf)
+        L.logger.debug(f"saving to hdf5:\n{df.to_string()}")
+        try:
+            df.to_hdf(full_fname, key='frame_packages', mode='a', 
+                  append=True, format="table")
+        except Exception as e:
+            L.logger.error(f"Error saving to hdf5:\n{e}")
+
+def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue, videowriter=None):
     L = Logger()
     L.logger.info("Reading video frames from SHM and saving them...")
 
@@ -46,9 +49,10 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname,
     while True:
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
-            frames_h5_file.close()
+            # frames_h5_file.close()
             if package_buf:
-                _save_frame_packages(package_buf, full_fname)
+                save_queue.put(package_buf)
+            save_queue.put(None)  # Signal the saving thread to exit
             break
         
         current_time = int(time.time()*1e6)  
@@ -88,24 +92,23 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname,
             frame = np.flip(frame, 0)
             frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
         
-        # videowriter.write(frame)
-            
         # single frame saving
         jpeg_data = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
         name = f"frames/frame_{frame_package['ID']:06d}"
         try:
-            frames_h5_file.create_dataset(name=name, data=np.void(jpeg_data[1].tobytes()))
+            # single frame saving
+            jpeg_data = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
+            with h5py.File(full_fname, "a") as hdf:
+                hdf.create_dataset(f"frames/frame_{frame_package['ID']:06d}", 
+                                data=np.void(jpeg_data[1].tobytes()))
         except Exception as e:
             L.logger.error(f"Error saving frame {name} to hdf5:\n{e}")
             
         prv_id = frame_package["ID"]
         nchecks = 1
         if len(package_buf) >= buf_size:
-            # clse and reopen h5 file so pandas based writing of packages works
-            frames_h5_file.close()
-            _save_frame_packages(package_buf, full_fname)
-            package_buf.clear()
-            frames_h5_file = h5py.File(full_fname, "a")
+            save_queue.put(package_buf)
+            package_buf = []
 
 def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname, 
                    paradigmflag_shm_struc_fname, logging_name, session_data_dir, 
@@ -126,27 +129,15 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
 
     full_fname = os.path.join(session_data_dir, f"{logging_name.replace('log_','')}.hdf5")
     Logger().logger.debug(full_fname)
-    with pd.HDFStore(full_fname) as hdf:
-        hdf.put('frame_packages', pd.DataFrame(), format='table', append=False)
-    # single frame saving, keep open
-    frames_h5_file = h5py.File(full_fname, "a")
-    frames_h5_file.create_group('frames')
+    with h5py.File(full_fname, "a") as frames_h5_file:
+        frames_h5_file.create_group('frames')
         
-    # for speed, don't render videos yet, do it in post
+    save_queue = Queue()
+    save_thread = Thread(target=_save_frame_packages, args=(save_queue, full_fname))
+    save_thread.start()
     
-    # video saving
-    # fourcc = cv.VideoWriter_fourcc(*'mp4v')
-    # if cam_name == "bodycam":
-    #     videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
-    #                                 fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
-    # elif cam_name == "facecam":
-    #     videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
-    #                         fps, (frame_shm.x_res, frame_shm.y_res), isColor=False)
-    # elif cam_name == "unitycam":
-    #     videowriter = cv.VideoWriter(full_fname.replace(".hdf5", ".mp4"), fourcc, 
-    #                         fps, (frame_shm.x_res, frame_shm.y_res), isColor=True)
-    
-    _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, frames_h5_file)
+    _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue)
+    save_thread.join()
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Log camera from SHM to save directory")
