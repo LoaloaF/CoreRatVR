@@ -135,6 +135,7 @@ def open_log_ephys_proc():
     P = Parameters()
     script = "log_ephys.py"
     mx_python = os.path.join(P.MAXWELL_BASE_PATH, 'python', 'bin', 'python3.10')
+    mx_python = "/usr/bin/python3"
     path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
     stream_script = os.path.join(*path)
     

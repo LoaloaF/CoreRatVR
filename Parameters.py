@@ -149,7 +149,7 @@ class Parameters:
             "P0800_LinearTrack_old.xlsx",
         ]
         self.MAXWELL_SAVE_LEGACY_FORMAT = False
-        self.MAXWELL_CONFIG_OF_ANIMAL = "rYL_011"
+        self.MAXWELL_CONFIG_OF_ANIMAL = "rYL010"
         self.MAXWELL_GAIN = 512
         self.MAXWELL_BASE_PATH = "/home/vrmaster/MaxLab/"
         self.MAXWELL_SERVER_BIN = "/home/vrmaster/MaxLab/bin/mxwserver"
