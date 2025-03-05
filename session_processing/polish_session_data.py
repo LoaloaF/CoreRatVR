@@ -349,10 +349,12 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data,
         frame_tstamp_col = frame_tstamp_col.replace('_pc_', '_ephys_')
         ballvel_tstamp_col = ballvel_tstamp_col.replace('_pc_', '_ephys_')
         event_tstamp_col = event_tstamp_col.replace('_pc_', '_ephys_')
-        facecam_tstamp_col = facecam_tstamp_col.replace('_pc_', '_ephys_')
-        bodycam_tstamp_col = bodycam_tstamp_col.replace('_pc_', '_ephys_')
         unitycam_tstamp_col = unitycam_tstamp_col.replace('_pc_', '_ephys_')
+        facecam_tstamp_col = facecam_tstamp_col.replace('_pc_', '_ephys_')
+        if bodycam_tstamp_col.replace('_pc_', '_ephys_') in bodycam_packages:
+            bodycam_tstamp_col = bodycam_tstamp_col.replace('_pc_', '_ephys_')
     
+    Logger().logger.info(f"Adding trial_id to dataframes... -- {bodycam_packages.columns}, {bodycam_tstamp_col}")
     # if unity_trials_data is None, this will enter the catch block in main function
     # get the trial time boundaries and constuct an interval index from it
 
