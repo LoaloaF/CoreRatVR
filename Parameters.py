@@ -67,6 +67,8 @@ class Parameters:
         # camera shm parameters
         self.SHM_NAME_FACE_CAM = 'facecam'
         self.FACE_CAM_IDX = 0
+        # ['DEV_000F314E2C37', 'DEV_000F314E2C38', 'DEV_000F314C7FE4', 'DEV_000F314E4F8F']
+        self.FACE_CAM_IDENTIFER = "DEV_000F314E2C38"
         self.FACE_CAM_X_TOPLEFT = 0
         self.FACE_CAM_Y_TOPLEFT = 0
         self.FACE_CAM_X_RES = 640
@@ -178,7 +180,7 @@ class Parameters:
                 "SHM_NAME_UNITY_CAM", "UNITY_CAM_X_RES", "UNITY_CAM_Y_RES", 
                 "UNITY_CAM_NCHANNELS"),
             "Face Camera": (
-                "SHM_NAME_FACE_CAM", "FACE_CAM_IDX", "FACE_CAM_X_TOPLEFT", 
+                "SHM_NAME_FACE_CAM", "FACE_CAM_IDX", "FACE_CAM_IDENTIFER", "FACE_CAM_X_TOPLEFT", 
                 "FACE_CAM_Y_TOPLEFT", "FACE_CAM_X_RES", 
                 "FACE_CAM_Y_RES", "FACE_CAM_NCHANNELS"),
             "Body Camera": (

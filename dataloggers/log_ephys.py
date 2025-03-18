@@ -36,6 +36,8 @@ def _animal_name2implant_device(nas_dir, animal_name):
 
 def _get_implant_config_fullfname(nas_dir, implant_name, animal_name, date):
     path = os.path.join(nas_dir, 'devices', 'implant_devices', implant_name, 'bonding')
+    Logger().logger.info(path)
+    
     animal_config = [f for f in os.listdir(path) 
                      if f.startswith(animal_name) and f.endswith('.cfg')]
     Logger().logger.info(f"Implant configurations found for {implant_name}, "

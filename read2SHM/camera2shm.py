@@ -12,11 +12,13 @@ from VideoFrameSHMInterface import VideoFrameSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 from CustomLogger import CustomLogger as Logger
 
-def _setup_capture(x_resolution, y_resolution, camera_idx, fps):
+def _setup_capture(x_resolution, y_resolution, camera_identifer, fps):
     L = Logger()
-    L.logger.debug(f"Setting up video capture for cam {camera_idx}")
+    L.logger.debug(f"Setting up video capture for cam identifer: {camera_identifer}")
     
-    cap = cv2.VideoCapture(camera_idx)
+    if camera_identifer.isdigit():
+        camera_identifer = int(camera_identifer)
+    cap = cv2.VideoCapture(camera_identifer)
     if not cap.isOpened():
         L.logger.error("Failed to open camera")
         exit(1)
@@ -69,12 +71,12 @@ def _read_stream_loop(frame_shm, termflag_shm, cap, x_topleft, y_topleft):
         cap.release()
 
 def run_camera2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname, cam_name,
-                   x_topleft, y_topleft, camera_idx, fps):
+                   x_topleft, y_topleft, camera_identifer, fps):
     # shm access
     frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
 
-    cap = _setup_capture(frame_shm.x_res, frame_shm.y_res, camera_idx, fps)
+    cap = _setup_capture(frame_shm.x_res, frame_shm.y_res, camera_identifer, fps)
     _read_stream_loop(frame_shm, termflag_shm, cap, x_topleft, y_topleft)
 
 if __name__ == "__main__":
@@ -89,7 +91,7 @@ if __name__ == "__main__":
     argParser.add_argument("--x_topleft", type=int)
     argParser.add_argument("--y_topleft", type=int)
     argParser.add_argument("--process_prio", type=int)
-    argParser.add_argument("--camera_idx", type=int)
+    argParser.add_argument("--camera_identifer")
     argParser.add_argument("--fps", type=int)
     kwargs = vars(argParser.parse_args())
     

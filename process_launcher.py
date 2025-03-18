@@ -15,12 +15,12 @@ def open_camera2shm_proc(cam_name):
     stream_script = os.path.join(*path)
     
     args = _make_proc_args(shm_args=("termflag", cam_name))
-    cam_idx = str(P.FACE_CAM_IDX) if cam_name == 'facecam' else str(P.BODY_CAM_IDX)
-    fps = str(P.FACE_CAM_FPS) if cam_name == 'facecam' else str(P.BODY_CAM_FPS)
+    camera_identifer = str(P.BODY_CAM_IDX)
+    fps = str(P.BODY_CAM_FPS)
     args.extend([
         "--logging_name", cam_name+"2shm",
         "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
-        "--camera_idx", cam_idx,
+        "--camera_identifer", camera_identifer,
         # "--channels", P.FACE_CAM_IDX if cam_name == 'facecam' else P.BODY_CAM_IDX,
         "--x_topleft", str(P.FACE_CAM_X_TOPLEFT),
         "--y_topleft", str(P.FACE_CAM_Y_TOPLEFT),
@@ -36,11 +36,11 @@ def open_vimbacam2shm_proc(cam_name):
     stream_script = os.path.join(*path)
     
     args = _make_proc_args(shm_args=("termflag", cam_name, "paradigmflag"))
-    cam_idx = str(P.FACE_CAM_IDX) if cam_name == 'facecam' else str(P.BODY_CAM_IDX)
+    camera_identifer = str(P.FACE_CAM_IDENTIFER) if cam_name == 'facecam' else str(P.BODY_CAM_IDX)
     args.extend([
         "--logging_name", cam_name+"2shm",
         "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
-        "--camera_idx", cam_idx,
+        "--camera_identifer", camera_identifer,
         # "--channels", P.FACE_CAM_IDX if cam_name == 'facecam' else P.BODY_CAM_IDX,
         "--x_topleft", str(P.BODY_CAM_X_TOPLEFT),
         "--y_topleft", str(P.BODY_CAM_Y_TOPLEFT),

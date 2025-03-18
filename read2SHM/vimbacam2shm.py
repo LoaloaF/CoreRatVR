@@ -13,12 +13,13 @@ from FlagSHMInterface import FlagSHMInterface
 from CustomLogger import CustomLogger as Logger
 
 
-def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm):
+def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm, camera_identifer):
     L = Logger()
     L.logger.info("Reading camera stream & writing to SHM...")
 
     with Vimba() as vimba:
-        vimbacam = vimba.camera(0)
+        L.logger.debug(vimba.camera_ids())
+        vimbacam = vimba.camera(camera_identifer)
         try:
             vimbacam.open()
         except Exception as e:
@@ -84,13 +85,13 @@ def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm):
 
 def run_vimbacam2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname, 
                      paradigmflag_shm_struc_fname, cam_name,
-                     x_topleft, y_topleft, camera_idx):
+                     x_topleft, y_topleft, camera_identifer):
     # shm access
     frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     paradigmflag_shm = FlagSHMInterface(paradigmflag_shm_struc_fname)
     
-    _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm)
+    _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm, camera_identifer)
 
 if __name__ == "__main__":
     argParser = argparse.ArgumentParser("Read camera stream, timestamp, ",
@@ -105,7 +106,7 @@ if __name__ == "__main__":
     argParser.add_argument("--x_topleft", type=int)
     argParser.add_argument("--y_topleft", type=int)
     argParser.add_argument("--process_prio", type=int)
-    argParser.add_argument("--camera_idx", type=int)
+    argParser.add_argument("--camera_identifer")
     kwargs = vars(argParser.parse_args())
     
     L = Logger()
