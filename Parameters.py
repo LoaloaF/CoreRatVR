@@ -68,13 +68,51 @@ class Parameters:
         self.SHM_NAME_FACE_CAM = 'facecam'
         self.FACE_CAM_IDX = 0
         # ['DEV_000F314E2C37', 'DEV_000F314E2C38', 'DEV_000F314C7FE4', 'DEV_000F314E4F8F']
-        self.FACE_CAM_IDENTIFER = "DEV_000F314E2C38"
+        self.FACE_CAM_IDENTIFER = "DEV_000F314E4F8F"
         self.FACE_CAM_X_TOPLEFT = 0
         self.FACE_CAM_Y_TOPLEFT = 0
         self.FACE_CAM_X_RES = 640
         self.FACE_CAM_Y_RES = 480
         self.FACE_CAM_NCHANNELS = 1
         self.FACE_CAM_FPS = 30
+
+        # camera shm parameters
+        self.SHM_NAME_TTL2_CAM = 'ttlcam2'
+        self.TTL2_CAM_IDX = 0
+        self.TTL2_CAM_IDENTIFER = "DEV_000F314E2C37"
+        self.TTL2_CAM_X_TOPLEFT = 0
+        self.TTL2_CAM_Y_TOPLEFT = 0
+        self.TTL2_CAM_X_RES = 640
+        self.TTL2_CAM_Y_RES = 480
+        self.TTL2_CAM_NCHANNELS = 1
+        self.TTL2_CAM_FPS = 30
+
+        # camera shm parameters
+        self.SHM_NAME_TTL3_CAM = 'ttlcam3'
+        self.TTL3_CAM_IDX = 0
+        self.TTL3_CAM_IDENTIFER = "DEV_000F314C7FE4"
+        self.TTL3_CAM_X_TOPLEFT = 0
+        self.TTL3_CAM_Y_TOPLEFT = 0
+        self.TTL3_CAM_X_RES = 640
+        self.TTL3_CAM_Y_RES = 480
+        self.TTL3_CAM_NCHANNELS = 1
+        self.TTL3_CAM_FPS = 30
+
+        # camera shm parameters
+        self.SHM_NAME_TTL4_CAM = 'ttlcam4'
+        self.TTL4_CAM_IDX = 0
+        self.TTL4_CAM_IDENTIFER = "DEV_000F314E2C38"
+        self.TTL4_CAM_X_TOPLEFT = 0
+        self.TTL4_CAM_Y_TOPLEFT = 0
+        self.TTL4_CAM_X_RES = 640
+        self.TTL4_CAM_Y_RES = 480
+        self.TTL4_CAM_NCHANNELS = 1
+        self.TTL4_CAM_FPS = 30
+
+
+
+
+
 
         self.SHM_NAME_BODY_CAM = 'bodycam'
         self.BODY_CAM_IDX = 0
@@ -183,6 +221,19 @@ class Parameters:
                 "SHM_NAME_FACE_CAM", "FACE_CAM_IDX", "FACE_CAM_IDENTIFER", "FACE_CAM_X_TOPLEFT", 
                 "FACE_CAM_Y_TOPLEFT", "FACE_CAM_X_RES", 
                 "FACE_CAM_Y_RES", "FACE_CAM_NCHANNELS"),
+            "TTL2 Camera": (
+                "SHM_NAME_TTL2_CAM", "TTL2_CAM_IDX", "TTL2_CAM_IDENTIFER", "TTL2_CAM_X_TOPLEFT",
+                "TTL2_CAM_Y_TOPLEFT", "TTL2_CAM_X_RES",
+                "TTL2_CAM_Y_RES", "TTL2_CAM_NCHANNELS"),
+            "TTL3 Camera": (
+                "SHM_NAME_TTL3_CAM", "TTL3_CAM_IDX", "TTL3_CAM_IDENTIFER", "TTL3_CAM_X_TOPLEFT",
+                "TTL3_CAM_Y_TOPLEFT", "TTL3_CAM_X_RES",
+                "TTL3_CAM_Y_RES", "TTL3_CAM_NCHANNELS"),
+            "TTL4 Camera": (
+                "SHM_NAME_TTL4_CAM", "TTL4_CAM_IDX", "TTL4_CAM_IDENTIFER", "TTL4_CAM_X_TOPLEFT",
+                "TTL4_CAM_Y_TOPLEFT", "TTL4_CAM_X_RES",
+                "TTL4_CAM_Y_RES", "TTL4_CAM_NCHANNELS"),
+            
             "Body Camera": (
                 "SHM_NAME_BODY_CAM", "BODY_CAM_IDX", "BODY_CAM_X_RES", 
                 "BODY_CAM_Y_RES", "BODY_CAM_X_TOPLEFT", "BODY_CAM_Y_TOPLEFT", 

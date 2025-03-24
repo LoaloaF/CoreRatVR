@@ -93,6 +93,31 @@ def attach_stream_endpoints(app):
         await _stream_cam_loop(inspect, websocket, cam_name, app, 
                                check_interval=check_interval)
         
+    @app.websocket("/stream/ttlcam2")
+    async def stream_facecam(websocket: WebSocket, inspect: str = Query("false")):
+        inspect = inspect.lower() == "true"
+        cam_name = "ttlcam2"
+        check_interval = 0.01
+        await _stream_cam_loop(inspect, websocket, cam_name, app, 
+                               check_interval=check_interval)
+        
+    @app.websocket("/stream/ttlcam3")
+    async def stream_facecam(websocket: WebSocket, inspect: str = Query("false")):
+        inspect = inspect.lower() == "true"
+        cam_name = "ttlcam3"
+        check_interval = 0.01
+        await _stream_cam_loop(inspect, websocket, cam_name, app, 
+                               check_interval=check_interval)
+    
+    @app.websocket("/stream/ttlcam4")
+    async def stream_facecam(websocket: WebSocket, inspect: str = Query("false")):
+        inspect = inspect.lower() == "true"
+        cam_name = "ttlcam4"
+        check_interval = 0.01
+        await _stream_cam_loop(inspect, websocket, cam_name, app, 
+                               check_interval=check_interval)
+        
+        
     @app.websocket("/stream/unitycam")
     async def stream_unitycam(websocket: WebSocket, inspect: str = Query("false")):
         inspect = inspect.lower() == "true"
@@ -216,6 +241,13 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
     if not inspect:
         if cam_name == "facecam":
             shm = _access_shm(P.SHM_NAME_FACE_CAM, "facecam2shm", app)
+        elif cam_name == "ttlcam2":
+            shm = _access_shm(P.SHM_NAME_TTL2_CAM, "ttl2cam2shm", app)
+        elif cam_name == "ttlcam3":
+            shm = _access_shm(P.SHM_NAME_TTL3_CAM, "ttl3cam2shm", app)
+        elif cam_name == "ttlcam4":
+            shm = _access_shm(P.SHM_NAME_TTL4_CAM, "ttl4cam2shm", app)
+            
         elif cam_name == "bodycam":
             shm = _access_shm(P.SHM_NAME_BODY_CAM, "bodycam2shm", app)
         elif cam_name == "unitycam":

@@ -29,14 +29,14 @@ def open_camera2shm_proc(cam_name):
     ])
     return _launch(P.WHICH_PYTHON, stream_script, *args)
 
-def open_vimbacam2shm_proc(cam_name):
+def open_vimbacam2shm_proc(cam_name, camera_identifer):
     P = Parameters()
     script = "vimbacam2shm.py"
     path = P.PROJECT_DIRECTORY, "CoreRatVR", "read2SHM", script
     stream_script = os.path.join(*path)
     
     args = _make_proc_args(shm_args=("termflag", cam_name, "paradigmflag"))
-    camera_identifer = str(P.FACE_CAM_IDENTIFER) if cam_name == 'facecam' else str(P.BODY_CAM_IDX)
+    # camera_identifer = str(P.FACE_CAM_IDENTIFER) if cam_name == 'facecam' else str(P.BODY_CAM_IDX)
     args.extend([
         "--logging_name", cam_name+"2shm",
         "--process_prio", str(P.CAMERA2SHM_PROC_PRIORITY),
@@ -76,6 +76,9 @@ def open_log_camera_proc(cam_name):
             fps = str(P.BODY_CAM_FPS)
         case 'unitycam':
             fps = str(P.UNITY_CAM_FPS)
+        # default
+        case _:
+            fps = str(P.BODY_CAM_FPS)
     args.extend([
         "--logging_name", "log_"+cam_name,
         "--process_prio", str(P.LOG_CAMERA_PROC_PRIORITY),
@@ -291,6 +294,16 @@ def _make_proc_args(shm_args=("termflag", "ballvelocity", "portentaoutput"),
     if "facecam" in shm_args:
         args.extend(("--videoframe_shm_struc_fname", 
                      shm_struct_fname(P.SHM_NAME_FACE_CAM)))
+    if "ttlcam2" in shm_args:
+        args.extend(("--videoframe_shm_struc_fname", 
+                     shm_struct_fname(P.SHM_NAME_TTL2_CAM)))
+    if "ttlcam3" in shm_args:
+        args.extend(("--videoframe_shm_struc_fname",
+                        shm_struct_fname(P.SHM_NAME_TTL3_CAM)))
+    if "ttlcam4" in shm_args:
+        args.extend(("--videoframe_shm_struc_fname",
+                        shm_struct_fname(P.SHM_NAME_TTL4_CAM)))
+        
     if "bodycam" in shm_args:
         args.extend(("--videoframe_shm_struc_fname", 
                      shm_struct_fname(P.SHM_NAME_BODY_CAM)))

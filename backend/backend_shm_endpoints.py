@@ -92,6 +92,38 @@ def attach_shm_endpoints(app):
                                   y_resolution=P.FACE_CAM_Y_RES,
                                   nchannels=P.FACE_CAM_NCHANNELS)
         request.app.state.state["shm"][P.SHM_NAME_FACE_CAM] = True
+        
+    @app.post("/shm/create_ttl2cam_shm")
+    def create_ttl2cam_shm(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_TTL2_CAM: False})
+        sc.create_video_frame_shm(shm_name=P.SHM_NAME_TTL2_CAM, 
+                                  x_resolution=P.TTL2_CAM_X_RES,
+                                  y_resolution=P.TTL2_CAM_Y_RES,
+                                  nchannels=P.TTL2_CAM_NCHANNELS)
+        request.app.state.state["shm"][P.SHM_NAME_TTL2_CAM] = True
+
+    
+    @app.post("/shm/create_ttl3cam_shm")
+    def create_ttl3cam_shm(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_TTL3_CAM: False})
+        sc.create_video_frame_shm(shm_name=P.SHM_NAME_TTL3_CAM, 
+                                  x_resolution=P.TTL3_CAM_X_RES,
+                                  y_resolution=P.TTL3_CAM_Y_RES,
+                                  nchannels=P.TTL3_CAM_NCHANNELS)
+        request.app.state.state["shm"][P.SHM_NAME_TTL3_CAM] = True
+    
+    @app.post("/shm/create_ttl4cam_shm")
+    def create_ttl4cam_shm(request: Request):
+        validate_state(request.app.state.state, valid_initiated=True, 
+                       valid_shm_created={P.SHM_NAME_TTL4_CAM: False})
+        sc.create_video_frame_shm(shm_name=P.SHM_NAME_TTL4_CAM, 
+                                  x_resolution=P.TTL4_CAM_X_RES,
+                                  y_resolution=P.TTL4_CAM_Y_RES,
+                                  nchannels=P.TTL4_CAM_NCHANNELS)
+        request.app.state.state["shm"][P.SHM_NAME_TTL4_CAM] = True
+        
 
     @app.post("/shm/create_bodycam_shm")
     def create_bodycam_shm(request: Request):
