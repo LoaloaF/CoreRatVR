@@ -9,6 +9,7 @@ import argparse
 # from pymba import Vimba
 
 from VideoFrameSHMInterface import VideoFrameSHMInterface
+from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 from CustomLogger import CustomLogger as Logger
 
@@ -38,13 +39,24 @@ def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm, camera_identife
             pack = "<{" + f"N:I,ID:{frame_i},PCT:{t}" + "}>\r\n"
             L.logger.debug(f"Gap was: \033[1;33m{(t-prv_t)/1000}ms \033[0m")
             
-            image = image[:frame_shm.y_res, :frame_shm.x_res]
+            x_res = frame_shm.metadata['x_resolution']
+            y_res = frame_shm.metadata['y_resolution']
+            nchannels = frame_shm.metadata['nchannels']
+            
+            image = image[:y_res, :x_res,]
             # flip y and x
             image = image[::-1, ::-1]
             image = image.reshape(image.shape[0], image.shape[1], 1)
-            image = image.transpose(1, 0, 2) # cv2: y-x-rgb, everywhere: x-y-rgb
+            # image = image.transpose(1, 0, 2) # cv2: y-x-rgb, everywhere: x-y-rgb
 
-            frame_shm.add_frame(image, pack.encode('utf-8'))
+            # frame_shm.add_frame(image, pack.encode('utf-8'))
+            frame_bytes = image.tobytes()
+            package_nbytes = frame_shm.metadata['frame_package_nbytes']
+            combined_bytes = bytearray(package_nbytes+len(frame_bytes))
+            combined_bytes[:len(pack)] = pack.encode('utf-8')
+            combined_bytes[package_nbytes:] = frame_bytes
+            frame_shm.push(combined_bytes)
+            
             frame_i += 1
             prv_t = t
             
@@ -89,7 +101,8 @@ def run_vimbacam2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname,
                      paradigmflag_shm_struc_fname, cam_name,
                      x_topleft, y_topleft, camera_identifer):
     # shm access
-    frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
+    # frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
+    frame_shm = CyclicPackagesSHMInterface(videoframe_shm_struc_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     paradigmflag_shm = FlagSHMInterface(paradigmflag_shm_struc_fname)
     

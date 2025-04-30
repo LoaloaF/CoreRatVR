@@ -7,6 +7,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 import time
 import argparse
 import cv2
+import numpy as np
 
 from VideoFrameSHMInterface import VideoFrameSHMInterface
 from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
@@ -68,7 +69,7 @@ def _read_stream_loop(frame_shm, termflag_shm, cap, x_topleft, y_topleft):
             L.logger.debug(f"New frame: {pack}")
             
             frame = frame[y_topleft:y_res, x_topleft:x_res, :nchannels]
-            frame = frame.transpose(1,0,2) # cv2: y-x-rgb, everywhere: x-y-rgb
+            # frame = frame.transpose(1,0,2) # cv2: y-x-rgb, everywhere: x-y-rgb
             # frame_shm.add_frame(frame, pack.encode('utf-8'))
             
             frame_bytes = frame.tobytes()

@@ -238,7 +238,7 @@ def _live_get_frame(frame_shm, prv_frame_package):
     frame_package = frame_raw[:package_nbytes]
     frame_package = extract_packet_data(frame_package)
     frame_raw = frame_raw[package_nbytes:]
-    frame = np.frombuffer(frame_raw, dtype=np.uint8).reshape([x_res, y_res, nchannels])
+    frame = np.frombuffer(frame_raw, dtype=np.uint8).reshape([y_res, x_res, nchannels])
     
     # unity frame is written in other colorformat and flipped, fix here 
     if frame_shm._shm_name == 'unitycam':

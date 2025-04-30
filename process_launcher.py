@@ -63,7 +63,7 @@ def open_shm2cam_stream_proc(cam_name):
 
 def open_log_camera_proc(cam_name):
     P = Parameters()
-    script = "log_camera.py"
+    script = "log_camera_cylic.py" if cam_name != 'unitycam' else "log_camera.py"
     path = P.PROJECT_DIRECTORY, "CoreRatVR", "dataloggers", script
     stream_script = os.path.join(*path)
     

@@ -17,6 +17,9 @@ sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 
 from CustomLogger import CustomLogger as Logger
 from VideoFrameSHMInterface import VideoFrameSHMInterface
+from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
+from shm_interface_utils import extract_packet_data
+
 from FlagSHMInterface import FlagSHMInterface
 
 
@@ -38,6 +41,12 @@ def _save_frame_packages(queue, full_fname):
 def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue, videowriter=None):
     L = Logger()
     L.logger.info("Reading video frames from SHM and saving them...")
+    
+    # shm arguments, used to be in VideoSharedMemory
+    x_res = frame_shm.metadata['x_resolution']
+    y_res = frame_shm.metadata['y_resolution']
+    nchannels = frame_shm.metadata['nchannels']
+    package_nbytes = frame_shm.metadata['frame_package_nbytes']
 
     package_buf = []
     prv_id = -1
@@ -65,11 +74,16 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue, 
                 L.logger.debug("Paradigm stopped, on halt....")
                 continue
         
-        # wait until new frame is available
-        if (frame_package := frame_shm.get_package(dict)).get('ID') in (prv_id, None):
-            sleep(0.0001)
+        frame_raw = frame_shm.popitem()
+        if frame_raw is None:
+            sleep(0.001)
             nchecks += 1
             continue
+        
+        frame_package = frame_raw[:package_nbytes]
+        frame_package = extract_packet_data(frame_package)
+        frame_raw = frame_raw[package_nbytes:]
+        frame = np.frombuffer(frame_raw, dtype=np.uint8).reshape([y_res, x_res, nchannels])
         
         # skip the first frame, it may have sat there for very long (probabmatic for logger)
         if prv_id == -1:
@@ -77,7 +91,7 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue, 
             L.logger.debug(f"Skipping first frame with id {prv_id}")
             continue
         
-        frame = frame_shm.get_frame()
+        # frame = frame_shm.get_frame()
         # check for ID discontinuity
         if (dif := (frame_package["ID"]-prv_id)) != 1:
             L.logger.warning(f"Package ID discontinuous; gap was {dif}")
@@ -87,8 +101,7 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue, 
         frame_package.pop("N")
         package_buf.append(frame_package)
         prv_time = frame_package["PCT"]
-        
-        # this is actually the only camera now using this single frame log process script
+               
         if frame_shm._shm_name == "unitycam":
             frame = np.flip(frame, 0)
             frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
@@ -115,7 +128,8 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
                    paradigmflag_shm_struc_fname, logging_name, session_data_dir, 
                    fps, cam_name):
     # shm access
-    frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
+    # frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
+    frame_shm = CyclicPackagesSHMInterface(videoframe_shm_struc_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     paradigm_running_shm = FlagSHMInterface(paradigmflag_shm_struc_fname)
 

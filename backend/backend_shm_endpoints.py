@@ -87,7 +87,9 @@ def attach_shm_endpoints(app):
     def create_facecam_shm(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_FACE_CAM: False})
-        sc.create_video_frame_shm(shm_name=P.SHM_NAME_FACE_CAM, 
+        sc.create_cyclic_frames_shm(shm_name=P.SHM_NAME_FACE_CAM, 
+                                  npackages=32,
+                                  frame_package_nbytes=80,
                                   x_resolution=P.FACE_CAM_X_RES,
                                   y_resolution=P.FACE_CAM_Y_RES,
                                   nchannels=P.FACE_CAM_NCHANNELS)
@@ -97,7 +99,9 @@ def attach_shm_endpoints(app):
     def create_ttl2cam_shm(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TTL2_CAM: False})
-        sc.create_video_frame_shm(shm_name=P.SHM_NAME_TTL2_CAM, 
+        sc.create_cyclic_frames_shm(shm_name=P.SHM_NAME_TTL2_CAM, 
+                                  npackages=32,
+                                  frame_package_nbytes=80,
                                   x_resolution=P.TTL2_CAM_X_RES,
                                   y_resolution=P.TTL2_CAM_Y_RES,
                                   nchannels=P.TTL2_CAM_NCHANNELS)
@@ -108,7 +112,9 @@ def attach_shm_endpoints(app):
     def create_ttl3cam_shm(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TTL3_CAM: False})
-        sc.create_video_frame_shm(shm_name=P.SHM_NAME_TTL3_CAM, 
+        sc.create_cyclic_frames_shm(shm_name=P.SHM_NAME_TTL3_CAM, 
+                                  npackages=32,
+                                  frame_package_nbytes=80,
                                   x_resolution=P.TTL3_CAM_X_RES,
                                   y_resolution=P.TTL3_CAM_Y_RES,
                                   nchannels=P.TTL3_CAM_NCHANNELS)
@@ -118,7 +124,9 @@ def attach_shm_endpoints(app):
     def create_ttl4cam_shm(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TTL4_CAM: False})
-        sc.create_video_frame_shm(shm_name=P.SHM_NAME_TTL4_CAM, 
+        sc.create_cyclic_frames_shm(shm_name=P.SHM_NAME_TTL4_CAM, 
+                                  npackages=32,
+                                  frame_package_nbytes=80,
                                   x_resolution=P.TTL4_CAM_X_RES,
                                   y_resolution=P.TTL4_CAM_Y_RES,
                                   nchannels=P.TTL4_CAM_NCHANNELS)
