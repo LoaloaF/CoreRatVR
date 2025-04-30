@@ -25,11 +25,11 @@ def _reset_MEA1K(gain, enable_stimulation_power=False):
     mx.offset()
 
 def _animal_name2implant_device(nas_dir, animal_name):
-    fullfname = os.path.join(nas_dir, 'devices', 'implant_to_animal_map.csv')
+    fullfname = os.path.join(nas_dir, 'devices', 'animal_meta_info.csv')
     mapping = pd.read_csv(fullfname, index_col=0, header=0)
     Logger().logger.debug(f"Animal->Implant map:\n{mapping}")
     if animal_name in mapping.index:
-        return mapping.loc[animal_name].item()
+        return mapping.loc[animal_name, "implant_name"]
     else:
         raise ValueError(f"No implant name found for `{animal_name}` Add to the "
                          f"mapping manually: {fullfname}")

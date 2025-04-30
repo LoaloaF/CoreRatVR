@@ -148,7 +148,7 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
         frames_h5_file.create_group('frames')
         
     save_queue = Queue()
-    save_thread = Thread(target=_save_frame_packages, args=(save_queue, full_fname))
+    save_thread = Thread(target=_save_frame_packages, args=(save_queue, full_fname.replace(".hdf5", "_packages.hdf5")))
     save_thread.start()
     
     _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue)
