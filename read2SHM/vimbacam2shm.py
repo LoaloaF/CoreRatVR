@@ -39,6 +39,8 @@ def _read_vimbastream(frame_shm, termflag_shm, paradigmflag_shm, camera_identife
             L.logger.debug(f"Gap was: \033[1;33m{(t-prv_t)/1000}ms \033[0m")
             
             image = image[:frame_shm.y_res, :frame_shm.x_res]
+            # flip y and x
+            image = image[::-1, ::-1]
             image = image.reshape(image.shape[0], image.shape[1], 1)
             image = image.transpose(1, 0, 2) # cv2: y-x-rgb, everywhere: x-y-rgb
 

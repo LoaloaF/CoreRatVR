@@ -465,8 +465,13 @@ def hdf5_frames2mp4(session_dir, merged_fname):
     L = Logger()
     L.logger.info(f"Rendering videos from hdf5 files in {session_dir}")
     render_video("facecam")
+    L.logger.info(f"Rendering next video...")
+    
     render_video("bodycam")
     render_video("unitycam")
+    render_video("ttlcam2")
+    render_video("ttlcam3")
+    render_video("ttlcam4")
     
     
 if __name__ == '__main__':
