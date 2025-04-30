@@ -22,6 +22,7 @@ class CyclicPackagesSHMInterface:
         self._write_pntr_nbytes = shm_structure["fields"]["write_pntr_nbytes"]
         self._npackages = shm_structure["metadata"]["npackages"]   
         self._package_nbytes = shm_structure["metadata"]["package_nbytes"] 
+        self.metadata = shm_structure["metadata"]
         
         self._internal_w_pointer = 0
         self._read_pointer = 0
@@ -45,7 +46,7 @@ class CyclicPackagesSHMInterface:
         package_start_idx = temp_w_pointer - self._package_nbytes
 
         self.L.logger.debug((f"Writing to SHM {package_start_idx}:"
-                             f"{temp_w_pointer} - {byte_encoded_array}" ))
+                             f"{temp_w_pointer} - {byte_encoded_array[:1000]}" ))
         self._memory.buf[package_start_idx:temp_w_pointer] = byte_encoded_array
         # write the internal write pointer to SHM so reader procs can read new pack
         self._update_stored_write_pointer()

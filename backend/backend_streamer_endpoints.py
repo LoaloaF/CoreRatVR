@@ -22,6 +22,8 @@ import process_launcher as pl
 from backend.backend_helpers import shm_struct_fname
 from SHM.CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from SHM.VideoFrameSHMInterface import VideoFrameSHMInterface
+from SHM.shm_interface_utils import extract_packet_data
+
 
 from analytics_processing.modality_loading import session_modality_from_nas
 from analytics_processing.modality_transformations import data_modality_na2null
@@ -198,7 +200,8 @@ def _access_shm(shm_name, matching_proc, app):
                 valid_shm_created={shm_name: True},
                 valid_proc_running=None if matching_proc is None else {matching_proc: True,})
     if "cam" in shm_name:
-        return VideoFrameSHMInterface(shm_struct_fname(shm_name))
+        # return VideoFrameSHMInterface(shm_struct_fname(shm_name))
+        return CyclicPackagesSHMInterface(shm_struct_fname(shm_name))
     elif shm_name in ("ballvelocity", "portentaoutput", "portentainput", "unityoutput"):
         return CyclicPackagesSHMInterface(shm_struct_fname(shm_name))
     
@@ -216,22 +219,34 @@ def _inspect_get_frame(requested_PCT, packages, sessionfile, cam_name):
     frame_key = f"frame_{int(frame_pkg['ID']):06d}"
     return (sessionfile[f"{cam_name}_frames"][frame_key][()]).item(), frame_pkg
 
-def _live_get_frame(shm, prv_frame_package):
+def _live_get_frame(frame_shm, prv_frame_package):
     L = Logger()
     L.logger.debug(f"Checking for new frame")
-    if (frame_package := shm.get_package(dict)) == prv_frame_package:
-        L.logger.debug(f"Same package: {frame_package}")
+    
+    # frame_shm = CyclicPackagesSHMInterface(videoframe_shm_struc_fname)
+    # shm arguments, used to be in VideoSharedMemory
+    x_res = frame_shm.metadata['x_resolution']
+    y_res = frame_shm.metadata['y_resolution']
+    nchannels = frame_shm.metadata['nchannels']
+    package_nbytes = frame_shm.metadata['frame_package_nbytes']
+    
+    frame_raw = frame_shm.popitem()
+    if frame_raw is None:
+        L.logger.debug(f"Same package: {prv_frame_package}")
         return None, prv_frame_package
     
-    frame_jpg = shm.get_frame()
+    frame_package = frame_raw[:package_nbytes]
+    frame_package = extract_packet_data(frame_package)
+    frame_raw = frame_raw[package_nbytes:]
+    frame = np.frombuffer(frame_raw, dtype=np.uint8).reshape([x_res, y_res, nchannels])
     
     # unity frame is written in other colorformat and flipped, fix here 
-    if shm._shm_name == 'unitycam':
-        frame_jpg = cv2.flip(frame_jpg, 0)
-        frame_jpg = cv2.cvtColor(frame_jpg, cv2.COLOR_RGB2BGR)
+    if frame_shm._shm_name == 'unitycam':
+        frame_raw = cv2.flip(frame_raw, 0)
+        frame_raw = cv2.cvtColor(frame_raw, cv2.COLOR_RGB2BGR)
     
-    L.logger.debug(f"New frame {frame_jpg.shape} read from SHM: {frame_package}")
-    return cv2.imencode('.jpg', frame_jpg)[1].tobytes(), frame_package
+    L.logger.debug(f"New frame {frame.shape} read from SHM: {frame_package}")
+    return cv2.imencode('.jpg', frame)[1].tobytes(), frame_package
 
 async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.01):
     L = Logger()
@@ -273,15 +288,15 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
                 # index the recorded session with the requested pc timestamp
                 t = int(await websocket.receive_text())
                 requested_PCT = pd.to_datetime(t, unit='us')
-                frame_jpg, frame_package = _inspect_get_frame(requested_PCT, packages, 
+                frame_raw, frame_package = _inspect_get_frame(requested_PCT, packages, 
                                                               sessionfile, cam_name)
             else:
                 # stream live from memory
-                frame_jpg, frame_package = _live_get_frame(shm, frame_package)
-                if frame_jpg is None:
+                frame_raw, frame_package = _live_get_frame(shm, frame_package)
+                if frame_raw is None:
                     continue
 
-            await websocket.send_bytes(frame_jpg)  # Send the encoded frame
+            await websocket.send_bytes(frame_raw)  # Send the encoded frame
             await websocket.send_json(frame_package)  # Send the encoded frame
     
     except WebSocketDisconnect:

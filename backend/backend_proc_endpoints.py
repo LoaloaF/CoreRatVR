@@ -43,6 +43,7 @@ def attach_proc_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
                                           P.SHM_NAME_PORTENTA_OUTPUT: True,
+                                          P.SHM_NAME_PARADIGM_RUNNING_FLAG: True,
                                           P.SHM_NAME_BALLVELOCITY: True,
                                           },
                        valid_proc_running={"log_portenta": False})
@@ -140,6 +141,7 @@ def attach_proc_endpoints(app):
     def launch_log_facecam(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                          P.SHM_NAME_PARADIGM_RUNNING_FLAG: True,
                                           P.SHM_NAME_FACE_CAM: True,
                                           },
                        valid_proc_running={"log_facecam": False})
@@ -150,6 +152,7 @@ def attach_proc_endpoints(app):
     def launch_log_ttl2cam(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                          P.SHM_NAME_PARADIGM_RUNNING_FLAG: True,
                                           P.SHM_NAME_TTL2_CAM: True,
                                           },
                        valid_proc_running={"log_ttl2cam": False})
@@ -160,6 +163,7 @@ def attach_proc_endpoints(app):
     def launch_log_ttl3cam(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                          P.SHM_NAME_PARADIGM_RUNNING_FLAG: True,
                                           P.SHM_NAME_TTL3_CAM: True,
                                           },
                        valid_proc_running={"log_ttl3cam": False})
@@ -170,6 +174,7 @@ def attach_proc_endpoints(app):
     def launch_log_ttl4cam(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                          P.SHM_NAME_PARADIGM_RUNNING_FLAG: True,
                                           P.SHM_NAME_TTL4_CAM: True,
                                           },
                        valid_proc_running={"log_ttl4cam": False})
@@ -180,6 +185,7 @@ def attach_proc_endpoints(app):
     def launch_log_bodycam(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                          P.SHM_NAME_PARADIGM_RUNNING_FLAG: True,
                                           P.SHM_NAME_BODY_CAM: True,
                                           },
                        valid_proc_running={"log_bodycam": False})
@@ -200,6 +206,7 @@ def attach_proc_endpoints(app):
     def launch_log_unity(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                          P.SHM_NAME_PARADIGM_RUNNING_FLAG: True,
                                           P.SHM_NAME_UNITY_OUTPUT: True,
                                           },
                        valid_proc_running={"log_unity": False})
@@ -210,6 +217,7 @@ def attach_proc_endpoints(app):
     def launch_log_unitycam(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TERM_FLAG: True,
+                                          P.SHM_NAME_PARADIGM_RUNNING_FLAG: True,
                                           P.SHM_NAME_UNITY_CAM: True,
                                           },
                        valid_proc_running={"log_unitycam": False})

@@ -125,14 +125,27 @@ def attach_shm_endpoints(app):
         request.app.state.state["shm"][P.SHM_NAME_TTL4_CAM] = True
         
 
+    # @app.post("/shm/create_bodycam_shm")
+    # def create_bodycam_shm(request: Request):
+    #     validate_state(request.app.state.state, valid_initiated=True, 
+    #                    valid_shm_created={P.SHM_NAME_BODY_CAM: False})
+    #     sc.create_video_frame_shm(shm_name=P.SHM_NAME_BODY_CAM, 
+    #                               x_resolution=P.BODY_CAM_X_RES,
+    #                               y_resolution=P.BODY_CAM_Y_RES,
+    #                               nchannels=P.BODY_CAM_NCHANNELS)
+    #     request.app.state.state["shm"][P.SHM_NAME_BODY_CAM] = True
+    
     @app.post("/shm/create_bodycam_shm")
     def create_bodycam_shm(request: Request):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_BODY_CAM: False})
-        sc.create_video_frame_shm(shm_name=P.SHM_NAME_BODY_CAM, 
-                                  x_resolution=P.BODY_CAM_X_RES,
-                                  y_resolution=P.BODY_CAM_Y_RES,
-                                  nchannels=P.BODY_CAM_NCHANNELS)
+        
+        sc.create_cyclic_frames_shm(shm_name=P.SHM_NAME_BODY_CAM, 
+                                      npackages=32,
+                                      frame_package_nbytes=80,
+                                      x_resolution=P.BODY_CAM_X_RES,
+                                      y_resolution=P.BODY_CAM_Y_RES,
+                                      nchannels=P.BODY_CAM_NCHANNELS)
         request.app.state.state["shm"][P.SHM_NAME_BODY_CAM] = True
     
     @app.post("/shm/create_unitycam_shm")
