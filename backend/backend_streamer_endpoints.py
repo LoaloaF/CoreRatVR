@@ -237,6 +237,11 @@ def _live_get_frame(frame_shm, prv_frame_package):
     
     frame_package = frame_raw[:package_nbytes]
     frame_package = extract_packet_data(frame_package)
+    
+    if prv_frame_package != {} and frame_package['PCT']-prv_frame_package['PCT'] < 60_000:
+        L.logger.debug(f"Skipping streaming of frame, FPS>30")
+        return None, prv_frame_package
+    
     frame_raw = frame_raw[package_nbytes:]
     frame = np.frombuffer(frame_raw, dtype=np.uint8).reshape([y_res, x_res, nchannels])
     
@@ -280,7 +285,8 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
     await websocket.accept()
 
     frame_package = {}
-    try: 
+    # try: 
+    if True:
         while True:
             await asyncio.sleep(check_interval)
                         
@@ -299,15 +305,15 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
             await websocket.send_bytes(frame_raw)  # Send the encoded frame
             await websocket.send_json(frame_package)  # Send the encoded frame
     
-    except WebSocketDisconnect:
-        L.logger.info(f"Client disconnected from {cam_name} weboscket")
-    except Exception as e:
-        L.logger.warning(f"Error in {cam_name} stream: {e}")
-    finally:
-        if not inspect:
-            shm.close_shm()
-        else:
-            sessionfile.close()
+    # except WebSocketDisconnect:
+    #     L.logger.info(f"Client disconnected from {cam_name} weboscket")
+    # except Exception as e:
+    #     L.logger.warning(f"Error in {cam_name} stream: {e}")
+    # finally:
+    #     if not inspect:
+    #         shm.close_shm()
+    #     else:
+    #         sessionfile.close()
 
 async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name, 
                                 time_column, check_interval=0.01, maxpops=3):
