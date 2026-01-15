@@ -88,7 +88,7 @@ def attach_shm_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_FACE_CAM: False})
         sc.create_cyclic_frames_shm(shm_name=P.SHM_NAME_FACE_CAM, 
-                                  npackages=32,
+                                  npackages=P.SHM_NPACKAGES_FACE_CAM,
                                   frame_package_nbytes=80,
                                   x_resolution=P.FACE_CAM_X_RES,
                                   y_resolution=P.FACE_CAM_Y_RES,
@@ -100,7 +100,7 @@ def attach_shm_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TTL2_CAM: False})
         sc.create_cyclic_frames_shm(shm_name=P.SHM_NAME_TTL2_CAM, 
-                                  npackages=32,
+                                  npackages=P.SHM_NPACKAGES_TTL2_CAM,
                                   frame_package_nbytes=80,
                                   x_resolution=P.TTL2_CAM_X_RES,
                                   y_resolution=P.TTL2_CAM_Y_RES,
@@ -113,7 +113,7 @@ def attach_shm_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TTL3_CAM: False})
         sc.create_cyclic_frames_shm(shm_name=P.SHM_NAME_TTL3_CAM, 
-                                  npackages=32,
+                                  npackages=P.SHM_NPACKAGES_TTL3_CAM,
                                   frame_package_nbytes=80,
                                   x_resolution=P.TTL3_CAM_X_RES,
                                   y_resolution=P.TTL3_CAM_Y_RES,
@@ -125,7 +125,7 @@ def attach_shm_endpoints(app):
         validate_state(request.app.state.state, valid_initiated=True, 
                        valid_shm_created={P.SHM_NAME_TTL4_CAM: False})
         sc.create_cyclic_frames_shm(shm_name=P.SHM_NAME_TTL4_CAM, 
-                                  npackages=32,
+                                  npackages=P.SHM_NPACKAGES_TTL4_CAM,
                                   frame_package_nbytes=80,
                                   x_resolution=P.TTL4_CAM_X_RES,
                                   y_resolution=P.TTL4_CAM_Y_RES,

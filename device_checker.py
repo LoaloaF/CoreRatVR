@@ -112,15 +112,6 @@ def _get_system_dep_defaults(sys_info):
         p = "~", ".platformio", "penv", "bin", "platformio"
     defaults["PLATFORMIO_BIN"] = os.path.join(*p)
     
-    #nas dir
-    if sys_info['SYSTEM'] == "Windows":
-        p = "D:", "NTnas", "nas_vrdata"
-    elif sys_info['SYSTEM'] == "Linux":
-        p =  "run", "user", "1000", "gvfs", "smb-share:server=yaniklab-data.local,share=large", "BMI", "VirtualReality", "SpatialSequenceLearning",
-    elif sys_info['SYSTEM'] == "Darwin":
-        p = "/", "Volumes", "large", "simon", "nas_vrdata"
-    defaults["NAS_DATA_DIRECTORY"] = os.path.join(*p)
-    
     # unity build
     if sys_info['SYSTEM'] in ("Windows", "Linux"):
         p = "UnityRatVR", "builds"

@@ -28,10 +28,12 @@ from SHM.shm_interface_utils import extract_packet_data
 from analytics_processing.modality_loading import session_modality_from_nas
 from analytics_processing.modality_transformations import data_modality_na2null
 
-from analytics_processing.modality_loading import session_modality_from_nas
-from analytics_processing.modality_transformations import data_modality_na2null
+# from analytics_processing.modality_loading import session_modality_from_nas
+# from analytics_processing.modality_transformations import data_modality_na2null
 from analytics_processing.modality_transformations import data_modality_rename2oldkeys
 from analytics_processing.modality_transformations import data_modality_pct_as_index
+from analytics_processing.analytics import get_analytics
+
 
 def attach_stream_endpoints(app):
     # singlton class - reference to instance created in lifespan
@@ -79,6 +81,32 @@ def attach_stream_endpoints(app):
                                     time_column=time_column,
                                     check_interval=check_interval, maxpops=maxpops)
         
+    @app.websocket("/stream/singleunitspikes")
+    async def stream_singleunitspikes(websocket: WebSocket):
+        P = Parameters()
+        # every 20ms, pop a max of 20 event packages (async, max ~1000Hz, shortly)
+        check_interval = 0.02
+        maxpops = 20
+        data_name = "Spikes"
+        time_column = 'ephys_timestamp'
+        # shm_name = P.SHM_NAME_PORTENTA_OUTPUT
+        await _stream_packages_loop(True, websocket, app, data_name, None,
+                                    time_column=time_column,
+                                    check_interval=check_interval, maxpops=maxpops)
+    
+    @app.websocket("/stream/ensembleprojections")
+    async def stream_ensembleprojections(websocket: WebSocket):
+        P = Parameters()
+        # every 20ms, pop a max of 20 event packages (async, max ~1000Hz, shortly)
+        check_interval = 0.02
+        maxpops = 20
+        data_name = "ConcatenatedEnsambleProj40ms"
+        time_column = 'from_ephys_timestamp'
+        # shm_name = P.SHM_NAME_PORTENTA_OUTPUT
+        await _stream_packages_loop(True, websocket, app, data_name, None,
+                                    time_column=time_column,
+                                    check_interval=check_interval, maxpops=maxpops)
+        
     @app.websocket("/stream/bodycam")
     async def stream_bodycam(websocket: WebSocket, inspect: str = Query("false")):
         inspect = inspect.lower() == "true"
@@ -91,7 +119,7 @@ def attach_stream_endpoints(app):
     async def stream_facecam(websocket: WebSocket, inspect: str = Query("false")):
         inspect = inspect.lower() == "true"
         cam_name = "facecam"
-        check_interval = 0.01
+        check_interval = 0.005
         await _stream_cam_loop(inspect, websocket, cam_name, app, 
                                check_interval=check_interval)
         
@@ -99,7 +127,7 @@ def attach_stream_endpoints(app):
     async def stream_facecam(websocket: WebSocket, inspect: str = Query("false")):
         inspect = inspect.lower() == "true"
         cam_name = "ttlcam2"
-        check_interval = 0.01
+        check_interval = 0.005
         await _stream_cam_loop(inspect, websocket, cam_name, app, 
                                check_interval=check_interval)
         
@@ -107,7 +135,7 @@ def attach_stream_endpoints(app):
     async def stream_facecam(websocket: WebSocket, inspect: str = Query("false")):
         inspect = inspect.lower() == "true"
         cam_name = "ttlcam3"
-        check_interval = 0.01
+        check_interval = 0.005
         await _stream_cam_loop(inspect, websocket, cam_name, app, 
                                check_interval=check_interval)
     
@@ -115,7 +143,7 @@ def attach_stream_endpoints(app):
     async def stream_facecam(websocket: WebSocket, inspect: str = Query("false")):
         inspect = inspect.lower() == "true"
         cam_name = "ttlcam4"
-        check_interval = 0.01
+        check_interval = 0.005
         await _stream_cam_loop(inspect, websocket, cam_name, app, 
                                check_interval=check_interval)
         
@@ -192,8 +220,6 @@ def attach_stream_endpoints(app):
 
 
 
-
-
 # stream helpers
 def _access_shm(shm_name, matching_proc, app):
     validate_state(app.state.state, valid_initiated=True, 
@@ -238,7 +264,7 @@ def _live_get_frame(frame_shm, prv_frame_package):
     frame_package = frame_raw[:package_nbytes]
     frame_package = extract_packet_data(frame_package)
     
-    if prv_frame_package != {} and frame_package['PCT']-prv_frame_package['PCT'] < 60_000:
+    if prv_frame_package != {} and frame_package['PCT']-prv_frame_package['PCT'] < 30_000:
         L.logger.debug(f"Skipping streaming of frame, FPS>30")
         return None, prv_frame_package
     
@@ -285,8 +311,7 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
     await websocket.accept()
 
     frame_package = {}
-    # try: 
-    if True:
+    try: 
         while True:
             await asyncio.sleep(check_interval)
                         
@@ -305,22 +330,26 @@ async def _stream_cam_loop(inspect, websocket, cam_name, app, check_interval=0.0
             await websocket.send_bytes(frame_raw)  # Send the encoded frame
             await websocket.send_json(frame_package)  # Send the encoded frame
     
-    # except WebSocketDisconnect:
-    #     L.logger.info(f"Client disconnected from {cam_name} weboscket")
-    # except Exception as e:
-    #     L.logger.warning(f"Error in {cam_name} stream: {e}")
-    # finally:
-    #     if not inspect:
-    #         shm.close_shm()
-    #     else:
-    #         sessionfile.close()
+    except WebSocketDisconnect:
+        L.logger.info(f"Client disconnected from {cam_name} weboscket")
+    except Exception as e:
+        L.logger.warning(f"Error in {cam_name} stream: {e}")
+    finally:
+        if not inspect:
+            shm.close_shm()
+        else:
+            sessionfile.close()
 
 async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name, 
                                 time_column, check_interval=0.01, maxpops=3):
     L = Logger()
     P = Parameters()
-    try: 
-        # initialize for either viewing a recordded session or stream live from memory    
+    
+    read_from_h5 = True # not all data in memeroy
+    
+    # try: 
+    if True:
+        # initialize for either viewing a recorded session or stream live from memory
         if not inspect:
             shm = _access_shm(shm_name, None, app)
             shm.reset_reader() 
@@ -333,12 +362,78 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
             nas_base_dir, paradigm_subdir = P.SESSION_DATA_DIRECTORY.split("RUN_")
             session_fullfname = os.path.join(nas_base_dir, "RUN_"+paradigm_subdir, P.SESSION_NAME)
             
-            pc_time = session_modality_from_nas(session_fullfname, data_name, 
-                                                columns=[time_column])
-            # values of the series are i loc values
-            idx = data_modality_pct_as_index(pc_time).index
-            pc_time = pd.Series(np.arange(idx.shape[0]), index=idx)
-            L.logger.debug(f"Indexing {data_name} from\n{pc_time}")
+            
+            
+            
+            
+            # EXPERIMENTAL
+            
+            # data = session_modality_from_nas(session_fullfname, data_name)
+            # L.logger.debug(data)
+            
+            if data_name in ("Spikes", "ConcatenatedEnsambleProj40ms"):
+                read_from_h5 = False # in memoery
+                
+                if data_name=="Spikes":
+                    cols = ('cluster_id_str', 'cluster_id', 
+                            'ephys_timestamp', 'fine_brain_area') 
+                else:
+                    cols = None
+                data = get_analytics(data_name, mode='set', 
+                                     session_names=[P.SESSION_NAME[:-5]],
+                                     columns=cols)
+                print(data)
+                balldata = session_modality_from_nas(session_fullfname, "ballvelocity", 
+                                                    columns=['ballvelocity_ephys_timestamp',
+                                                             'ballvelocity_pc_timestamp'])
+                
+                # Reset index to access ephys_timestamp as a column
+                data_reset = data.reset_index(drop=True)
+                
+                # Convert ephys_timestamp to float64 to match ballvelocity_ephys_timestamp dtype
+                data_reset[time_column] = data_reset[time_column].astype('float64')
+                
+                # Sort both dataframes by their respective timestamp columns for merge_asof
+                balldata_sorted = balldata.sort_values('ballvelocity_ephys_timestamp')
+                data_reset_sorted = data_reset.sort_values(time_column)
+                
+                # Perform nearest timestamp matching
+                data_remapped = pd.merge_asof(
+                    data_reset_sorted,
+                    balldata_sorted,
+                    left_on=time_column,
+                    right_on='ballvelocity_ephys_timestamp',
+                    direction='nearest'
+                )
+                
+                # Replace ephys_timestamp with the mapped pc_timestamp and convert to datetime index
+                data_remapped[time_column] = pd.to_datetime(data_remapped['ballvelocity_pc_timestamp'], unit='us')
+                
+                # Drop the temporary ballvelocity columns and set PC timestamp as index
+                data_remapped = data_remapped.drop(columns=['ballvelocity_ephys_timestamp', 'ballvelocity_pc_timestamp'])
+                data = data_remapped.set_index(time_column).sort_index()
+                
+                L.logger.debug(f"Loaded spikes data with PC timestamps as index\n{data.head()}")
+            else:
+                pc_time = session_modality_from_nas(session_fullfname, data_name, 
+                                                    columns=[time_column])
+                # values of the series are i loc values
+                idx = data_modality_pct_as_index(pc_time).index
+                pc_time = pd.Series(np.arange(idx.shape[0]), index=idx)
+                L.logger.debug(f"Indexing {data_name} from\n{pc_time}")
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
             
 
         packages = []
@@ -351,19 +446,29 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
                 requested_start_PCT = pd.to_datetime(int(start_t), unit='us')
                 requested_stop_PCT = pd.to_datetime(int(stop_t), unit='us')
                 try:
-                    interval_data = pc_time.loc[requested_start_PCT:requested_stop_PCT]
-                    L.logger.debug(f"Read H5 for {data_name} from "
-                                   f"{requested_start_PCT} to {requested_stop_PCT}. "
-                                   f"Got {len(interval_data)} rows.")
-                    if not interval_data.empty:
-                        start = int(interval_data.values[0])
-                        stop = int(interval_data.values[-1])+1
-                        requested_interval = session_modality_from_nas(session_fullfname, data_name,
-                                                        start=start, stop=stop,)
-                        requested_interval = data_modality_rename2oldkeys(requested_interval, data_name)
-                        requested_interval = data_modality_na2null(requested_interval)
+                    if read_from_h5:
+                        interval_data = pc_time.loc[requested_start_PCT:requested_stop_PCT]
+                        L.logger.debug(f"Read H5 for {data_name} from "
+                                    f"{requested_start_PCT} to {requested_stop_PCT}. "
+                                    f"Got {len(interval_data)} rows.")
+                        if not interval_data.empty:
+                            start = int(interval_data.values[0])
+                            stop = int(interval_data.values[-1])+1
+                            requested_interval = session_modality_from_nas(session_fullfname, data_name,
+                                                            start=start, stop=stop,)
+                            requested_interval = data_modality_rename2oldkeys(requested_interval, data_name)
+                            requested_interval = data_modality_na2null(requested_interval)
+                        else:
+                            requested_interval = pd.DataFrame()
+                            
                     else:
-                        requested_interval = pd.DataFrame()
+                        L.logger.debug(f"Requested PCT for {data_name}: "
+                               f"{requested_start_PCT} to {requested_stop_PCT}")
+                        requested_interval = data.loc[requested_start_PCT:requested_stop_PCT].reset_index().rename(columns={
+                            time_column: 'PCT',})
+                        # convert from datetime to us int
+                        requested_interval['PCT'] = requested_interval['PCT'].astype('int64') // 1000
+
                 except Exception as e:
                     L.logger.error(e)
                     continue
@@ -389,10 +494,10 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
                 await websocket.send_json(packages)
                 packages.clear()
                 
-    except WebSocketDisconnect:
-        L.logger.info(f"Client disconnected from {shm_name} weboscket")
-    except Exception as e:
-        L.logger.error(f"Error in {shm_name} stream: {e}")
-    finally:
-        if not inspect:
-            shm.close_shm()
+    # except WebSocketDisconnect:
+    #     L.logger.info(f"Client disconnected from {shm_name} weboscket")
+    # except Exception as e:
+    #     L.logger.error(f"Error in {shm_name} stream: {e}")
+    # finally:
+    #     if not inspect:
+    #         shm.close_shm()
