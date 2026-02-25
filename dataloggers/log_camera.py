@@ -35,7 +35,7 @@ def _save_frame_packages(queue, full_fname):
         except Exception as e:
             L.logger.error(f"Error saving to hdf5:\n{e}")
 
-def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue, videowriter=None):
+def _log(frame_shm, termflag_shm, paradigm_running_shm, frames_hdf, save_queue, videowriter=None):
     L = Logger()
     L.logger.info("Reading video frames from SHM and saving them...")
 
@@ -93,17 +93,19 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue, 
             frame = np.flip(frame, 0)
             frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
         
-        # single frame saving
-        jpeg_data = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
-        name = f"frames/frame_{frame_package['ID']:06d}"
+        frame_id = frame_package['ID']
         try:
-            # single frame saving
-            jpeg_data = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
-            with h5py.File(full_fname, "a") as hdf:
-                hdf.create_dataset(f"frames/frame_{frame_package['ID']:06d}", 
-                                data=np.void(jpeg_data[1].tobytes()))
+            jpeg_ok, jpeg_buf = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
+            if jpeg_ok:
+                n = frames_hdf["frames"].shape[0]
+                frames_hdf["frames"].resize(n + 1, axis=0)
+                frames_hdf["frame_ids"].resize(n + 1, axis=0)
+                frames_hdf["frames"][-1] = jpeg_buf
+                frames_hdf["frame_ids"][-1] = frame_id
+            else:
+                L.logger.error(f"cv.imencode failed for frame id {frame_id}")
         except Exception as e:
-            L.logger.error(f"Error saving frame {name} to hdf5:\n{e}")
+            L.logger.error(f"Error saving frame id {frame_id} to hdf5:\n{e}")
             
         prv_id = frame_package["ID"]
         nchecks = 1
@@ -130,14 +132,22 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
 
     full_fname = os.path.join(session_data_dir, f"{logging_name.replace('log_','')}.hdf5")
     Logger().logger.debug(full_fname)
-    with h5py.File(full_fname, "a") as frames_h5_file:
-        frames_h5_file.create_group('frames')
-        
+
     save_queue = Queue()
-    save_thread = Thread(target=_save_frame_packages, args=(save_queue, full_fname.replace(".hdf5", "_packages.hdf5")))
+    save_thread = Thread(target=_save_frame_packages,
+                         args=(save_queue, full_fname.replace(".hdf5", "_packages.hdf5")))
     save_thread.start()
-    
-    _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue)
+
+    # Open the frames file once for the whole session.
+    # Only _log (this thread) ever touches it — no collision possible.
+    with h5py.File(full_fname, "a") as frames_hdf:
+        frames_hdf.create_dataset("frames",    shape=(0,), maxshape=(None,),
+                                  dtype=h5py.vlen_dtype(np.uint8))
+        frames_hdf.create_dataset("frame_ids", shape=(0,), maxshape=(None,),
+                                  dtype=np.int64)
+        _log(frame_shm, termflag_shm, paradigm_running_shm, frames_hdf, save_queue)
+    # frames file cleanly closed here
+
     save_thread.join()
 
 if __name__ == "__main__":
