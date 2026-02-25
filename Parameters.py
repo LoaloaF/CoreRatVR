@@ -5,6 +5,8 @@ import json
 from device_checker import get_all_system_info
 from typing import Any
 
+from baseVR.base_functionality import device_paths
+
 import platform
 
 
@@ -19,7 +21,7 @@ class Parameters:
     
     def initialize_defaults(self):
         # basic path parameters
-        self.PROJECT_DIRECTORY = self.get_default_project_directory()
+        self.PROJECT_DIRECTORY = device_paths()[2]
         self.SHM_STRUCTURE_DIRECTORY = os.path.join(self.PROJECT_DIRECTORY, "tmp_shm_structure_JSONs")
         self.DATA_DIRECTORY = os.path.join(self.PROJECT_DIRECTORY, "data")
         
@@ -43,10 +45,10 @@ class Parameters:
         self.SHM_NAME_PARADIGM_RUNNING_FLAG = 'paradigmflag'
         self.SHM_NAME_BALLVELOCITY = 'ballvelocity'
         self.SHM_NPACKAGES_BALLVELOCITY = int(2**12) # 4k
-        self.SHM_PACKAGE_NBYTES_BALLVELOCITY = 80
+        self.SHM_PACKAGE_NBYTES_BALLVELOCITY = 128
         self.SHM_NAME_PORTENTA_OUTPUT = 'portentaoutput'
         self.SHM_NPACKAGES_PORTENTA_OUTPUT = int(2**12) # 4k
-        self.SHM_PACKAGE_NBYTES_PORTENTA_OUTPUT = 80
+        self.SHM_PACKAGE_NBYTES_PORTENTA_OUTPUT = 128
         self.SHM_NAME_PORTENTA_INPUT = 'portentainput'
         self.SHM_NPACKAGES_PORTENTA_INPUT = 16
         self.SHM_PACKAGE_NBYTES_PORTENTA_INPUT = 32
@@ -66,6 +68,7 @@ class Parameters:
 
         # camera shm parameters
         self.SHM_NAME_FACE_CAM = 'facecam'
+        self.SHM_NPACKAGES_FACE_CAM = 128
         self.FACE_CAM_IDX = 0
         # ['DEV_000F314E2C37', 'DEV_000F314E2C38', 'DEV_000F314C7FE4', 'DEV_000F314E4F8F']
         self.FACE_CAM_IDENTIFER = "DEV_000F314E4F8F"
@@ -78,6 +81,7 @@ class Parameters:
 
         # camera shm parameters
         self.SHM_NAME_TTL2_CAM = 'ttlcam2'
+        self.SHM_NPACKAGES_TTL2_CAM = 128
         self.TTL2_CAM_IDX = 0
         self.TTL2_CAM_IDENTIFER = "DEV_000F314E2C37"
         self.TTL2_CAM_X_TOPLEFT = 0
@@ -89,6 +93,7 @@ class Parameters:
 
         # camera shm parameters
         self.SHM_NAME_TTL3_CAM = 'ttlcam3'
+        self.SHM_NPACKAGES_TTL3_CAM = 128
         self.TTL3_CAM_IDX = 0
         self.TTL3_CAM_IDENTIFER = "DEV_000F314C7FE4"
         self.TTL3_CAM_X_TOPLEFT = 0
@@ -100,6 +105,7 @@ class Parameters:
 
         # camera shm parameters
         self.SHM_NAME_TTL4_CAM = 'ttlcam4'
+        self.SHM_NPACKAGES_TTL4_CAM = 128
         self.TTL4_CAM_IDX = 0
         self.TTL4_CAM_IDENTIFER = "DEV_000F314E2C38"
         self.TTL4_CAM_X_TOPLEFT = 0
@@ -136,7 +142,7 @@ class Parameters:
         
         self.UNITY_BUILD_DIRECTORY = os.path.join(self.PROJECT_DIRECTORY, info["UNITY_BUILD_DIRECTORY"])
         self.UNITY_BUILD_NAME = info["UNITY_BUILD_NAME"]
-        self.NAS_DATA_DIRECTORY = self.get_default_nas_directory()
+        self.NAS_DATA_DIRECTORY = device_paths()[0]
         
         # system parameters
         self.SYSTEM = info["SYSTEM"]
@@ -218,19 +224,19 @@ class Parameters:
                 "SHM_NAME_UNITY_CAM", "UNITY_CAM_X_RES", "UNITY_CAM_Y_RES", 
                 "UNITY_CAM_NCHANNELS"),
             "Face Camera": (
-                "SHM_NAME_FACE_CAM", "FACE_CAM_IDX", "FACE_CAM_IDENTIFER", "FACE_CAM_X_TOPLEFT", 
+                "SHM_NAME_FACE_CAM", "SHM_NPACKAGES_FACE_CAM", "FACE_CAM_IDX", "FACE_CAM_IDENTIFER", "FACE_CAM_X_TOPLEFT", 
                 "FACE_CAM_Y_TOPLEFT", "FACE_CAM_X_RES", 
                 "FACE_CAM_Y_RES", "FACE_CAM_NCHANNELS"),
             "TTL2 Camera": (
-                "SHM_NAME_TTL2_CAM", "TTL2_CAM_IDX", "TTL2_CAM_IDENTIFER", "TTL2_CAM_X_TOPLEFT",
+                "SHM_NAME_TTL2_CAM", "SHM_NPACKAGES_TTL2_CAM", "TTL2_CAM_IDX", "TTL2_CAM_IDENTIFER", "TTL2_CAM_X_TOPLEFT",
                 "TTL2_CAM_Y_TOPLEFT", "TTL2_CAM_X_RES",
                 "TTL2_CAM_Y_RES", "TTL2_CAM_NCHANNELS"),
             "TTL3 Camera": (
-                "SHM_NAME_TTL3_CAM", "TTL3_CAM_IDX", "TTL3_CAM_IDENTIFER", "TTL3_CAM_X_TOPLEFT",
+                "SHM_NAME_TTL3_CAM", "SHM_NPACKAGES_TTL3_CAM", "TTL3_CAM_IDX", "TTL3_CAM_IDENTIFER", "TTL3_CAM_X_TOPLEFT",
                 "TTL3_CAM_Y_TOPLEFT", "TTL3_CAM_X_RES",
                 "TTL3_CAM_Y_RES", "TTL3_CAM_NCHANNELS"),
             "TTL4 Camera": (
-                "SHM_NAME_TTL4_CAM", "TTL4_CAM_IDX", "TTL4_CAM_IDENTIFER", "TTL4_CAM_X_TOPLEFT",
+                "SHM_NAME_TTL4_CAM", "SHM_NPACKAGES_TTL4_CAM", "TTL4_CAM_IDX", "TTL4_CAM_IDENTIFER", "TTL4_CAM_X_TOPLEFT",
                 "TTL4_CAM_Y_TOPLEFT", "TTL4_CAM_X_RES",
                 "TTL4_CAM_Y_RES", "TTL4_CAM_NCHANNELS"),
             
@@ -285,21 +291,3 @@ class Parameters:
         params = self.get_attributes()
         params_json = json.dumps(params, indent=2)
         return params_json
-    
-    @classmethod
-    def get_default_project_directory(cls) -> str:
-        p = os.path.abspath(inspect.getfile(inspect.currentframe()))
-        return os.path.join(os.path.dirname(p), "..")
-    
-    @classmethod
-    def get_default_nas_directory(cls) -> str:
-        #nas dir
-        if platform.uname().system == "Windows":
-            p = "D:", "NTnas", "nas_vrdata"
-        elif platform.uname().system == "Linux":
-            p = "/", "mnt", "SpatialSequenceLearning"
-        elif platform.uname().system == "Darwin":
-            p = "/", "Volumes", "large", "BMI", "VirtualReality", "SpatialSequenceLearning"
-            # p = "/", "Users", "loaloa", "local_data", "nas_imitation"
-        return os.path.join(*p)
-        
