@@ -24,10 +24,12 @@ from SHM.CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from SHM.VideoFrameSHMInterface import VideoFrameSHMInterface
 
 from analytics_processing.modality_loading import session_modality_from_nas
-from analytics_processing.modality_transformations import data_modality_na2null
+try:
+    # analysisVR changed this helper to a private name; keep compatibility with both.
+    from analytics_processing.modality_loading import load_session_hdf5
+except ImportError:
+    from analytics_processing.modality_loading import _load_session_hdf5 as load_session_hdf5
 
-from analytics_processing.modality_loading import load_session_hdf5
-from analytics_processing.modality_loading import session_modality_from_nas
 from analytics_processing.modality_transformations import data_modality_na2null
 from analytics_processing.modality_transformations import data_modality_rename2oldkeys
 from analytics_processing.modality_transformations import data_modality_pct_as_index

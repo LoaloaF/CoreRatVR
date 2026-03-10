@@ -77,7 +77,13 @@ def attach_inspect_endpoints(app):
         
         L.logger.info(f"Initiating session inspection for {session_name}")
         P = Parameters()
-        source, session_name = session_name.split(";", 1)
+        # Support both legacy "SOURCE;session_name.hdf5" and plain "session_name.hdf5".
+        source = "NAS"
+        if ";" in session_name:
+            source, session_name = session_name.split(";", 1)
+        source = source.strip().upper()
+        session_name = os.path.basename(session_name.strip())
+
         if source == "NAS":
             animal, paradigm = session_name.split("_")[-4:-2]
             base_dir = os.path.join(P.NAS_DATA_DIRECTORY, f"RUN_{animal}", f"{animal}_{paradigm}")
@@ -109,14 +115,15 @@ def attach_inspect_endpoints(app):
             # except Exception as e:
             #     print("Error loading parameter defauls from session: ", e)
         
-        else: #DB
-            #TODO: implement
-            pass
+        elif source == "DB":
+            raise HTTPException(status_code=501, detail="DB inspection source is not implemented")
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown inspection source: {source}")
                 
         P.SESSION_DATA_DIRECTORY = session_dir
         P.SESSION_NAME = session_name
         P.LOGGING_DIRECTORY = logging_dir
-        P.INSPECT_FROM_DB = source == "db"
+        P.INSPECT_FROM_DB = source == "DB"
         P.LOG_TO_DATA_DIR = False
         
         request.app.state.state["initiatedInspect"] = True

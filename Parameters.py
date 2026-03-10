@@ -224,7 +224,10 @@ class Parameters:
         if platform.uname().system == "Windows":
             p = "D:", "NTnas", "nas_vrdata"
         elif platform.uname().system == "Linux":
-            p = "/", "mnt", "SpatialSequenceLearning"
+            default_p = "/", "mnt", "SpatialSequenceLearning"
+            fallback_p = "/", "mnt", "slow", "BMI", "VirtualReality", "SpatialSequenceLearning"
+            default_path = os.path.join(*default_p)
+            p = default_p if os.path.isdir(default_path) else fallback_p
         elif platform.uname().system == "Darwin":
             p = "/", "Volumes", "large", "BMI", "VirtualReality", "SpatialSequenceLearning"
             # p = "/", "Users", "loaloa", "local_data", "nas_imitation"
