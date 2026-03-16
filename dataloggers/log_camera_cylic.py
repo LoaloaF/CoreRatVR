@@ -37,10 +37,10 @@ def _save_frame_packages(queue, full_fname):
         except Exception as e:
             L.logger.error(f"Error saving to hdf5:\n{e}")
 
-def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue, videowriter=None):
+def _log(frame_shm, termflag_shm, paradigm_running_shm, frames_hdf, save_queue, videowriter=None):
     L = Logger()
     L.logger.info("Reading video frames from SHM and saving them...")
-    
+
     # shm arguments, used to be in VideoSharedMemory
     x_res = frame_shm.metadata['x_resolution']
     y_res = frame_shm.metadata['y_resolution']
@@ -57,40 +57,38 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue, 
     while True:
         if termflag_shm.is_set():
             L.logger.info("Termination flag raised")
-            # frames_h5_file.close()
             if package_buf:
                 save_queue.put(package_buf)
             save_queue.put(None)  # Signal the saving thread to exit
             break
-        
-        current_time = int(time.time()*1e6)  
+
+        current_time = int(time.time()*1e6)
         if not paradigm_running_shm.is_set():
             if not portenta_start_stop_flag:
                 L.logger.info(f"Paradigm start not running at {current_time}, on halt....")
                 portenta_start_stop_flag = True
                 portenta_start_stop_pct = int(time.time()*1e6)
-            elif current_time-portenta_start_stop_pct > 1000000:            
+            elif current_time-portenta_start_stop_pct > 1000000:
                 L.logger.debug("Paradigm stopped, on halt....")
                 continue
-        
+
         frame_raw = frame_shm.popitem()
         if frame_raw is None:
             sleep(0.001)
             nchecks += 1
             continue
-        
+
         frame_package = frame_raw[:package_nbytes]
         frame_package = extract_packet_data(frame_package)
         frame_raw = frame_raw[package_nbytes:]
         frame = np.frombuffer(frame_raw, dtype=np.uint8).reshape([y_res, x_res, nchannels])
-        
+
         # skip the first frame, it may have sat there for very long (probabmatic for logger)
         if prv_id == -1:
             prv_id = frame_package["ID"]
             L.logger.debug(f"Skipping first frame with id {prv_id}")
             continue
-        
-        # frame = frame_shm.get_frame()
+
         # check for ID discontinuity
         if (dif := (frame_package["ID"]-prv_id)) != 1:
             L.logger.warning(f"Package ID discontinuous; gap was {dif}")
@@ -100,23 +98,25 @@ def _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue, 
         frame_package.pop("N")
         package_buf.append(frame_package)
         prv_time = frame_package["PCT"]
-               
+
         if frame_shm._shm_name == "unitycam":
             frame = np.flip(frame, 0)
             frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
-        
-        # single frame saving
-        jpeg_data = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
-        name = f"frames/frame_{frame_package['ID']:06d}"
+
+        frame_id = frame_package['ID']
         try:
-            # single frame saving
-            jpeg_data = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
-            with h5py.File(full_fname, "a") as hdf:
-                hdf.create_dataset(f"frames/frame_{frame_package['ID']:06d}", 
-                                data=np.void(jpeg_data[1].tobytes()))
+            jpeg_ok, jpeg_buf = cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 90])
+            if jpeg_ok:
+                n = frames_hdf["frames"].shape[0]
+                frames_hdf["frames"].resize(n + 1, axis=0)
+                frames_hdf["frame_ids"].resize(n + 1, axis=0)
+                frames_hdf["frames"][-1] = jpeg_buf
+                frames_hdf["frame_ids"][-1] = frame_id
+            else:
+                L.logger.error(f"cv.imencode failed for frame id {frame_id}")
         except Exception as e:
-            L.logger.error(f"Error saving frame {name} to hdf5:\n{e}")
-            
+            L.logger.error(f"Error saving frame id {frame_id} to hdf5:\n{e}")
+
         prv_id = frame_package["ID"]
         nchecks = 1
         if len(package_buf) >= buf_size:
@@ -127,7 +127,6 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
                    paradigmflag_shm_struc_fname, logging_name, session_data_dir, 
                    fps, cam_name):
     # shm access
-    # frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
     frame_shm = CyclicPackagesSHMInterface(videoframe_shm_struc_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
     paradigm_running_shm = FlagSHMInterface(paradigmflag_shm_struc_fname)
@@ -143,14 +142,25 @@ def run_log_camera(videoframe_shm_struc_fname, termflag_shm_struc_fname,
 
     full_fname = os.path.join(session_data_dir, f"{logging_name.replace('log_','')}.hdf5")
     Logger().logger.debug(full_fname)
-    with h5py.File(full_fname, "a") as frames_h5_file:
-        frames_h5_file.create_group('frames')
-        
+
     save_queue = Queue()
-    save_thread = Thread(target=_save_frame_packages, args=(save_queue, full_fname.replace(".hdf5", "_packages.hdf5")))
+    save_thread = Thread(target=_save_frame_packages,
+                         args=(save_queue, full_fname.replace(".hdf5", "_packages.hdf5")))
     save_thread.start()
-    
-    _log(frame_shm, termflag_shm, paradigm_running_shm, full_fname, save_queue)
+
+    # Open the frames file once for the whole session.
+    # Only _log (this thread) ever touches it — no collision possible.
+    with h5py.File(full_fname, "a") as frames_hdf:
+        frames_hdf.create_dataset("frames",    shape=(0,), maxshape=(None,),
+                                  dtype=h5py.vlen_dtype(np.uint8))
+        frames_hdf.create_dataset("frame_ids", shape=(0,), maxshape=(None,),
+                                  dtype=np.int64)
+        # parse datasets to check
+        datasets = list(frames_hdf.keys())
+        Logger().logger.debug(f"Datasets in frames_hdf: {datasets}")
+        _log(frame_shm, termflag_shm, paradigm_running_shm, frames_hdf, save_queue)
+    # frames file cleanly closed here
+
     save_thread.join()
 
 if __name__ == "__main__":
