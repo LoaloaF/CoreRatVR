@@ -1,7 +1,8 @@
 import os
 
 import asyncio
-from send2trash import send2trash
+import shutil
+# from send2trash import send2trash
 from time import sleep
 import json
 from fastapi import HTTPException, Request
@@ -190,7 +191,8 @@ def attach_general_endpoints(app):
         
         if body.get("deleteVal"):
             session_dir = body.get("sessionDir")
-            send2trash(session_dir)
+            # send2trash(session_dir)
+            shutil.rmtree(session_dir)
             if os.path.exists(session_dir): # sometimes empty dir left
                 os.rmdir(session_dir)
 
@@ -236,8 +238,13 @@ def attach_general_endpoints(app):
     @app.get("/paradigms")
     def paradigms():
         dirname = os.path.join(P.PROJECT_DIRECTORY, "UnityRatVR", "Paradigms")
-        paradigms = [f for f in os.listdir(dirname) if f.endswith(".xlsx")
-                     if f not in P.EXCLUDE_PARADIGMS]
+        if not os.path.exists(dirname):
+            msg = "Paradigm directory not found. Clone UnityRatVR repo to base dir."
+            paradigms = ['P0000_dummy.xlsx']
+        else:
+            paradigms = [f for f in os.listdir(dirname) if f.endswith(".xlsx")
+                        if f not in P.EXCLUDE_PARADIGMS]
+        print(f"Paradigms found: {paradigms}")
         return sorted(paradigms)
 
     @app.get("/animals")
@@ -330,6 +337,8 @@ def attach_general_endpoints(app):
 def attach_UI_endpoint(app):
     P = Parameters()
     ui_dir = os.path.join(P.PROJECT_DIRECTORY, 'UIRatVR', 'dist')
+    if not os.path.exists(ui_dir):
+        print(f"UI repo missing. Clone UIRatVR repo to base dir.")
     
     @app.get("/ui")
     async def root():

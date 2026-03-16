@@ -25,15 +25,12 @@ from SHM.VideoFrameSHMInterface import VideoFrameSHMInterface
 from SHM.shm_interface_utils import extract_packet_data
 
 
-from analytics_processing.modality_loading import session_modality_from_nas
-from analytics_processing.modality_transformations import data_modality_na2null
+from analysisVR.analytics_processing.modality_loading import session_modality_from_nas
+from analysisVR.analytics_processing.modality_transformations import data_modality_na2null
+from analysisVR.analytics_processing.modality_transformations import data_modality_rename2oldkeys
+from analysisVR.analytics_processing.modality_transformations import data_modality_pct_as_index
 
-# from analytics_processing.modality_loading import session_modality_from_nas
-# from analytics_processing.modality_transformations import data_modality_na2null
-from analytics_processing.modality_transformations import data_modality_rename2oldkeys
-from analytics_processing.modality_transformations import data_modality_pct_as_index
-from analytics_processing.analytics import get_analytics
-
+# from analysisVR.analytics_processing.analytics import get_analytics
 
 def attach_stream_endpoints(app):
     # singlton class - reference to instance created in lifespan
@@ -347,8 +344,7 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
     
     read_from_h5 = True # not all data in memeroy
     
-    # try: 
-    if True:
+    try: 
         # initialize for either viewing a recorded session or stream live from memory
         if not inspect:
             shm = _access_shm(shm_name, None, app)
@@ -494,10 +490,10 @@ async def _stream_packages_loop(inspect, websocket, app, data_name, shm_name,
                 await websocket.send_json(packages)
                 packages.clear()
                 
-    # except WebSocketDisconnect:
-    #     L.logger.info(f"Client disconnected from {shm_name} weboscket")
-    # except Exception as e:
-    #     L.logger.error(f"Error in {shm_name} stream: {e}")
-    # finally:
-    #     if not inspect:
-    #         shm.close_shm()
+    except WebSocketDisconnect:
+        L.logger.info(f"Client disconnected from {shm_name} weboscket")
+    except Exception as e:
+        L.logger.error(f"Error in {shm_name} stream: {e}")
+    finally:
+        if not inspect:
+            shm.close_shm()

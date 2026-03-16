@@ -61,9 +61,16 @@ class SessionParamters:
         self.start_time = datetime.now()
         # UI ensures that POST requests for paradigm_name, animal, animal_weight are made
         self.paradigm_id = int(self.paradigm_name[1:5])
-        paradigm_excelfullfname = self._copy_paradigm_excel_to_session_dir()
-        self._extract_metadata_from_paradigm_excel(paradigm_excelfullfname)
-        self._read_paradigmFSM_json_assets()
+        
+        P = Parameters()
+        p = P.PROJECT_DIRECTORY, "UnityRatVR", "Paradigms"
+        unity_paradigm_dir = os.path.join(*p)
+        if not os.path.exists(unity_paradigm_dir):
+            self.L.logger.error("Paradigm directory not found. Clone UnityRatVR repo to base dir.")
+        else:
+            paradigm_excelfullfname = self._copy_paradigm_excel_to_session_dir()
+            self._extract_metadata_from_paradigm_excel(paradigm_excelfullfname)
+            self._read_paradigmFSM_json_assets()
     
     def handle_stop_session(self):
         self.stop_time = datetime.now()
