@@ -95,13 +95,21 @@ def check_log_files(session_dir, fnames):
 def get_data_file_info(session_dir, fname):
     info = ''
     with h5py.File(os.path.join(session_dir, fname), 'r') as f:
+        Logger().logger.debug(f.keys())
         for key in list(f.keys()):
-            key_str =  f"\n\t\'{key}\':"
-
-            if 'table' in f[key]:
-                info += f"{key_str:<29} {f[key]['table'].shape[0]:<5,} rows"
+            Logger().logger.debug(key)
+            key_str =  f"\n\t'{key}':"
+            obj = f[key]
+            Logger().logger.debug(type(obj))
+            if isinstance(obj, h5py.Group):
+                if 'table' in obj:
+                    info += f"{key_str:<29} {obj['table'].shape[0]:<5,} rows"
+                else:
+                    info += f"{key_str:<29} [Group] keys: {list(obj.keys())}"
+            elif isinstance(obj, h5py.Dataset):
+                info += f"{key_str:<29} [Dataset] shape: {obj.shape}, dtype: {obj.dtype}"
             else:
-                info += f"{key_str:<29}"
+                info += f"{key_str:<29} [Unknown type]"
     return info + '\n'
 
 def check_file_existence(session_dir, fnames):

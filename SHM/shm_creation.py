@@ -63,6 +63,37 @@ def create_singlebyte_shm(shm_name): # flags
     }
     return _write_json(shm_structure, shm_name)
 
+def create_cyclic_frames_shm(shm_name, npackages, frame_package_nbytes, x_resolution, 
+                             y_resolution, nchannels):
+    L = Logger()
+    L.logger.info(f"Creating cylic frames SHM named `{shm_name}`")
+
+    frame_nbytes = x_resolution * y_resolution * nchannels
+    write_pntr_nbytes = 8
+    total_nbytes = write_pntr_nbytes + (frame_package_nbytes+frame_nbytes) *npackages
+
+    _create_shm(shm_name=shm_name, total_nbytes=total_nbytes)
+    
+    # except for metadata, look like normal cyclic packages
+    shm_structure = {
+        "shm_type": "cyclic_packages",
+        "shm_name": shm_name,
+        "total_nbytes": total_nbytes,
+        "fields": {"shm_packages_nbytes": (frame_package_nbytes+frame_nbytes) *npackages,
+                   "write_pntr_nbytes": write_pntr_nbytes, },
+        # "field_types": {"shm_packages_type": "str",
+        #                 "write_pntr_type": "uint8"},
+        "metadata": {"package_nbytes": (frame_package_nbytes+frame_nbytes),
+                     "frame_package_nbytes": frame_package_nbytes,
+                     "npackages": npackages, 
+                     "x_resolution": x_resolution, 
+                     "y_resolution": y_resolution, 
+                     "nchannels": nchannels,
+                     "colorformat": "BGR",},
+    }
+    # shm_structure = validate_shm_structure(shm_structure)
+    return _write_json(shm_structure, shm_name)
+
 def create_cyclic_packages_shm(shm_name, package_nbytes, npackages):
     L = Logger()
     L.logger.info(f"Creating cylic package SHM named `{shm_name}`")

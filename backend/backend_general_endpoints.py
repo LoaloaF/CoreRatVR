@@ -1,7 +1,8 @@
 import os
 
 import asyncio
-from send2trash import send2trash
+import shutil
+# from send2trash import send2trash
 from time import sleep
 import json
 from fastapi import HTTPException, Request
@@ -163,6 +164,14 @@ def attach_general_endpoints(app):
         termflag_shm_interface.close_shm()
         request.app.state.state["termflag_shm_interface"] = None
         
+        # close scope and mxwserver manually if open
+        if procs_state["scope"] != 0:
+            L.logger.info(f"Closing scope process {procs_state['scope']}...")
+            os.kill(procs_state["scope"], 9)
+        if procs_state["mxserver"] != 0:
+            L.logger.info(f"Closing mea server process {procs_state['mxserver']}...")
+            os.kill(procs_state["mxserver"], 9)
+        
         request.app.state.state['procs'].update({proc_name: 0 for proc_name in procs_state.keys()})
 
         # delete all shared memory
@@ -182,7 +191,8 @@ def attach_general_endpoints(app):
         
         if body.get("deleteVal"):
             session_dir = body.get("sessionDir")
-            send2trash(session_dir)
+            # send2trash(session_dir)
+            shutil.rmtree(session_dir)
             if os.path.exists(session_dir): # sometimes empty dir left
                 os.rmdir(session_dir)
 
@@ -228,14 +238,26 @@ def attach_general_endpoints(app):
     @app.get("/paradigms")
     def paradigms():
         dirname = os.path.join(P.PROJECT_DIRECTORY, "UnityRatVR", "Paradigms")
-        paradigms = [f for f in os.listdir(dirname) if f.endswith(".xlsx")]
-        return paradigms
+        if not os.path.exists(dirname):
+            msg = "Paradigm directory not found. Clone UnityRatVR repo to base dir."
+            paradigms = ['P0000_dummy.xlsx']
+        else:
+            paradigms = [f for f in os.listdir(dirname) if f.endswith(".xlsx")
+                        if f not in P.EXCLUDE_PARADIGMS]
+        print(f"Paradigms found: {paradigms}")
+        return sorted(paradigms)
 
     @app.get("/animals")
     def animals():
-        static_animals = ["rYL_001","rYL_002","rYL_003","rYL_004","rYL_006","rYL_008","rYL_005","rYL_007","rYL_009","AI_001","dummyAnimal"]
-
-        return static_animals
+        return P.ANIMALS
+    
+    @app.get("/check_nas")
+    def check_nas():
+        Logger().logger.debug("Checking if NAS mapped...")
+        nas_mapped = os.path.exists(P.NAS_DATA_DIRECTORY)
+        if not nas_mapped or os.listdir(P.NAS_DATA_DIRECTORY) == []:
+            nas_mapped = "Warning: NAS not mapped yet."
+        return nas_mapped
 
     @app.get("/trial_variable_names")
     def trial_variable_names():
@@ -315,6 +337,8 @@ def attach_general_endpoints(app):
 def attach_UI_endpoint(app):
     P = Parameters()
     ui_dir = os.path.join(P.PROJECT_DIRECTORY, 'UIRatVR', 'dist')
+    if not os.path.exists(ui_dir):
+        print(f"UI repo missing. Clone UIRatVR repo to base dir.")
     
     @app.get("/ui")
     async def root():

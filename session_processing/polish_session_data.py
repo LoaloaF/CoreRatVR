@@ -116,6 +116,7 @@ def add_ephys_timestamps(ephys_fullfname, unity_trials_data, unity_frames_data,
     except:
         with h5py.File(ephys_fullfname, 'r') as file:
             ephys_bits = file['bits'][:]
+            start_sample = 0
 
 
     msg = np.array([(a[0],a[1]) for a in ephys_bits])
@@ -348,10 +349,12 @@ def insert_trial_id(unity_trials_data, unity_frames_data, ballvel_data,
         frame_tstamp_col = frame_tstamp_col.replace('_pc_', '_ephys_')
         ballvel_tstamp_col = ballvel_tstamp_col.replace('_pc_', '_ephys_')
         event_tstamp_col = event_tstamp_col.replace('_pc_', '_ephys_')
-        facecam_tstamp_col = facecam_tstamp_col.replace('_pc_', '_ephys_')
-        bodycam_tstamp_col = bodycam_tstamp_col.replace('_pc_', '_ephys_')
         unitycam_tstamp_col = unitycam_tstamp_col.replace('_pc_', '_ephys_')
+        facecam_tstamp_col = facecam_tstamp_col.replace('_pc_', '_ephys_')
+        if bodycam_tstamp_col.replace('_pc_', '_ephys_') in bodycam_packages:
+            bodycam_tstamp_col = bodycam_tstamp_col.replace('_pc_', '_ephys_')
     
+    Logger().logger.info(f"Adding trial_id to dataframes... -- {bodycam_packages.columns}, {bodycam_tstamp_col}")
     # if unity_trials_data is None, this will enter the catch block in main function
     # get the trial time boundaries and constuct an interval index from it
 
@@ -430,7 +433,7 @@ def hdf5_frames2mp4(session_dir, merged_fname):
                 fps = _calc_fps(packages, cam_name)
 
                 frame_keys = merged_file[f"{cam_name}_frames"].keys()
-                # L.logger.info(f"Rendering {cam_name} (n={len(frame_keys):,})...")
+                L.logger.info(f"Rendering {cam_name} (n={len(frame_keys):,} at {fps} FPS)...")
                 for i, (frame_key, pack) in enumerate(zip(frame_keys, packages.iterrows())):
                     frame = merged_file[f"{cam_name}_frames"][frame_key][()]
                     frame = cv2.imdecode(np.frombuffer(frame.tobytes(), np.uint8), 
@@ -443,27 +446,32 @@ def hdf5_frames2mp4(session_dir, merged_fname):
                     
                     # insert black frame if package ID is discontinuous
                     if pack_id != prv_pack_id+1:
-                        # L.logger.warning(f"Package ID discontinuous; gap was "
-                        #                  f"{pack_id - prv_pack_id}.  Inserting"
-                        #                  f" black frame.")
+                        L.logger.warning(f"Package ID discontinuous; gap was "
+                                         f"{pack_id - prv_pack_id}.  Inserting"
+                                         f" black frame.")
                         writer.write(np.zeros_like(frame))
                     else:
                         writer.write(frame)
                     prv_pack_id = pack_id
                     
                     # log progress
-                    # if i % (len(frame_keys)//10) == 0:
-                    #     print(f"{i/len(frame_keys)*100:.0f}% done...", end='\r')
-                # L.logger.info(f"Sucessfully rendered {cam_name} video!")
+                    if i % (len(frame_keys)//10) == 0:
+                        print(f"{i/len(frame_keys)*100:.0f}% done...", end='\r')
+                L.logger.info(f"Sucessfully rendered {cam_name} video!")
             # keys in hdf5 file may very well not exist
             except Exception as e:
                 # L.logger.error(f"Failed to render {cam_name} video: {e}")
                 return
-    # L = Logger()
-    # L.logger.info(f"Rendering videos from hdf5 files in {session_dir}")
+    L = Logger()
+    L.logger.info(f"Rendering videos from hdf5 files in {session_dir}")
     render_video("facecam")
+    L.logger.info(f"Rendering next video...")
+    
     render_video("bodycam")
     render_video("unitycam")
+    render_video("ttlcam2")
+    render_video("ttlcam3")
+    render_video("ttlcam4")
     
     
 if __name__ == '__main__':

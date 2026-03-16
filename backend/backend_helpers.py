@@ -26,6 +26,8 @@ def _parse2type(value: str, correct_type: type):
                 return False
             else:
                 return True
+        if correct_type == list:
+            return value.split(",")
     except ValueError:
         return 
     

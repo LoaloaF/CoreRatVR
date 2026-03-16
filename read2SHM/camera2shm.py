@@ -7,16 +7,20 @@ sys.path.insert(1, os.path.join(sys.path[0], '..', 'SHM')) # SHM dir
 import time
 import argparse
 import cv2
+import numpy as np
 
 from VideoFrameSHMInterface import VideoFrameSHMInterface
+from CyclicPackagesSHMInterface import CyclicPackagesSHMInterface
 from FlagSHMInterface import FlagSHMInterface
 from CustomLogger import CustomLogger as Logger
 
-def _setup_capture(x_resolution, y_resolution, camera_idx, fps):
+def _setup_capture(x_resolution, y_resolution, camera_identifer, fps):
     L = Logger()
-    L.logger.debug(f"Setting up video capture for cam {camera_idx}")
+    L.logger.debug(f"Setting up video capture for cam identifer: {camera_identifer}")
     
-    cap = cv2.VideoCapture(camera_idx)
+    if camera_identifer.isdigit():
+        camera_identifer = int(camera_identifer)
+    cap = cv2.VideoCapture(camera_identifer)
     if not cap.isOpened():
         L.logger.error("Failed to open camera")
         exit(1)
@@ -46,6 +50,9 @@ def _setup_capture(x_resolution, y_resolution, camera_idx, fps):
 def _read_stream_loop(frame_shm, termflag_shm, cap, x_topleft, y_topleft):
     L = Logger()
     L.logger.info("Reading camera stream & writing to SHM...")
+    x_res = frame_shm.metadata['x_resolution']
+    y_res = frame_shm.metadata['y_resolution']
+    nchannels = frame_shm.metadata['nchannels']
     try:
         frame_i = 0
         while True:
@@ -61,20 +68,30 @@ def _read_stream_loop(frame_shm, termflag_shm, cap, x_topleft, y_topleft):
             pack = "<{" + f"N:I,ID:{frame_i},PCT:{int(time.time()*1e6)}" + "}>\r\n"
             L.logger.debug(f"New frame: {pack}")
             
-            frame = frame[y_topleft:frame_shm.y_res, x_topleft:frame_shm.x_res, :frame_shm.nchannels]
-            frame = frame.transpose(1,0,2) # cv2: y-x-rgb, everywhere: x-y-rgb
-            frame_shm.add_frame(frame, pack.encode('utf-8'))
+            frame = frame[y_topleft:y_res, x_topleft:x_res, :nchannels]
+            # frame = frame.transpose(1,0,2) # cv2: y-x-rgb, everywhere: x-y-rgb
+            # frame_shm.add_frame(frame, pack.encode('utf-8'))
+            
+            frame_bytes = frame.tobytes()
+            package_nbytes = frame_shm.metadata['frame_package_nbytes']
+            combined_bytes = bytearray(package_nbytes+len(frame_bytes))
+            combined_bytes[:len(pack)] = pack.encode('utf-8')
+            combined_bytes[package_nbytes:] = frame_bytes
+            frame_shm.push(combined_bytes)
+
             frame_i += 1
     finally:
         cap.release()
 
 def run_camera2shm(videoframe_shm_struc_fname, termflag_shm_struc_fname, cam_name,
-                   x_topleft, y_topleft, camera_idx, fps):
+                   x_topleft, y_topleft, camera_identifer, fps):
     # shm access
-    frame_shm = VideoFrameSHMInterface(videoframe_shm_struc_fname)
+    frame_shm = CyclicPackagesSHMInterface(videoframe_shm_struc_fname)
     termflag_shm = FlagSHMInterface(termflag_shm_struc_fname)
 
-    cap = _setup_capture(frame_shm.x_res, frame_shm.y_res, camera_idx, fps)
+    cap = _setup_capture(frame_shm.metadata['x_resolution'], 
+                         frame_shm.metadata['y_resolution'], 
+                         camera_identifer, fps)
     _read_stream_loop(frame_shm, termflag_shm, cap, x_topleft, y_topleft)
 
 if __name__ == "__main__":
@@ -89,7 +106,7 @@ if __name__ == "__main__":
     argParser.add_argument("--x_topleft", type=int)
     argParser.add_argument("--y_topleft", type=int)
     argParser.add_argument("--process_prio", type=int)
-    argParser.add_argument("--camera_idx", type=int)
+    argParser.add_argument("--camera_identifer")
     argParser.add_argument("--fps", type=int)
     kwargs = vars(argParser.parse_args())
     

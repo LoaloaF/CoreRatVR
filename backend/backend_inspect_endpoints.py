@@ -77,50 +77,26 @@ def attach_inspect_endpoints(app):
         
         L.logger.info(f"Initiating session inspection for {session_name}")
         P = Parameters()
-        source, session_name = session_name.split(";", 1)
-        if source == "NAS":
-            animal, paradigm = session_name.split("_")[-4:-2]
-            base_dir = os.path.join(P.NAS_DATA_DIRECTORY, f"RUN_{animal}", f"{animal}_{paradigm}")
-            # base_dir = os.path.expanduser("~/local_data") # local hack, cut later
-            
-            session_dir = os.path.join(base_dir, session_name.replace("behavior_", "")[:-5])
-            logging_dir = P.LOGGING_DIRECTORY # the default logging dir on this machine
-            
-            # attempt to load parameter defaults from session, old sessions might not have this
-            # try:
-            if True:
-                # metadata = pd.read_hdf(os.path.join(session_dir, session_name),
-                #                         key="metadata")
-                # session_paramters.load_session_parameters(metadata)
-                # session_params = json.loads(metadata[:,"configuration"].iloc[0])
-                # keep the defalts for thoese params
-                # [session_params.pop(k) for k in ["LOGGING_LEVEL", "PROJECT_DIRECTORY", 
-                #                                 "NAS_DATA_DIRECTORY"] if k in session_params]
-                # P.update_from_json(session_params)
-                
-                # new version
-                nas_base_dir, paradigm_subdir = session_dir.split("RUN_")
-                session_fullfname = os.path.join(nas_base_dir, "RUN_"+paradigm_subdir, session_name)
-                metad = session_modality_from_nas(session_fullfname, 'metadata')
-                session_paramters.load_session_parameters(metad)
-                P.update_from_json(metad["configuration"])
-                
-                
-            # except Exception as e:
-            #     print("Error loading parameter defauls from session: ", e)
+
+        animal, paradigm = session_name.split("_")[-4:-2]
+        base_dir = os.path.join(P.NAS_DATA_DIRECTORY, f"RUN_{animal}", f"{animal}_{paradigm}")
         
-        else: #DB
-            #TODO: implement
-            pass
+        session_dir = os.path.join(base_dir, session_name.replace("behavior_", "")[:-5])
+        logging_dir = P.LOGGING_DIRECTORY # the default logging dir on this machine
+        
+        nas_base_dir, paradigm_subdir = session_dir.split("RUN_")
+        session_fullfname = os.path.join(nas_base_dir, "RUN_"+paradigm_subdir, session_name)
+        metadata = session_modality_from_nas(session_fullfname, 'metadata')
+        # set the parameters and session_parameters from the inspected session
+        session_paramters.load_session_parameters(metadata)
+        P.update_from_json(metadata["configuration"])
                 
         P.SESSION_DATA_DIRECTORY = session_dir
         P.SESSION_NAME = session_name
         P.LOGGING_DIRECTORY = logging_dir
-        P.INSPECT_FROM_DB = source == "db"
         P.LOG_TO_DATA_DIR = False
         
         request.app.state.state["initiatedInspect"] = True
-
         L = Logger()
         L.spacer()
         L.logger.info(f"Session inspection initiated for {session_name}")

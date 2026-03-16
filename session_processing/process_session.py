@@ -108,28 +108,49 @@ def _handle_data(session_dir):
                          "PCT": f"facecam_image_pc_timestamp",
                          "INSERT1": "facecam_image_ephys_timestamp",
                          "INSERT2": "trial_id",}
-    facecam_packages = load_camera_data(session_dir, 'facecam.hdf5', 
+    facecam_packages = load_camera_data(session_dir, 'facecam_packages.hdf5', 
                                         toDBnames_mapping)
+    toDBnames_mapping = {"ID": f"ttlcam2_image_id", 
+                         "PCT": f"ttlcam2_image_pc_timestamp",
+                         "INSERT1": "ttlcam2_image_ephys_timestamp",
+                         "INSERT2": "trial_id",}
+    ttlcam2_packages = load_camera_data(session_dir, 'ttlcam2_packages.hdf5', 
+                                        toDBnames_mapping)
+    toDBnames_mapping = {"ID": f"ttlcam3_image_id",
+                         "PCT": f"ttlcam3_image_pc_timestamp",
+                         "INSERT1": "ttlcam3_image_ephys_timestamp",
+                         "INSERT2": "trial_id",}
+    ttlcam3_packages = load_camera_data(session_dir, 'ttlcam3_packages.hdf5',
+                                        toDBnames_mapping)
+    toDBnames_mapping = {"ID": f"ttlcam4_image_id",
+                         "PCT": f"ttlcam4_image_pc_timestamp",
+                         "INSERT1": "ttlcam4_image_ephys_timestamp",
+                         "INSERT2": "trial_id",}
+    ttlcam4_packages = load_camera_data(session_dir, 'ttlcam4_packages.hdf5',
+                                        toDBnames_mapping)
+    
     toDBnames_mapping = {"ID": f"bodycam_image_id", 
                          "PCT": f"bodycam_image_pc_timestamp",
                          "INSERT1": "facecam_image_ephys_timestamp",
                          "INSERT2": "trial_id",}
-    bodycam_packages = load_camera_data(session_dir, 'bodycam.hdf5', 
+    bodycam_packages = load_camera_data(session_dir, 'bodycam_packages.hdf5', 
                                         toDBnames_mapping)
     toDBnames_mapping = {"ID": f"unitycam_image_id", 
                          "PCT": f"unitycam_image_pc_timestamp",
                          "INSERT1": "unitycam_image_ephys_timestamp",
                          "INSERT2": "trial_id",}
-    unitycam_packages = load_camera_data(session_dir, 'unitycam.hdf5', 
+    unitycam_packages = load_camera_data(session_dir, 'unitycam_packages.hdf5', 
                                          toDBnames_mapping)
     
     return (metadata, unity_trials_data, paradigmVariable_data, unity_frames_data,
-            ballvel_data, event_data, facecam_packages, bodycam_packages,  
-            unitycam_packages)
+            ballvel_data, event_data, facecam_packages, ttlcam2_packages, ttlcam3_packages, 
+            ttlcam4_packages, bodycam_packages, unitycam_packages)
 
 def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data, 
                            unity_frames_data, paradigmVariable_data, 
-                           facecam_packages, bodycam_packages, 
+                           facecam_packages, ttlcam2_packages, ttlcam3_packages,
+                            ttlcam4_packages,
+                           bodycam_packages, 
                            unitycam_packages, ballvel_data, event_data):
     L.logger.info(f"Merging data into one hdf5 file: {fname}")
     full_fname = os.path.join(session_dir, fname)
@@ -146,8 +167,10 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         store.put('metadata', pd.DataFrame([metadata], index=[0]), format='table')
     
         L.logger.info(f"Merging unity data...")
-        store.put('unity_trial', unity_trials_data, format='table')
-        store.put('unity_frame', unity_frames_data, format='table')
+        if unity_trials_data is not None:
+            store.put('unity_trial', unity_trials_data, format='table')
+        if unity_frames_data is not None:
+            store.put('unity_frame', unity_frames_data, format='table')
         if paradigmVariable_data is not None:
             store.put('paradigm_variable', paradigmVariable_data, format='table')
 
@@ -159,6 +182,13 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
         
         if facecam_packages is not None:
             store.put('facecam_packages', facecam_packages, format='table')    
+        if ttlcam2_packages is not None:
+            store.put('ttlcam2_packages', ttlcam2_packages, format='table')
+        if ttlcam3_packages is not None:
+            store.put('ttlcam3_packages', ttlcam3_packages, format='table')
+        if ttlcam4_packages is not None:
+            store.put('ttlcam4_packages', ttlcam4_packages, format='table')
+        
         if bodycam_packages is not None:
             store.put('bodycam_packages', bodycam_packages, format='table')
         if unitycam_packages is not None:
@@ -175,6 +205,27 @@ def _save_merged_hdf5_data(session_dir, fname, metadata, unity_trials_data,
                 source_file.copy(source_file["frames"], output_file, name="facecam_frames")
         else:
             L.logger.warning(f"Failed to find facecam data in {session_dir}")
+            
+        L.logger.info(f"Merging ttlcam2 data...")
+        if os.path.exists(os.path.join(session_dir, 'ttlcam2.hdf5')):
+            with h5py.File(os.path.join(session_dir, 'ttlcam2.hdf5'), 'r') as source_file:
+                source_file.copy(source_file["frames"], output_file, name="ttlcam2_frames")
+        else:
+            L.logger.warning(f"Failed to find ttlcam2 data in {session_dir}")
+            
+        L.logger.info(f"Merging ttlcam3 data...")
+        if os.path.exists(os.path.join(session_dir, 'ttlcam3.hdf5')):
+            with h5py.File(os.path.join(session_dir, "ttlcam3.hdf5"), 'r') as source_file:
+                source_file.copy(source_file["frames"], output_file, name="ttlcam3_frames")
+        else:
+            L.logger.warning(f"Failed to find ttlcam3 data in {session_dir}")
+            
+        L.logger.info(f"Merging ttlcam4 data...")
+        if os.path.exists(os.path.join(session_dir, 'ttlcam4.hdf5')):
+            with h5py.File(os.path.join(session_dir, 'ttlcam4.hdf5'), 'r') as source_file:
+                source_file.copy(source_file["frames"], output_file, name="ttlcam4_frames")
+        else:
+            L.logger.warning(f"Failed to find ttlcam4 data in {session_dir}")
         
         L.logger.info(f"Merging bodycam data...")
         if os.path.exists(os.path.join(session_dir, 'bodycam.hdf5')):
@@ -231,6 +282,12 @@ def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
         os.mkdir(full_nas_dir)
         L.logger.info(f"Created directory {full_nas_dir}")
         
+        # log files dir
+        full_nas_dir_log = os.path.join(full_nas_dir, "logs")
+        if not os.path.exists(full_nas_dir_log):
+            os.mkdir(full_nas_dir_log)
+            L.logger.info(f"Created directory {full_nas_dir_log}")
+        
         # copy only these selected files to NAS (merged file, log files, bodycam video)
         fnames = [fname for fname in os.listdir(session_dir) 
                 if fname.endswith(".log") or fname in (merged_fname, "bodycam.mp4", "ephys_output.raw.h5")]
@@ -240,7 +297,7 @@ def _handle_move2nas(session_dir, nas_dir, merged_fname, animal, paradigm):
                 if fn == merged_fname:
                     L.logger.info(f"Copying {fn} ({os.path.getsize(src)/(1024**3):.1}GB)"
                                 f" to NAS...")
-                dst = os.path.join(full_nas_dir, fn)
+                dst = os.path.join(full_nas_dir_log if fn.endswith(".log") else full_nas_dir, fn)
                 shutil.copyfile(src, dst)
     except Exception as e:
         L.logger.error(f"Failed to copy files to NAS: {e}")
@@ -292,8 +349,8 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     
     
     (metadata, unity_trials_data, paradigmVariable_data, unity_frames_data,
-    ballvel_data, event_data, facecam_packages, bodycam_packages,  
-    unitycam_packages) = data
+    ballvel_data, event_data, facecam_packages, ttlcam2_packages, ttlcam3_packages, 
+    ttlcam4_packages, bodycam_packages, unitycam_packages) = data
     L.spacer()
     L.logger.info(f"{metadata['session_name']}\nData loaded without Exceptions! ")
 
@@ -307,10 +364,12 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
         
     # inplace insert trial id into every dataframe with a timestamp
     L.spacer()
-    insert_trial_id(unity_trials_data, unity_frames_data,
-                    ballvel_data, event_data, facecam_packages, bodycam_packages,
-                    unitycam_packages, use_ephys_timestamps=integrate_ephys)
-    
+    if unity_trials_data is not None:
+        L.logger.info(f"Inserting trial_id to all modalities...")
+        insert_trial_id(unity_trials_data, unity_frames_data,
+                        ballvel_data, event_data, facecam_packages, bodycam_packages,
+                        unitycam_packages, use_ephys_timestamps=integrate_ephys)
+        
     if prompt_user_decision:
         answer = input("\nProceed with merging and renaming session dir? [y/n]: ")
         if answer.lower() != 'y':
@@ -321,7 +380,9 @@ def process_session(session_dir, nas_dir, prompt_user_decision, integrate_ephys,
     merged_fname = f"{metadata['session_name']}.hdf5"
     _save_merged_hdf5_data(session_dir, merged_fname, metadata, unity_trials_data, 
                            unity_frames_data, paradigmVariable_data, 
-                           facecam_packages, bodycam_packages, 
+                           facecam_packages, 
+                           ttlcam2_packages, ttlcam3_packages, ttlcam4_packages,
+                           bodycam_packages, 
                            unitycam_packages, ballvel_data, event_data)
     
     if render_videos:
